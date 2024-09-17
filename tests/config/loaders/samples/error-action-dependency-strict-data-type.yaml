@@ -1,0 +1,9 @@
+# exception: LoadError
+# match: Unrecognized 'strict' attribute type
+---
+actions:
+  - name: foo
+    type: shell
+    expects:
+      - name: foo
+        strict: bar

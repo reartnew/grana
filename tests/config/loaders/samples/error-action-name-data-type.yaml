@@ -1,0 +1,6 @@
+# exception: LoadError
+# match: Unexpected name type
+---
+actions:
+  - type: shell
+    name: {}

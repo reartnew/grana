@@ -1,0 +1,5 @@
+# exception: YAMLStructureError
+# match: Expected string content after '!import'
+---
+actions:
+  - !import {}

@@ -1,0 +1,8 @@
+# exception: LoadError
+# match: Unrecognized 'selectable' content type
+---
+actions:
+  - name: Foo
+    type: shell
+    command: bar
+    selectable: {}

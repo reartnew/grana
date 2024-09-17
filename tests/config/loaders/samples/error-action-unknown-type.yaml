@@ -1,0 +1,6 @@
+# exception: LoadError
+# match: Unknown dispatched type
+---
+actions:
+  - name: foo
+    type: bar

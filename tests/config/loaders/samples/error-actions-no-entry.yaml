@@ -1,0 +1,14 @@
+# exception: IntegrityError
+# match: No entrypoints for the workflow
+---
+actions:
+  - name: bar
+    type: shell
+    command: whoami
+    expects:
+      - baz
+  - name: baz
+    type: shell
+    command: whoami
+    expects:
+      - bar

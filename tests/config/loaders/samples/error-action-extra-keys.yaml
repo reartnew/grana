@@ -1,0 +1,8 @@
+# exception: LoadError
+# match: Unrecognized keys for action
+---
+actions:
+  - name: foo
+    type: shell
+    command: ls -la
+    foo: bar

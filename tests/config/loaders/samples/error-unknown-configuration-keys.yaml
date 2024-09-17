@@ -1,0 +1,10 @@
+# exception: LoadError
+# match: Unrecognized configuration keys
+---
+configuration:
+  foo: bar
+actions:
+
+  - name: Foo
+    type: shell
+    command: echo foo

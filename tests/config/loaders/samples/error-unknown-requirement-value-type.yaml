@@ -1,0 +1,11 @@
+# exception: LoadError
+# match: Unexpected package constrain
+---
+configuration:
+  requires_packages:
+    - {}
+actions:
+
+  - name: Foo
+    type: shell
+    command: echo foo

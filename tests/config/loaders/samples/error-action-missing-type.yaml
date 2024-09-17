@@ -1,0 +1,5 @@
+# exception: LoadError
+# match: 'type' not specified for action
+---
+actions:
+  - name: foo

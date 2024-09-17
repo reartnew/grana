@@ -1,0 +1,4 @@
+# exception: LoadError
+# match: Unrecognized root keys
+---
+foo:

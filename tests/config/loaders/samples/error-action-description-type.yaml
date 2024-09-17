@@ -1,0 +1,7 @@
+# exception: LoadError
+# match: Unrecognized 'description' content type
+---
+actions:
+  - name: foo
+    type: shell
+    description: {}

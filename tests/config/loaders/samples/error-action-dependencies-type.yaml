@@ -1,0 +1,7 @@
+# exception: LoadError
+# match: Unrecognized 'expects' content type
+---
+actions:
+  - name: foo
+    type: shell
+    expects: {}

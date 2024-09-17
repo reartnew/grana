@@ -1,0 +1,5 @@
+# exception: LoadError
+# match: Unrecognized node type
+---
+actions:
+  - foo

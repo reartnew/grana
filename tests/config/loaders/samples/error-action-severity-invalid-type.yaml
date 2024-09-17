@@ -1,0 +1,6 @@
+# exception: LoadError
+# match: Unrecognized 'severity' content type
+---
+actions:
+  - type: shell
+    severity: {}

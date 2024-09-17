@@ -1,0 +1,223 @@
+[tool.poetry]
+name = "grana"
+version = "1.0.0"
+description = "Declarative task runner"
+license = "MIT"
+authors = [
+    "Artem Novikov <artnew@list.ru>",
+]
+readme = "README.md"
+repository = "https://github.com/reartnew/grana"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+
+[tool.poetry.dependencies]
+python = "^3.8.1, <3.13"
+named-env = "^2.3.2"
+classlogging = "^1.1.1"
+python-dotenv = "^1.0.1"
+async-shell = "^1.0.7"
+pyyaml = "^6.0.2"
+click = "^8.1.7"
+dacite-cjunct = "1.8.1a0"
+inquirer = "^3.4.0"
+aiodocker = { version = "^0.22.2", optional = true }
+lazy-object-proxy = "^1.10.0"
+packaging = "^24.1"
+
+[tool.poetry.extras]
+docker = ["aiodocker"]
+all = ["aiodocker"]
+
+[tool.poetry.group.dev.dependencies]
+tox = "^4.14.1"
+pytest = "^8.3.2"
+pylint = "^3.2.6"
+mypy = "^1.11.1"
+black = "^24.8.0"
+bandit = "^1.7.9"
+coverage = "^7.6.1"
+pytest-pylint = "^0.21.0"
+pytest-mypy = "^0.10.3"
+pytest-black = "^0.3.12"
+pytest-bandit = "^0.6.1"
+pytest-cov = "^5.0.0"
+pytest-asyncio = "^0.23.8"
+types-pyyaml = "^6.0.12.20240311"
+setuptools = "^72.1.0"
+pytest-data-suites = "^1.0.5"
+
+[tool.poetry.scripts]
+grana = "grana.console:main"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "src",
+    "tests",
+]
+addopts = """
+--pylint
+--mypy
+--black
+--bandit
+"""
+
+bandit_targets = ["src"]
+filterwarnings = [
+    "error",
+    "ignore:.*:pytest.PytestWarning",
+    "ignore:.*:builtins.DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src"]
+
+[tool.coverage.report]
+fail_under = 95
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+
+[tool.pylint.MASTER]
+fail-under = 10.0
+jobs = 1
+unsafe-load-any-extension = "no"
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+    "too-few-public-methods",
+    "broad-except",
+    "fixme",
+    "logging-fstring-interpolation",
+]
+enable = ["unused-wildcard-import"]
+
+[tool.pylint.REFACTORING]
+max-nested-blocks = 10
+never-returning-functions = ["sys.exit"]
+
+[tool.pylint.BASIC]
+argument-naming-style = "snake_case"
+attr-naming-style = "snake_case"
+bad-names = ["l"]
+class-attribute-naming-style = "any"
+class-naming-style = "any"
+class-rgx = "[A-Z][a-zA-Z]*$"
+const-naming-style = "UPPER_CASE"
+docstring-min-length = -1
+function-naming-style = "snake_case"
+good-names-rgxs = "^[a-z_]$"
+include-naming-hint = "no"
+inlinevar-naming-style = "any"
+method-naming-style = "snake_case"
+module-naming-style = "snake_case"
+no-docstring-rgx = "^_"
+property-classes = ["abc.abstractproperty"]
+variable-naming-style = "snake_case"
+
+[tool.pylint.FORMAT]
+expected-line-ending-format = "LF"
+indent-after-paren = 4
+indent-string = "'    '"
+max-line-length = 120
+max-module-lines = 1000
+single-line-class-stmt = "no"
+single-line-if-stmt = "no"
+
+[tool.pylint.MISCELLANEOUS]
+notes = "TODO"
+
+[tool.pylint.SIMILARITIES]
+ignore-comments = "yes"
+ignore-docstrings = "yes"
+ignore-imports = "no"
+min-similarity-lines = 50
+
+[tool.pylint.SPELLING]
+max-spelling-suggestions = 4
+spelling-store-unknown-words = "no"
+
+[tool.pylint.STRING]
+check-quote-consistency = "no"
+check-str-concat-over-line-jumps = "no"
+
+[tool.pylint.TYPECHECK]
+contextmanager-decorators = ["contextlib.contextmanager"]
+ignore-mixin-members = "yes"
+ignore-none = "no"
+ignore-on-opaque-inference = "yes"
+ignored-classes = [
+    "optparse.Values",
+    "thread._local",
+    "_thread._local",
+]
+missing-member-hint = "yes"
+missing-member-hint-distance = 1
+missing-member-max-choices = 1
+
+[tool.pylint.VARIABLES]
+allow-global-unused-variables = "yes"
+callbacks = [
+    "cb_",
+    "_cb",
+]
+dummy-variables-rgx = "^_$"
+ignored-argument-names = "_.*|^ignored_|^unused_"
+init-import = "no"
+redefining-builtins-modules = [
+    "six.moves",
+    "past.builtins",
+    "future.builtins",
+    "builtins",
+    "io",
+]
+
+[tool.pylint.CLASSES]
+defining-attr-methods = [
+    "__init__",
+    "__new__",
+    "__post_init__",
+]
+valid-classmethod-first-arg = "cls"
+valid-metaclass-classmethod-first-arg = "cls"
+
+[tool.pylint.DESIGN]
+max-args = 20
+max-attributes = 50
+max-bool-expr = 10
+max-branches = 50
+max-locals = 50
+max-parents = 20
+max-public-methods = 100
+max-returns = 10
+max-statements = 100
+min-public-methods = 2
+
+[tool.pylint.IMPORTS]
+allow-wildcard-with-all = "no"
+analyse-fallback-blocks = "yes"
+
+[tool.pylint.EXCEPTIONS]
+overgeneral-exceptions = [
+    "builtins.BaseException",
+    "builtins.Exception",
+]

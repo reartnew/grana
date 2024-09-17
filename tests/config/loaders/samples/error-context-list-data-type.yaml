@@ -1,0 +1,10 @@
+# exception: LoadError
+# match: Context item #1 is not a dict nor an '!import'
+---
+context:
+  - foo
+actions:
+
+  - name: Test
+    type: shell
+    command: "@{context.executable} hello world"

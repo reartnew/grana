@@ -1,0 +1,8 @@
+# exception: LoadError
+# match: Both command and file specified
+---
+actions:
+  - name: foo
+    type: shell
+    command: foo
+    file: bar

@@ -1,0 +1,8 @@
+# exception: LoadError
+# match: Unrecognized dependency node structure
+---
+actions:
+  - name: foo
+    type: shell
+    expects:
+      - [ ]

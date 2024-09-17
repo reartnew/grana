@@ -1,0 +1,6 @@
+# exception: LoadError
+# match: Invalid severity
+---
+actions:
+  - type: shell
+    severity: foo

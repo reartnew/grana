@@ -1,0 +1,12 @@
+# exception: LoadError
+# match: Unrecognized 'bind' content type
+---
+actions:
+  - name: Foo
+    type: docker-shell
+    command: bar
+    image: baz
+    bind:
+      - dest: qux
+        contents: x
+        src: y

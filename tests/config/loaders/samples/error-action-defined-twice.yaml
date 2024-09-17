@@ -1,0 +1,10 @@
+# exception: LoadError
+# match: Action declared twice
+---
+actions:
+  - name: foo
+    type: shell
+    command: whoami
+  - name: foo
+    type: shell
+    command: whoami

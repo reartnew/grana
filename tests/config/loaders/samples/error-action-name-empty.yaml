@@ -1,0 +1,6 @@
+# exception: LoadError
+# match: Action node name is empty
+---
+actions:
+  - type: shell
+    name: ""

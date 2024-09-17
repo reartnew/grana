@@ -1,0 +1,3 @@
+---
+actions:
+  - !import ./one.yaml

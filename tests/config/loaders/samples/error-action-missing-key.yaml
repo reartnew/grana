@@ -1,0 +1,6 @@
+# exception: LoadError
+# match: Missing key for action
+---
+actions:
+  - name: foo
+    type: echo

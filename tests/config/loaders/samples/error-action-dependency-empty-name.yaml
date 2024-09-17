@@ -1,0 +1,8 @@
+# exception: LoadError
+# match: Empty dependency name met
+---
+actions:
+  - name: foo
+    type: shell
+    expects:
+      - name: ""

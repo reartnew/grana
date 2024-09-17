@@ -1,0 +1,17 @@
+# exception: IntegrityError
+# match: Unreachable actions found
+---
+actions:
+  - name: foo
+    type: shell
+    command: whoami
+  - name: bar
+    type: shell
+    command: whoami
+    expects:
+      - baz
+  - name: baz
+    type: shell
+    command: whoami
+    expects:
+      - bar

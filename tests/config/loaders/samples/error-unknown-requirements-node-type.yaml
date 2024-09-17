@@ -1,0 +1,10 @@
+# exception: LoadError
+# match: 'configuration.requires_packages' contents should be a list of strings or a string
+---
+configuration:
+  requires_packages: {}
+actions:
+
+  - name: Foo
+    type: shell
+    command: echo foo

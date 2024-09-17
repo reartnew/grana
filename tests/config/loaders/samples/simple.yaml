@@ -1,0 +1,23 @@
+---
+context:
+
+  x: y
+  z: w
+
+actions:
+
+  - name: RunSomeTool
+    description: Run some tool
+    type: shell
+    command: sometool -c dummy.yml
+    selectable: False
+
+  - name: RunAnotherTool
+    description: Run another tool
+    type: shell
+    command: anothertool --foo bar
+    expects:
+      - name: RunSomeTool
+        strict: Yes
+      - name: MissingExternal
+        external: Yes

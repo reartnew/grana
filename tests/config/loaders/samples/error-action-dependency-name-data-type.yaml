@@ -1,0 +1,8 @@
+# exception: LoadError
+# match: Unrecognized dependency name type
+---
+actions:
+  - name: foo
+    type: shell
+    expects:
+      - name: { }

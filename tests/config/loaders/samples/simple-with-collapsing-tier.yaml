@@ -1,0 +1,22 @@
+---
+actions:
+
+  - name: RunSomeTool
+    description: Run some tool
+    type: shell
+    command: sometool -c dummy.yml
+
+  - name: RunAnotherTool
+    description: Run another tool
+    type: shell
+    command: anothertool --foo bar
+    expects:
+      - RunSomeTool
+
+  - name: RunShell
+    description: Run shell
+    type: shell
+    command: echo foo
+    expects:
+      - RunSomeTool
+      - RunAnotherTool

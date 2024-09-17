@@ -1,0 +1,4 @@
+# exception: LoadError
+# match: 'actions' contents should be a list
+---
+actions:

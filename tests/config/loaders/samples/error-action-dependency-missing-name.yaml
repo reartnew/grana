@@ -1,0 +1,8 @@
+# exception: LoadError
+# match: Name not specified for the dependency
+---
+actions:
+  - name: foo
+    type: shell
+    expects:
+      - { }

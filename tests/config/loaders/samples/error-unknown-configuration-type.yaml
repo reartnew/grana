@@ -1,0 +1,9 @@
+# exception: LoadError
+# match: 'configuration' contents should be a dict
+---
+configuration: []
+actions:
+
+  - name: Foo
+    type: shell
+    command: echo foo

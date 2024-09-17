@@ -1,0 +1,10 @@
+# exception: LoadError
+# match: Context keys should be strings
+---
+context:
+  1: foo
+actions:
+
+  - name: Test
+    type: shell
+    command: "@{context.executable} hello world"

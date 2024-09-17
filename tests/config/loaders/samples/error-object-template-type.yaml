@@ -1,0 +1,7 @@
+# exception: YAMLStructureError
+# match: Expected string content after '!@'
+---
+- actions:
+    - type: shell
+      command: echo OK
+      environment: !@ {"i am": "not a string"}

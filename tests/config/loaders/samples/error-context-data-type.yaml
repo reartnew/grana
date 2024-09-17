@@ -1,0 +1,9 @@
+# exception: LoadError
+# match: 'context' contents should be a dict or a list
+---
+context: foo
+actions:
+
+  - name: Test
+    type: shell
+    command: "@{context.executable} hello world"

@@ -1,0 +1,7 @@
+# exception: LoadError
+# match: Unrecognized 'file' content type: typing.Dict
+---
+actions:
+  - name: foo
+    type: shell
+    file: {}

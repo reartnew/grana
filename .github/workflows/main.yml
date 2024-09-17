@@ -1,0 +1,10 @@
+---
+name: main
+on:
+  push:
+    branches:
+      - main
+      - devel
+jobs:
+  tox:
+    uses: ./.github/workflows/tox.yml

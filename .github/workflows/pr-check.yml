@@ -1,0 +1,13 @@
+---
+name: pr-check
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - main
+      - devel
+jobs:
+  tox:
+    uses: ./.github/workflows/tox.yml

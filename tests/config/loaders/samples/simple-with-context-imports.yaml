@@ -1,0 +1,9 @@
+---
+context:
+  - !import ./simple.yaml
+  - x: bar
+
+actions:
+  - name: Foo
+    type: echo
+    message: bar

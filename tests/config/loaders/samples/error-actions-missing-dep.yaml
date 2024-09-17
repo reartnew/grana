@@ -1,0 +1,9 @@
+# exception: IntegrityError
+# match: Missing actions among dependencies
+---
+actions:
+  - name: foo
+    type: shell
+    command: whoami
+    expects:
+      - bar
