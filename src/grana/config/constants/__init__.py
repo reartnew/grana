@@ -125,12 +125,12 @@ class C:
         lambda: Env.GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY,
     )
     DISPLAY_CLASS: Mandatory[DisplayClassType] = Mandatory(
+        lambda: _maybe_display_class_by_name(get_cli_arg("display")),
         lambda: maybe_class_from_module(
             path_str=Env.GRANA_DISPLAY_SOURCE_FILE,
             class_name="Display",
             submodule_name="display",
         ),
-        lambda: _maybe_display_class_by_name(get_cli_arg("display")),
         lambda: _maybe_display_class_by_name(Env.GRANA_DISPLAY_NAME),
         _get_default_display_class,
     )
