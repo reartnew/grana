@@ -71,10 +71,13 @@ class PrologueDisplay(BaseDisplay):
             if action.selectable:
                 displayed_action_names.append(action.name)
                 default_selected_action_names.append(action.name)
+        if not displayed_action_names:
+            raise InteractionError(f"No selectable actions found")
         selected_action_names: t.List[str] = self._run_dialog(
             displayed_action_names=displayed_action_names,
             default_selected_action_names=default_selected_action_names,
         )
+        self.logger.warning(f"Interactively selected actions: {selected_action_names}")
         for action_name, action in workflow.items():
             if action_name in displayed_action_names and action_name not in selected_action_names:
                 action.disable()

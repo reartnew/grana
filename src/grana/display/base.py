@@ -1,5 +1,7 @@
 """Runner output processor base"""
 
+import classlogging
+
 from ..actions.base import ActionBase
 from ..exceptions import InteractionError
 from ..workflow import Workflow
@@ -9,7 +11,7 @@ __all__ = [
 ]
 
 
-class BaseDisplay:
+class BaseDisplay(classlogging.LoggerMixin):
     """Base class for possible customizations"""
 
     def __init__(self, workflow: Workflow) -> None:
