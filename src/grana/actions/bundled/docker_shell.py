@@ -190,8 +190,8 @@ class DockerShellAction(EmissionScannerActionBase):
 
     async def _read_stdout(self, container: DockerContainer) -> None:
         async for chunk in container.log(stdout=True, follow=True):
-            self.emit(chunk)
+            self.say(chunk)
 
     async def _read_stderr(self, container: DockerContainer) -> None:
         async for chunk in container.log(stderr=True, follow=True):
-            self.emit(Stderr(chunk))
+            self.say(Stderr(chunk))

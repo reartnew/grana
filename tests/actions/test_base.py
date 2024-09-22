@@ -22,7 +22,7 @@ class StubAction(ActionBase):
 
     async def run(self):
         for message in self.MESSAGES:
-            self.emit(message)
+            self.say(message)
             await asyncio.sleep(0.01)
 
 

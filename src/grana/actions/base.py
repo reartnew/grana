@@ -182,8 +182,8 @@ class ActionBase(classlogging.LoggerMixin):
         if not fut.done():
             fut.set_result(None)
 
-    def emit(self, message: EventType) -> None:
-        """Issue a message"""
+    def say(self, message: EventType) -> None:
+        """Send a message to the display"""
         self._event_queue.put_nowait(message)
 
     def skip(self) -> t.NoReturn:
@@ -294,16 +294,16 @@ class EmissionScannerActionBase(ActionBase):
         except Exception:
             self.logger.warning("Failed while parsing system message", exc_info=True)
 
-    def emit(self, message: EventType) -> None:
+    def say(self, message: EventType) -> None:
         # Do not check stderr
         if isinstance(message, Stderr):
-            super().emit(message)
+            super().say(message)
             return
         memorized_prefix: str = ""
         for line in message.splitlines():
             # `endswith` is a cheaper check than re.findall
             if not line.endswith("]##") or not (matches := self._SERVICE_MESSAGES_SCAN_PATTERN.findall(line)):
-                super().emit(memorized_prefix + line)
+                super().say(memorized_prefix + line)
                 memorized_prefix = ""
                 continue
             for preceding_content, expression in matches:
@@ -311,4 +311,4 @@ class EmissionScannerActionBase(ActionBase):
                 self._process_service_message_expression(expression)
         # Do not forget to report system message prefix, if any
         if memorized_prefix:
-            super().emit(memorized_prefix)
+            super().say(memorized_prefix)

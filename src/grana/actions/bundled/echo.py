@@ -20,4 +20,4 @@ class EchoAction(ActionBase):
     args: EchoArgs
 
     async def run(self) -> None:
-        self.emit(self.args.message)
+        self.say(self.args.message)

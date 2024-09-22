@@ -38,11 +38,11 @@ class ShellAction(EmissionScannerActionBase):
 
     async def _read_stdout(self, shell_process: Shell) -> None:
         async for line in shell_process.read_stdout():
-            self.emit(line)
+            self.say(line)
 
     async def _read_stderr(self, shell_process: Shell) -> None:
         async for line in shell_process.read_stderr():
-            self.emit(Stderr(line))
+            self.say(Stderr(line))
 
     async def _create_shell(self) -> Shell:
         command: str = self.args.command or f"source '{self.args.file}'"
