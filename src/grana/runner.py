@@ -158,12 +158,12 @@ class Runner(classlogging.LoggerMixin):
             await task
 
     @classmethod
-    async def _dispatch_action_events_to_display(cls, action: ActionBase, display: BaseDisplay) -> None:
+    async def _dispatch_action_messages_to_display(cls, action: ActionBase, display: BaseDisplay) -> None:
         try:
-            async for message in action.read_events():
-                display.emit_action_message(source=action, message=message)
+            async for message in action.read_messages():
+                display.on_action_message(source=action, message=message)
         except Exception:
-            cls.logger.exception(f"`emit_action_message` failed for {action.name!r}")
+            cls.logger.exception(f"`on_action_message` failed for {action.name!r}")
 
     async def _run_action(self, action: ActionBase) -> None:
         if not action.enabled:
@@ -175,7 +175,7 @@ class Runner(classlogging.LoggerMixin):
         except Exception as e:
             details: str = str(e) if isinstance(e, ActionRenderError) else repr(e)
             message = f"Action {action.name!r} rendering failed: {details}"
-            self.display.emit_action_error(source=action, message=message)
+            self.display.on_action_error(source=action, message=message)
             self.logger.warning(message, exc_info=not isinstance(e, ActionRenderError))
             action._internal_fail(e)  # pylint: disable=protected-access
             self._execution_failed = True
@@ -186,8 +186,8 @@ class Runner(classlogging.LoggerMixin):
         except Exception:
             self.logger.exception(f"`on_action_start` callback failed on {action.name!r} for {self.display}")
         self.logger.trace(f"Allocating action dispatcher for {action.name!r}")
-        action_events_reader_task: asyncio.Task = asyncio.create_task(
-            self._dispatch_action_events_to_display(
+        action_messages_reader_task: asyncio.Task = asyncio.create_task(
+            self._dispatch_action_messages_to_display(
                 action=action,
                 display=self.display,
             )
@@ -196,12 +196,12 @@ class Runner(classlogging.LoggerMixin):
             await action
         except Exception as e:
             try:
-                self.display.emit_action_error(
+                self.display.on_action_error(
                     source=action,
                     message=str(e) if isinstance(e, ActionRunError) else f"Action {action.name!r} run exception: {e!r}",
                 )
             except Exception:
-                self.logger.exception(f"`emit_action_error` failed for {action.name!r}")
+                self.logger.exception(f"`on_action_error` failed for {action.name!r}")
             if action.status == ActionStatus.WARNING:
                 self.logger.warning(f"Action {action.name!r} finished with warning status")
             else:
@@ -210,7 +210,7 @@ class Runner(classlogging.LoggerMixin):
             self.logger.debug("Action failure traceback", exc_info=True)
         finally:
             self._outcomes[action.name].update(action.get_outcomes())
-            await action_events_reader_task
+            await action_messages_reader_task
             self.logger.trace(f"Calling `on_action_finish` for {action.name!r}")
             try:
                 self.display.on_action_finish(action)

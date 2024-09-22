@@ -1,5 +1,7 @@
 """Runner output processor base"""
 
+import classlogging
+
 from ..actions.base import ActionBase
 from ..exceptions import InteractionError
 from ..workflow import Workflow
@@ -9,7 +11,7 @@ __all__ = [
 ]
 
 
-class BaseDisplay:
+class BaseDisplay(classlogging.LoggerMixin):
     """Base class for possible customizations"""
 
     def __init__(self, workflow: Workflow) -> None:
@@ -20,12 +22,12 @@ class BaseDisplay:
         print(message.rstrip("\n"))
 
     # pylint: disable=unused-argument
-    def emit_action_message(self, source: ActionBase, message: str) -> None:
+    def on_action_message(self, source: ActionBase, message: str) -> None:
         """Process a message from some source"""
         self.display(message)  # pragma: no cover
 
     # pylint: disable=unused-argument
-    def emit_action_error(self, source: ActionBase, message: str) -> None:
+    def on_action_error(self, source: ActionBase, message: str) -> None:
         """Process an error from some source"""
         self.display(message)  # pragma: no cover
 

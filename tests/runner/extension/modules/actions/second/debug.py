@@ -10,4 +10,4 @@ class Action(ActionBase):
     args: DebugArgs
 
     async def run(self) -> None:
-        self.emit(f"I am {self.args.message!r} too!")
+        self.say(f"I am {self.args.message!r} too!")

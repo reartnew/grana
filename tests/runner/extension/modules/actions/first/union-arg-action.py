@@ -12,4 +12,4 @@ class Action(ActionBase):
     args: UnionArgs
 
     async def run(self) -> None:
-        self.emit(str(self.args.message))
+        self.say(str(self.args.message))

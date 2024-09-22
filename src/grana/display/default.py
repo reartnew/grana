@@ -43,16 +43,16 @@ class PrologueDisplay(BaseDisplay):
     def _make_prologue(self, source: ActionBase, mark: str) -> str:
         raise NotImplementedError
 
-    def emit_action_message(self, source: ActionBase, message: str) -> None:
+    def on_action_message(self, source: ActionBase, message: str) -> None:
         is_stderr: bool = isinstance(message, Stderr)
         for line in message.splitlines() if message else [message]:
             line_prefix: str = self._make_prologue(source=source, mark="*" if is_stderr else " ")
             self.display(f"{line_prefix}{Color.yellow(line) if is_stderr else line}")
 
-    def emit_action_error(self, source: ActionBase, message: str) -> None:
+    def on_action_error(self, source: ActionBase, message: str) -> None:
         line_prefix: str = self._make_prologue(source=source, mark="!")
         for line in message.splitlines():
-            super().emit_action_error(
+            super().on_action_error(
                 source=source,
                 message=f"{line_prefix}{Color.red(line)}",
             )
@@ -71,10 +71,13 @@ class PrologueDisplay(BaseDisplay):
             if action.selectable:
                 displayed_action_names.append(action.name)
                 default_selected_action_names.append(action.name)
+        if not displayed_action_names:
+            raise InteractionError("No selectable actions found")
         selected_action_names: t.List[str] = self._run_dialog(
             displayed_action_names=displayed_action_names,
             default_selected_action_names=default_selected_action_names,
         )
+        self.logger.warning(f"Interactively selected actions: {selected_action_names}")
         for action_name, action in workflow.items():
             if action_name in displayed_action_names and action_name not in selected_action_names:
                 action.disable()

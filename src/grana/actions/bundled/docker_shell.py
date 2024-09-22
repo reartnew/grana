@@ -117,7 +117,7 @@ class DockerShellAction(EmissionScannerActionBase):
             ]
             if self.args.bind:
                 bind_configs += self.args.bind
-            container_binds: t.List[dict] = []
+            container_binds: t.List[str] = []
             for bind_config in bind_configs:
                 if isinstance(bind_config, FileDockerBind):
                     local_file_full_name: str = bind_config.src
@@ -126,14 +126,7 @@ class DockerShellAction(EmissionScannerActionBase):
                     bind_contents_local_file.write_text(data=bind_config.contents, encoding="utf-8")
                     bind_contents_local_file.chmod(0o777)
                     local_file_full_name = str(bind_contents_local_file)
-                container_binds.append(
-                    {
-                        "Type": "bind",
-                        "Target": bind_config.dest,
-                        "Source": local_file_full_name,
-                        "ReadOnly": bind_config.mode == BindMode.READ_ONLY,
-                    }
-                )
+                container_binds.append(f"{local_file_full_name}:{bind_config.dest}:{bind_config.mode.value}")
             self.logger.trace(f"Container volumes: {container_binds}")
             container: DockerContainer = await client.containers.run(
                 name=container_name,
@@ -141,7 +134,7 @@ class DockerShellAction(EmissionScannerActionBase):
                     "Cmd": [self.args.executable, container_entry_file_path],
                     "Image": self.args.image,
                     "HostConfig": {
-                        "Mounts": container_binds,
+                        "Binds": container_binds,
                         "Init": True,
                         "NetworkMode": self.args.network.mode.value,
                     },
@@ -197,8 +190,8 @@ class DockerShellAction(EmissionScannerActionBase):
 
     async def _read_stdout(self, container: DockerContainer) -> None:
         async for chunk in container.log(stdout=True, follow=True):
-            self.emit(chunk)
+            self.say(chunk)
 
     async def _read_stderr(self, container: DockerContainer) -> None:
         async for chunk in container.log(stderr=True, follow=True):
-            self.emit(Stderr(chunk))
+            self.say(Stderr(chunk))

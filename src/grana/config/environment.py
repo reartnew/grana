@@ -67,4 +67,4 @@ class Env(EnvironmentNamespace):
     GRANA_SHELL_INJECT_YIELD_FUNCTION: bool = OptionalBoolean(True)  # type: ignore
     GRANA_EXTERNAL_MODULES_PATHS: t.List[str] = OptionalList([])
     GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY: t.List[str] = OptionalList([])
-    GRANA_STRICT_OUTCOMES_RENDERING: bool = OptionalBoolean(False)  # type: ignore
+    GRANA_STRICT_OUTCOMES_RENDERING: bool = OptionalBoolean(True)  # type: ignore

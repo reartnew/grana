@@ -47,13 +47,13 @@ def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], Templar]:
 
 
 @pytest.fixture
-def templar(templar_factory: t.Callable[[], Templar]) -> Templar:
-    """Loose (default) templar"""
+def loose_templar(templar_factory: t.Callable[[], Templar], monkeypatch: pytest.MonkeyPatch) -> Templar:
+    """Loose templar"""
+    monkeypatch.setattr(Env, "GRANA_STRICT_OUTCOMES_RENDERING", False)
     return templar_factory()
 
 
 @pytest.fixture
-def strict_templar(templar_factory: t.Callable[[], Templar], monkeypatch: pytest.MonkeyPatch) -> Templar:
-    """Strict templar"""
-    monkeypatch.setattr(Env, "GRANA_STRICT_OUTCOMES_RENDERING", True)
+def strict_templar(templar_factory: t.Callable[[], Templar]) -> Templar:
+    """Strict (default) templar"""
     return templar_factory()
