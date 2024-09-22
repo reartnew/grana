@@ -375,6 +375,23 @@ def test_interaction_context(
     ]
 
 
+def test_empty_interaction(
+    run_text: RunFactoryType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test interaction context"""
+    monkeypatch.setattr(C, "INTERACTIVE_MODE", True)
+    with pytest.raises(exceptions.InteractionError, match="No selectable actions found"):
+        run_text(
+            """
+            actions:
+              - name: Bar
+                type: noop
+                selectable: False
+            """
+        )
+
+
 def test_complex_vars_context(run_text: RunFactoryType) -> None:
     """Test complex vars context"""
     output = run_text(
