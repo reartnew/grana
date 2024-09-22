@@ -158,9 +158,9 @@ class Runner(classlogging.LoggerMixin):
             await task
 
     @classmethod
-    async def _dispatch_action_events_to_display(cls, action: ActionBase, display: BaseDisplay) -> None:
+    async def _dispatch_action_messages_to_display(cls, action: ActionBase, display: BaseDisplay) -> None:
         try:
-            async for message in action.read_events():
+            async for message in action.read_messages():
                 display.emit_action_message(source=action, message=message)
         except Exception:
             cls.logger.exception(f"`emit_action_message` failed for {action.name!r}")
@@ -186,8 +186,8 @@ class Runner(classlogging.LoggerMixin):
         except Exception:
             self.logger.exception(f"`on_action_start` callback failed on {action.name!r} for {self.display}")
         self.logger.trace(f"Allocating action dispatcher for {action.name!r}")
-        action_events_reader_task: asyncio.Task = asyncio.create_task(
-            self._dispatch_action_events_to_display(
+        action_messages_reader_task: asyncio.Task = asyncio.create_task(
+            self._dispatch_action_messages_to_display(
                 action=action,
                 display=self.display,
             )
@@ -210,7 +210,7 @@ class Runner(classlogging.LoggerMixin):
             self.logger.debug("Action failure traceback", exc_info=True)
         finally:
             self._outcomes[action.name].update(action.get_outcomes())
-            await action_events_reader_task
+            await action_messages_reader_task
             self.logger.trace(f"Calling `on_action_finish` for {action.name!r}")
             try:
                 self.display.on_action_finish(action)

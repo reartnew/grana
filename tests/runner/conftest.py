@@ -26,7 +26,7 @@ def disable_env_cache() -> None:
 
 @pytest.fixture
 def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
-    """Creates display events list instead of putting them to stdout"""
+    """Creates display messages list instead of putting them to stdout"""
     results: t.List[str] = []
 
     # pylint: disable=unused-argument

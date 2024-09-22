@@ -30,16 +30,16 @@ class StubAction(ActionBase):
 async def test_action_emitter():
     """Check messages handling"""
     action = StubAction()
-    events: t.List[str] = []
+    messages: t.List[str] = []
 
     async def reader():
-        async for event in action.read_events():
-            events.append(event)
+        async for message in action.read_messages():
+            messages.append(message)
 
     reader_task = asyncio.create_task(reader())
     await action
     await reader_task
-    assert events == StubAction.MESSAGES
+    assert messages == StubAction.MESSAGES
 
 
 @pytest.mark.asyncio

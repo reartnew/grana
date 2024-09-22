@@ -3,11 +3,9 @@
 import dataclasses
 import typing as t
 
-EventType = str
 OutcomeStorageType = t.Dict[str, str]
 
 __all__ = [
-    "EventType",
     "OutcomeStorageType",
     "Stderr",
     "Import",

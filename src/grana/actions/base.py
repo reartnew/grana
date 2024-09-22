@@ -13,7 +13,7 @@ from dataclasses import dataclass, fields
 import classlogging
 
 from .constants import ACTION_RESERVED_FIELD_NAMES
-from .types import Stderr, EventType, OutcomeStorageType
+from .types import Stderr, OutcomeStorageType
 from ..exceptions import ActionRunError
 
 __all__ = [
@@ -105,7 +105,7 @@ class ActionBase(classlogging.LoggerMixin):
         self._enabled: bool = True
         # Do not create asyncio-related objects on constructing object to decouple from the event loop
         self._maybe_finish_flag: t.Optional[asyncio.Future] = None
-        self._maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = None
+        self._maybe_message_queue: t.Optional[asyncio.Queue[str]] = None
         self._running_task: t.Optional[asyncio.Task] = None
         self._severity: ActionSeverity = severity
 
@@ -140,10 +140,10 @@ class ActionBase(classlogging.LoggerMixin):
         return self._maybe_finish_flag
 
     @property
-    def _event_queue(self) -> asyncio.Queue[EventType]:
-        if self._maybe_event_queue is None:
-            self._maybe_event_queue = asyncio.Queue()
-        return self._maybe_event_queue
+    def _message_queue(self) -> asyncio.Queue[str]:
+        if self._maybe_message_queue is None:
+            self._maybe_message_queue = asyncio.Queue()
+        return self._maybe_message_queue
 
     @property
     def status(self) -> ActionStatus:
@@ -182,9 +182,9 @@ class ActionBase(classlogging.LoggerMixin):
         if not fut.done():
             fut.set_result(None)
 
-    def say(self, message: EventType) -> None:
+    def say(self, message: str) -> None:
         """Send a message to the display"""
-        self._event_queue.put_nowait(message)
+        self._message_queue.put_nowait(message)
 
     def skip(self) -> t.NoReturn:
         """Set status to SKIPPED and stop execution"""
@@ -213,11 +213,11 @@ class ActionBase(classlogging.LoggerMixin):
             self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
             self.get_future().set_exception(exception)
 
-    async def read_events(self) -> t.AsyncGenerator[EventType, None]:
-        """Obtain all emitted events sequentially"""
+    async def read_messages(self) -> t.AsyncGenerator[str, None]:
+        """Obtain all said messages sequentially"""
         while True:
             # Wait for either an event or action finish
-            queue_getter = asyncio.create_task(self._event_queue.get())
+            queue_getter = asyncio.create_task(self._message_queue.get())
             await asyncio.wait(
                 [self.get_future(), queue_getter],
                 return_when=asyncio.FIRST_COMPLETED,
@@ -230,7 +230,7 @@ class ActionBase(classlogging.LoggerMixin):
                 queue_getter.cancel()
                 while True:
                     try:
-                        yield self._event_queue.get_nowait()
+                        yield self._message_queue.get_nowait()
                     except asyncio.QueueEmpty:
                         break
                 return
@@ -294,7 +294,7 @@ class EmissionScannerActionBase(ActionBase):
         except Exception:
             self.logger.warning("Failed while parsing system message", exc_info=True)
 
-    def say(self, message: EventType) -> None:
+    def say(self, message: str) -> None:
         # Do not check stderr
         if isinstance(message, Stderr):
             super().say(message)
