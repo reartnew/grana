@@ -43,16 +43,16 @@ class PrologueDisplay(BaseDisplay):
     def _make_prologue(self, source: ActionBase, mark: str) -> str:
         raise NotImplementedError
 
-    def emit_action_message(self, source: ActionBase, message: str) -> None:
+    def on_action_message(self, source: ActionBase, message: str) -> None:
         is_stderr: bool = isinstance(message, Stderr)
         for line in message.splitlines() if message else [message]:
             line_prefix: str = self._make_prologue(source=source, mark="*" if is_stderr else " ")
             self.display(f"{line_prefix}{Color.yellow(line) if is_stderr else line}")
 
-    def emit_action_error(self, source: ActionBase, message: str) -> None:
+    def on_action_error(self, source: ActionBase, message: str) -> None:
         line_prefix: str = self._make_prologue(source=source, mark="!")
         for line in message.splitlines():
-            super().emit_action_error(
+            super().on_action_error(
                 source=source,
                 message=f"{line_prefix}{Color.red(line)}",
             )

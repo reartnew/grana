@@ -18,8 +18,8 @@ class BaseBadDisplay(BaseDisplay):
 
     FAILURES: t.Set[str]
     METHOD_FAILURES_TO_CHECK: t.Set[str] = {
-        "emit_action_message",
-        "emit_action_error",
+        "on_action_message",
+        "on_action_error",
         "on_runner_start",
         "on_runner_finish",
         "on_action_start",

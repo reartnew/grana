@@ -27,7 +27,7 @@ class StubAction(ActionBase):
 
 
 @pytest.mark.asyncio
-async def test_action_emitter():
+async def test_action_messages_handling():
     """Check messages handling"""
     action = StubAction()
     messages: t.List[str] = []
