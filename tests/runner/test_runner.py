@@ -28,9 +28,11 @@ def test_yield_good_call(runner_shell_yield_good_context: None) -> None:
     runner.run_sync()
     assert {k.name: k.status for k in runner.workflow.values()} == {
         "Foo": ActionStatus.SUCCESS,
+        "Qux": ActionStatus.SUCCESS,
         "Bar": ActionStatus.SUCCESS,
         "Baz": ActionStatus.SUCCESS,
         "Pivoslav": ActionStatus.SKIPPED,
+        "Egor": ActionStatus.WARNING,
     }
 
 
