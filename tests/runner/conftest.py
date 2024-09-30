@@ -125,12 +125,20 @@ actions:
   - name: Foo
     type: shell
     command: yield_outcome result_key "I am foo" 
+  - name: Qux
+    type: shell
+    command: printf "A\\nB\\nC\\n" | yield_outcome result_key 
   - name: Bar
     type: shell
     command: |
      echo "@{{outcomes.Foo.result_key}}"
+     cat <<EOF
+     @{{outcomes.Qux.result_key}}
+     EOF
      echo "@{{context.bar_prefix}} ##grana[yield-outcome-b64 {_str_to_b64('result_key')} {_str_to_b64('bar')}]##"
-    expects: Foo
+    expects:
+      - Foo
+      - Qux
   - name: Baz
     type: shell
     command: echo "@{{outcomes.Bar.result_key}}"
@@ -138,6 +146,10 @@ actions:
   - name: Pivoslav
     type: shell
     command: skip
+  - name: Egor
+    type: shell
+    command: yield_outcome A B C
+    severity: low
 """.encode()
     )
     if request.param == "chdir":

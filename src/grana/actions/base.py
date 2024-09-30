@@ -260,13 +260,13 @@ class EmissionScannerActionBase(ActionBase):
         r"""
             yield_outcome(){
               [ "$1" = "" ] && echo "Missing key (first argument)" && return 1
-              command -v base64 >/dev/null || ( echo "Missing command: base64" && return 2 )
-              [ "$2" = "" ] && value="$(cat /dev/stdin)" || value="$2"
-              echo "##grana[yield-outcome-b64 $(
-                printf "$1" | base64 | tr -d '\n'
-              ) $(
-                printf "$value" | base64 | tr -d '\n'
-              )]##"
+              [ "$3" != "" ] && echo "Too many arguments (expected 1 or 2)" && return 2
+              command -v base64 >/dev/null || ( echo "Missing command: base64" && return 3 )
+              encodedKey=$( printf "%s" "$1" | base64 | tr -d '\n' )
+              [ "$2" = "" ] \
+                && encodedValue=$( base64 </dev/stdin | tr -d '\n' ) \
+                || encodedValue=$( printf "%s" "$2" | base64 | tr -d '\n' )
+              echo "##grana[yield-outcome-b64 $encodedKey $encodedValue ]##"
               return 0
             }
             skip(){
