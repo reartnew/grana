@@ -3,6 +3,9 @@
 # pylint: disable=unused-argument
 
 import io
+import random
+import string
+import textwrap
 import typing as t
 from pathlib import Path
 
@@ -34,6 +37,32 @@ def test_yield_good_call(runner_shell_yield_good_context: None) -> None:
         "Pivoslav": ActionStatus.SKIPPED,
         "Egor": ActionStatus.WARNING,
     }
+
+
+def test_yield_multiline_call(ctx_from_text: CtxFactoryType) -> None:
+    """Test multiline yield in shell"""
+    much_data: str = "\n".join("".join(random.choice(string.ascii_uppercase) for _ in range(100)) for _ in range(100))
+    ctx_from_text(
+        f"""
+        ---
+        actions:
+          - type: docker-shell
+            name: Foo
+            image: alpine:latest
+            command: |
+              (cat <<EOF
+{textwrap.indent(much_data, '              ')}  
+              EOF
+              ) | yield_outcome foo
+          - name: Bar
+            type: echo
+            message: "@{{ out.Foo.foo }}"
+            expects: Foo
+        """
+    )
+    runner = grana.Runner()
+    runner.run_sync()
+    assert not runner.workflow["Foo"].get_outcomes()["foo"] == much_data
 
 
 def test_runner_multiple_run(runner_good_context: None) -> None:

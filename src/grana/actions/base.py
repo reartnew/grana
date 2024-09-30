@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import collections
 import enum
 import re
 import textwrap
@@ -258,17 +259,25 @@ class EmissionScannerActionBase(ActionBase):
     )
     _SHELL_SERVICE_FUNCTIONS_DEFINITIONS: str = textwrap.dedent(
         r"""
-            yield_outcome(){
+            yield_outcome()(
               [ "$1" = "" ] && echo "Missing key (first argument)" && return 1
               [ "$3" != "" ] && echo "Too many arguments (expected 1 or 2)" && return 2
               command -v base64 >/dev/null || ( echo "Missing command: base64" && return 3 )
+              _pipe()(
+                encodedKey="$1"
+                while read -r data; do
+                  echo "##grana[yield-outcome-b64-chunk $encodedKey $data]##"
+                done
+                echo "##grana[yield-outcome-b64-end $encodedKey]##"
+              )
               encodedKey=$( printf "%s" "$1" | base64 | tr -d '\n' )
-              [ "$2" = "" ] \
-                && encodedValue=$( base64 </dev/stdin | tr -d '\n' ) \
-                || encodedValue=$( printf "%s" "$2" | base64 | tr -d '\n' )
-              echo "##grana[yield-outcome-b64 $encodedKey $encodedValue ]##"
+              if [ "$2" = "" ]; then
+                base64 </dev/stdin | _pipe "$encodedKey"
+              else
+                printf "%s" "$2" | base64 | _pipe "$encodedKey"
+              fi
               return 0
-            }
+            )
             skip(){
               echo "##grana[skip]##"
               exit 0
@@ -276,17 +285,29 @@ class EmissionScannerActionBase(ActionBase):
         """
     ).lstrip()
 
+    def __init__(self, *a, **kw) -> None:
+        super().__init__(*a, **kw)
+        self._outcomes_base64_chunks: t.Dict[str, t.List[str]] = collections.defaultdict(list)
+
+    @classmethod
+    def _decode_base64_string(cls, data: str) -> str:
+        return base64.b64decode(data, validate=True).decode()
+
     def _process_service_message_expression(self, expression: str) -> None:
         try:
             expression_type, *encoded_args = expression.split()
-            decoded_args: t.List[str] = [base64.b64decode(part, validate=True).decode() for part in encoded_args]
             if expression_type == "skip":
                 self.skip()
-            elif expression_type == "yield-outcome-b64":
-                key, value = decoded_args
-                self.logger.debug(f"Action {self.name!r} emission stream " f"reported an outcome: {key!r}")
-                self.yield_outcome(key, value)
-                return
+            elif expression_type == "yield-outcome-b64-chunk":
+                key, value = encoded_args
+                self._outcomes_base64_chunks[key].append(value)
+            elif expression_type == "yield-outcome-b64-end":
+                (encoded_key,) = encoded_args
+                encoded_outcome_value: str = "".join(self._outcomes_base64_chunks.pop(encoded_key))
+                self.yield_outcome(
+                    key=self._decode_base64_string(encoded_key),
+                    value=self._decode_base64_string(encoded_outcome_value),
+                )
             else:
                 raise ValueError(f"Unrecognized expression: {expression!r}")
         except ActionSkip:  # pylint: disable=try-except-raise
