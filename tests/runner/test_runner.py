@@ -51,7 +51,7 @@ def test_yield_multiline_call(ctx_from_text: CtxFactoryType) -> None:
             image: alpine:latest
             command: |
               (cat <<EOF
-{textwrap.indent(much_data, '              ')}  
+{textwrap.indent(much_data, '              ')}
               EOF
               ) | yield_outcome foo
           - name: Bar
