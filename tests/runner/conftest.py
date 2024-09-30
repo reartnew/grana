@@ -36,10 +36,10 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     # pylint: disable=unused-argument
     def _run_dialog(
         cls,
-        displayed_action_names: t.List[str],
-        default_selected_action_names: t.List[str],
+        choices: t.List[str],
+        default: t.List[str],
     ) -> t.List[str]:
-        return default_selected_action_names[:1]
+        return default[:1]
 
     monkeypatch.setattr(DefaultDisplay, "display", display)
     monkeypatch.setattr(DefaultDisplay, "_run_dialog", _run_dialog)
