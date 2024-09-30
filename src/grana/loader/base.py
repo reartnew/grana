@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 from ..actions.base import ActionBase, ArgsBase, ActionDependency, ActionSeverity
 from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
 from ..exceptions import LoadError, PackageRequirementsError
+from ..strategy import KNOWN_STRATEGIES, BaseStrategy
 from ..tools.concealment import represent_object_type
 from ..tools.inspect import get_class_annotations
 from ..workflow import Workflow
@@ -57,6 +58,12 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         self._original_args_map: t.Dict[str, t.Dict[str, t.Any]] = {}
         self._action_type_counters: t.Dict[str, int] = collections.defaultdict(int)
         self._package_requirements: t.List[Requirement] = []
+        self._explicit_strategy_class: t.Optional[t.Type[BaseStrategy]] = None
+
+    @property
+    def strategy_class(self) -> t.Optional[t.Type[BaseStrategy]]:
+        """Return explicitly-set strategy class, if any"""
+        return self._explicit_strategy_class
 
     def _register_action(self, action: ActionBase) -> None:
         if action.name in self._actions:
@@ -269,7 +276,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         """Process configuration dictionary"""
         if not isinstance(configuration_dict, dict):
             self._throw(f"'configuration' contents should be a dict (got {type(configuration_dict)!r})")
-        allowed_cfg_keys: t.Set[str] = {"requires_packages"}
+        allowed_cfg_keys: t.Set[str] = {"requires_packages", "strategy"}
         if bad_cfg_keys := set(configuration_dict) - allowed_cfg_keys:
             self._throw(
                 f"Unrecognized configuration keys: {sorted(bad_cfg_keys)}"
@@ -290,3 +297,8 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
                 package_constrain = Requirement(package_constrain_str)
                 self.logger.debug(f"Defining package constrain: {package_constrain!r}")
                 self._package_requirements.append(package_constrain)
+        if "strategy" in configuration_dict:
+            strategy_value: str = configuration_dict["strategy"]
+            if strategy_value not in KNOWN_STRATEGIES:
+                self._throw(f"Unexpected strategy: {strategy_value!r}")
+            self._explicit_strategy_class = KNOWN_STRATEGIES[strategy_value]

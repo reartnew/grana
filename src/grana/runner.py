@@ -79,8 +79,12 @@ class Runner(classlogging.LoggerMixin):
     @functools.cached_property
     def strategy(self) -> types.StrategyType:
         """Strategy iterator"""
-        strategy_class: types.StrategyClassType = C.STRATEGY_CLASS
-        self.logger.debug(f"Using strategy class: {strategy_class}")
+        if self.loader.strategy_class is not None:
+            strategy_class: types.StrategyClassType = self.loader.strategy_class
+            self.logger.debug(f"Using strategy class from the loaded workflow: {strategy_class}")
+        else:
+            strategy_class = C.STRATEGY_CLASS
+            self.logger.debug(f"Using globally-set strategy class: {strategy_class}")
         return strategy_class(workflow=self.workflow)
 
     @classmethod

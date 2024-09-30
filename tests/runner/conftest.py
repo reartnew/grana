@@ -36,10 +36,10 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     # pylint: disable=unused-argument
     def _run_dialog(
         cls,
-        displayed_action_names: t.List[str],
-        default_selected_action_names: t.List[str],
+        choices: t.List[str],
+        default: t.List[str],
     ) -> t.List[str]:
-        return default_selected_action_names[:1]
+        return default[:1]
 
     monkeypatch.setattr(DefaultDisplay, "display", display)
     monkeypatch.setattr(DefaultDisplay, "_run_dialog", _run_dialog)
@@ -135,7 +135,8 @@ actions:
      cat <<EOF
      @{{outcomes.Qux.result_key}}
      EOF
-     echo "@{{context.bar_prefix}} ##grana[yield-outcome-b64 {_str_to_b64('result_key')} {_str_to_b64('bar')}]##"
+     echo "@{{context.bar_prefix}} ##grana[yield-outcome-b64-chunk {_str_to_b64('result_key')} {_str_to_b64('bar')}]##"
+     echo "##grana[yield-outcome-b64-end {_str_to_b64('result_key')}]##"
     expects:
       - Foo
       - Qux

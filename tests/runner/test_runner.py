@@ -3,6 +3,9 @@
 # pylint: disable=unused-argument
 
 import io
+import random
+import string
+import textwrap
 import typing as t
 from pathlib import Path
 
@@ -34,6 +37,32 @@ def test_yield_good_call(runner_shell_yield_good_context: None) -> None:
         "Pivoslav": ActionStatus.SKIPPED,
         "Egor": ActionStatus.WARNING,
     }
+
+
+def test_yield_multiline_call(ctx_from_text: CtxFactoryType) -> None:
+    """Test multiline yield in shell"""
+    much_data: str = "\n".join("".join(random.choice(string.ascii_uppercase) for _ in range(100)) for _ in range(100))
+    ctx_from_text(
+        f"""
+        ---
+        actions:
+          - type: docker-shell
+            name: Foo
+            image: alpine:latest
+            command: |
+              (cat <<EOF
+{textwrap.indent(much_data, '              ')}
+              EOF
+              ) | yield_outcome foo
+          - name: Bar
+            type: echo
+            message: "@{{ out.Foo.foo }}"
+            expects: Foo
+        """
+    )
+    runner = grana.Runner()
+    runner.run_sync()
+    assert not runner.workflow["Foo"].get_outcomes()["foo"] == much_data
 
 
 def test_runner_multiple_run(runner_good_context: None) -> None:
@@ -377,6 +406,25 @@ def test_interaction_context(
     ]
 
 
+def test_interaction_full_description_collision(
+    run_text: RunFactoryType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test interaction description collision"""
+    monkeypatch.setattr(C, "INTERACTIVE_MODE", True)
+    with pytest.raises(exceptions.InteractionError, match="Action full descriptions collision: 'Foo: Bar'"):
+        run_text(
+            """
+            actions:
+              - name: "Foo: Bar"
+                type: noop
+              - name: Foo
+                description: Bar
+                type: noop
+            """
+        )
+
+
 def test_empty_interaction(
     run_text: RunFactoryType,
     monkeypatch: pytest.MonkeyPatch,
@@ -618,3 +666,30 @@ def test_colored_output(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatc
         "\x1b[90m================\x1b[0m",
         "\x1b[32mSUCCESS\x1b[0m: shell-0",
     ]
+
+
+def test_explicit_strategy(
+    run_text: RunFactoryType,
+    monkeypatch: pytest.MonkeyPatch,
+    display_collector: t.List[str],
+) -> None:
+    """Check explicit strategy from workflow"""
+
+    monkeypatch.setattr(Env, "GRANA_STRATEGY_NAME", "strict")
+    with pytest.raises(exceptions.ExecutionFailed):
+        run_text(
+            """
+            ---
+            configuration:
+              strategy: loose
+            actions:
+              - name: Foo
+                type: shell
+                command: foobar
+              - name: Bar
+                type: echo
+                message: I started! 
+                expects: Foo
+            """
+        )
+    assert "[Bar]  | I started!" in display_collector
