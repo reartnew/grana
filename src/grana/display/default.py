@@ -76,7 +76,7 @@ class PrologueDisplay(BaseDisplay):
                 displayed_action_names_with_descriptions.append(action_name_with_description)
                 default_selected_action_names_with_descriptions.append(action_name_with_description)
                 if action_name_with_description in full_description_to_names_map:
-                    raise InteractionError(f"Action descriptions collision: {action_name_with_description!r}")
+                    raise InteractionError(f"Action full descriptions collision: {action_name_with_description!r}")
                 full_description_to_names_map[action_name_with_description] = action.name
         if not displayed_action_names_with_descriptions:
             raise InteractionError("No selectable actions found")
