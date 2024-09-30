@@ -62,6 +62,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
 
     @property
     def strategy_class(self) -> t.Optional[t.Type[BaseStrategy]]:
+        """Return explicitly-set strategy class, if any"""
         return self._explicit_strategy_class
 
     def _register_action(self, action: ActionBase) -> None:

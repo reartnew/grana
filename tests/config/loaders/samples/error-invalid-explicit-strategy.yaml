@@ -1,0 +1,9 @@
+# exception: LoadError
+# match: Unexpected strategy
+---
+configuration:
+  strategy: foobar
+actions:
+  - name: Foo
+    type: echo
+    message: foo

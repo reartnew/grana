@@ -666,3 +666,30 @@ def test_colored_output(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatc
         "\x1b[90m================\x1b[0m",
         "\x1b[32mSUCCESS\x1b[0m: shell-0",
     ]
+
+
+def test_explicit_strategy(
+    run_text: RunFactoryType,
+    monkeypatch: pytest.MonkeyPatch,
+    display_collector: t.List[str],
+) -> None:
+    """Check explicit strategy from workflow"""
+
+    monkeypatch.setattr(Env, "GRANA_STRATEGY_NAME", "strict")
+    with pytest.raises(exceptions.ExecutionFailed):
+        run_text(
+            """
+            ---
+            configuration:
+              strategy: loose
+            actions:
+              - name: Foo
+                type: shell
+                command: foobar
+              - name: Bar
+                type: echo
+                message: I started! 
+                expects: Foo
+            """
+        )
+    assert "[Bar]  | I started!" in display_collector
