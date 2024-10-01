@@ -57,7 +57,7 @@ class ShellAction(EmissionScannerActionBase):
             command=command,
             environment=environment,
             cwd=self.args.cwd,
-            executable=self.args.executable,
+            executable=self.args.executable or C.DEFAULT_SHELL_EXECUTABLE,
         )
 
     async def run(self) -> None:

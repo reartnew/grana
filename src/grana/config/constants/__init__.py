@@ -149,3 +149,6 @@ class C:
     STRICT_OUTCOMES_RENDERING: Mandatory[bool] = Mandatory(
         lambda: Env.GRANA_STRICT_OUTCOMES_RENDERING,
     )
+    DEFAULT_SHELL_EXECUTABLE: Mandatory[str] = Mandatory(
+        lambda: Env.GRANA_DEFAULT_SHELL_EXECUTABLE,
+    )

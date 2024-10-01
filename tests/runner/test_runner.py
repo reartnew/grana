@@ -693,3 +693,33 @@ def test_explicit_strategy(
             """
         )
     assert "[Bar]  | I started!" in display_collector
+
+
+@pytest.mark.parametrize("executable", ["/bin/sh", "/bin/bash"])
+def test_different_shells_locally(run_text: RunFactoryType, executable: str) -> None:
+    """Check explicitly set executable for shells"""
+    assert f"[Foo]  | {executable}" in run_text(
+        f"""
+        ---
+        actions:
+          - name: Foo
+            type: shell
+            executable: {executable}
+            command: echo $0
+        """
+    )
+
+
+@pytest.mark.parametrize("executable", ["/bin/sh", "/bin/bash"])
+def test_different_shells_globally(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatch, executable: str) -> None:
+    """Check globally set executable for shells"""
+    monkeypatch.setattr(Env, "GRANA_DEFAULT_SHELL_EXECUTABLE", executable)
+    assert f"[Foo]  | {executable}" in run_text(
+        """
+        ---
+        actions:
+          - name: Foo
+            type: shell
+            command: echo $0
+        """
+    )
