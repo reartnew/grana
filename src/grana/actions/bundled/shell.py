@@ -23,6 +23,7 @@ class ShellArgs(ArgsBase):
     file: t.Optional[str] = None
     environment: t.Optional[t.Dict[str, str]] = None
     cwd: t.Optional[str] = None
+    executable: t.Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.command is None and self.file is None:
@@ -56,6 +57,7 @@ class ShellAction(EmissionScannerActionBase):
             command=command,
             environment=environment,
             cwd=self.args.cwd,
+            executable=self.args.executable or C.DEFAULT_SHELL_EXECUTABLE,
         )
 
     async def run(self) -> None:

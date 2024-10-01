@@ -53,6 +53,9 @@ class Env(EnvironmentNamespace):
     GRANA_STRICT_OUTCOMES_RENDERING:
         When set to True, rendering a missing outcome key will result in an error instead of an empty string.
         Default is False.
+    GRANA_DEFAULT_SHELL_EXECUTABLE:
+        Specifies which shell executable should be used by the shell action by default.
+        Default is /bin/sh.
     """
 
     GRANA_LOG_LEVEL: str = OptionalString("")
@@ -68,3 +71,4 @@ class Env(EnvironmentNamespace):
     GRANA_EXTERNAL_MODULES_PATHS: t.List[str] = OptionalList([])
     GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY: t.List[str] = OptionalList([])
     GRANA_STRICT_OUTCOMES_RENDERING: bool = OptionalBoolean(True)  # type: ignore
+    GRANA_DEFAULT_SHELL_EXECUTABLE: str = OptionalString("/bin/sh")
