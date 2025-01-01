@@ -10,7 +10,8 @@ import typing as t
 
 import classlogging
 
-from .actions.base import ActionStatus, ActionBase, ActionSkip
+from .actions.base import ActionBase, ActionSkip
+from .actions.types import ActionStatus
 from .workflow import Workflow
 
 ST = t.TypeVar("ST", bound="BaseStrategy")

@@ -7,8 +7,7 @@ import inquirer  # type: ignore
 
 from .base import BaseDisplay
 from .color import Color
-from ..actions.base import ActionBase, ActionStatus
-from ..actions.types import Stderr
+from ..actions.types import Stderr, NamedMessageSource, ActionStatus
 from ..exceptions import InteractionError
 from ..workflow import Workflow
 
@@ -36,20 +35,25 @@ class PrologueDisplay(BaseDisplay):
         ActionStatus.OMITTED: Color.gray,
     }
 
-    def __init__(self, workflow: Workflow) -> None:
-        super().__init__(workflow)
+    def __init__(self) -> None:
+        super().__init__()
+        self._actions: t.List[NamedMessageSource] = []
         self._last_displayed_name: t.Optional[str] = None
 
-    def _make_prologue(self, source: ActionBase, mark: str) -> str:
+    def _make_prologue(self, source: NamedMessageSource, mark: str) -> str:
         raise NotImplementedError
 
-    def on_action_message(self, source: ActionBase, message: str) -> None:
+    def on_runner_start(self, children: t.Iterable[NamedMessageSource]) -> None:
+        super().on_runner_start(children)
+        self._actions.extend(children)
+
+    def on_action_message(self, source: NamedMessageSource, message: str) -> None:
         is_stderr: bool = isinstance(message, Stderr)
         for line in message.splitlines() if message else [message]:
             line_prefix: str = self._make_prologue(source=source, mark="*" if is_stderr else " ")
             self.display(f"{line_prefix}{Color.yellow(line) if is_stderr else line}")
 
-    def on_action_error(self, source: ActionBase, message: str) -> None:
+    def on_action_error(self, source: NamedMessageSource, message: str) -> None:
         line_prefix: str = self._make_prologue(source=source, mark="!")
         for line in message.splitlines():
             super().on_action_error(
@@ -68,7 +72,7 @@ class PrologueDisplay(BaseDisplay):
         displayed_action_names_with_descriptions: t.List[str] = []
         default_selected_action_names_with_descriptions: t.List[str] = []
         full_description_to_names_map: t.Dict[str, str] = {}
-        for _, action in workflow.iter_actions_by_tier():
+        for action in workflow.iterate_actions():
             if action.selectable:
                 action_name_with_description: str = action.name
                 if action.description is not None:
@@ -85,8 +89,8 @@ class PrologueDisplay(BaseDisplay):
             default=default_selected_action_names_with_descriptions,
         )
         self.logger.warning(f"Interactively selected actions: {selected_action_names}")
-        for action_name, action in workflow.items():
-            if action_name in displayed_action_names_with_descriptions and action_name not in selected_action_names:
+        for action in workflow.iterate_actions():
+            if action.name in displayed_action_names_with_descriptions and action.name not in selected_action_names:
                 action.disable()
 
     @classmethod
@@ -114,11 +118,15 @@ class PrefixDisplay(PrologueDisplay):
 
     NAME = "prefixes"
 
-    def __init__(self, workflow: Workflow) -> None:
-        super().__init__(workflow)
-        self._action_names_max_len = max(map(len, self._workflow))
+    def __init__(self) -> None:
+        super().__init__()
+        self._action_names_max_len: int = 0
 
-    def _make_prologue(self, source: ActionBase, mark: str) -> str:
+    def on_runner_start(self, children: t.Iterable[NamedMessageSource]) -> None:
+        super().on_runner_start(children)
+        self._action_names_max_len = max(self._action_names_max_len, *(len(action.name) for action in self._actions))
+
+    def _make_prologue(self, source: NamedMessageSource, mark: str) -> str:
         """Construct prefix based on previous emitter action name"""
         justification_len: int = self._action_names_max_len + 2  # "2" here stands for square brackets
         formatted_name: str = (
@@ -132,7 +140,7 @@ class PrefixDisplay(PrologueDisplay):
     def _display_status_banner(self) -> None:
         justification_len: int = self._action_names_max_len + 9  # "9" here stands for (e.g.) "SUCCESS: "
         self.display(Color.gray("=" * justification_len))
-        for _, action in self._workflow.iter_actions_by_tier():
+        for action in self._actions:
             color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
             self.display(f"{color_wrapper(action.status.value)}: {action.name}")
 
@@ -155,7 +163,7 @@ class HeaderDisplay(PrologueDisplay):
         if self._last_displayed_name is not None:
             self.display(Color.gray(" ╵"))
 
-    def _make_prologue(self, source: ActionBase, mark: str) -> str:
+    def _make_prologue(self, source: NamedMessageSource, mark: str) -> str:
         """Construct header based on previous emitter action name"""
         if self._last_displayed_name != source.name:
             self._close_block_if_necessary()
@@ -165,7 +173,7 @@ class HeaderDisplay(PrologueDisplay):
 
     def _display_status_banner(self) -> None:
         self._close_block_if_necessary()
-        for _, action in self._workflow.iter_actions_by_tier():
+        for action in self._actions:
             color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
             mark_symbol: str = self._STATUS_TO_MARK_SYMBOL_MAP[action.status]
             state_string = f" {mark_symbol} {action.status.value}: {action.name}"

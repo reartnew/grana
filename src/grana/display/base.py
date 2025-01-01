@@ -1,8 +1,10 @@
 """Runner output processor base"""
 
+import typing as t
+
 import classlogging
 
-from ..actions.base import ActionBase
+from ..actions.types import NamedMessageSource
 from ..exceptions import InteractionError
 from ..workflow import Workflow
 
@@ -14,24 +16,21 @@ __all__ = [
 class BaseDisplay(classlogging.LoggerMixin):
     """Base class for possible customizations"""
 
-    def __init__(self, workflow: Workflow) -> None:
-        self._workflow: Workflow = workflow
-
     def display(self, message: str) -> None:
         """Send text to the end user"""
         print(message.rstrip("\n"))
 
     # pylint: disable=unused-argument
-    def on_action_message(self, source: ActionBase, message: str) -> None:
+    def on_action_message(self, source: NamedMessageSource, message: str) -> None:
         """Process a message from some source"""
         self.display(message)  # pragma: no cover
 
     # pylint: disable=unused-argument
-    def on_action_error(self, source: ActionBase, message: str) -> None:
+    def on_action_error(self, source: NamedMessageSource, message: str) -> None:
         """Process an error from some source"""
         self.display(message)  # pragma: no cover
 
-    def on_runner_start(self) -> None:
+    def on_runner_start(self, children: t.Iterable[NamedMessageSource]) -> None:
         """Runner start callback"""
 
     def on_runner_finish(self) -> None:
@@ -41,8 +40,8 @@ class BaseDisplay(classlogging.LoggerMixin):
         """Execution plan approval callback"""
         raise InteractionError  # pragma: no cover
 
-    def on_action_start(self, action: ActionBase) -> None:
+    def on_action_start(self, source: NamedMessageSource) -> None:
         """Action start callback"""
 
-    def on_action_finish(self, action: ActionBase) -> None:
+    def on_action_finish(self, source: NamedMessageSource) -> None:
         """Action finish callback"""

@@ -15,9 +15,10 @@ import classlogging
 import dacite
 
 from . import types
-from .actions.base import ActionBase, ArgsBase, ActionStatus
+from .actions.base import ActionBase, ArgsBase
+from .actions.types import ActionStatus
 from .config.constants import C
-from .display.base import BaseDisplay
+from .display.types import DisplayEvent, DisplayEventName
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.helpers import get_default_loader_class_for_source
 from .rendering import Templar
@@ -47,6 +48,10 @@ class Runner(classlogging.LoggerMixin):
         self._execution_failed: bool = False
 
     @functools.cached_property
+    def _events_flow(self) -> asyncio.Queue:
+        return asyncio.Queue()
+
+    @functools.cached_property
     def loader(self) -> types.LoaderType:
         """Workflow loader"""
         loader_class: types.LoaderClassType
@@ -74,7 +79,7 @@ class Runner(classlogging.LoggerMixin):
             return self._explicit_display
         display_class: types.DisplayClassType = C.DISPLAY_CLASS
         self.logger.debug(f"Using display class: {display_class}")
-        return display_class(workflow=self.workflow)
+        return display_class()
 
     @functools.cached_property
     def strategy(self) -> types.StrategyType:
@@ -118,26 +123,43 @@ class Runner(classlogging.LoggerMixin):
             raise SourceError(f"No workflow source detected in {scan_path}")
         return located_source_file
 
+    def _send_display_event(self, name: DisplayEventName, **kwargs) -> asyncio.Future:
+        """Create a display event and return a future which indicates event processing status"""
+        self._events_flow.put_nowait(event := DisplayEvent(name, **kwargs))
+        return event.future
+
+    async def _process_display_events(self) -> None:
+        while True:
+            event: DisplayEvent = await self._events_flow.get()
+            try:
+                display_method = getattr(self.display, event.name.value)
+                display_method(**event.kwargs)
+            except Exception as e:
+                self.logger.exception(f"`{event.name}` callback failed for {self.display}")
+                event.future.set_exception(e)
+            else:
+                event.future.set_result(None)
+
     async def run_async(self) -> None:
         """Primary coroutine for all further processing"""
         # Build workflow and display
         workflow: Workflow = self.workflow
-        display: BaseDisplay = self.display
         # Check requirements
         self.loader.check_requirements()
+        display_events_flow_processing_task: asyncio.Task = asyncio.create_task(self._process_display_events())
         try:
-            display.on_runner_start()
-        except Exception:
-            self.logger.exception(f"`on_runner_start` callback failed for {display}")
-        if C.INTERACTIVE_MODE:
-            display.on_plan_interaction(workflow=workflow)
-        await self._run_all_actions()
-        try:
-            display.on_runner_finish()
-        except Exception:
-            self.logger.exception(f"`on_runner_finish` callback failed for {display}")
-        if self._execution_failed:
-            raise ExecutionFailed
+            await self._send_display_event(
+                DisplayEventName.ON_RUNNER_START,
+                children=workflow.iterate_actions(),
+            )
+            if C.INTERACTIVE_MODE:
+                await self._send_display_event(DisplayEventName.ON_PLAN_INTERACTION, workflow=workflow)
+            await self._run_all_actions()
+            await self._send_display_event(DisplayEventName.ON_RUNNER_FINISH)
+            if self._execution_failed:
+                raise ExecutionFailed
+        finally:
+            display_events_flow_processing_task.cancel()
 
     async def _run_all_actions(self) -> None:
         if self._started:
@@ -161,13 +183,9 @@ class Runner(classlogging.LoggerMixin):
         for task in action_runners.values():
             await task
 
-    @classmethod
-    async def _dispatch_action_messages_to_display(cls, action: ActionBase, display: BaseDisplay) -> None:
-        try:
-            async for message in action.read_messages():
-                display.on_action_message(source=action, message=message)
-        except Exception:
-            cls.logger.exception(f"`on_action_message` failed for {action.name!r}")
+    async def _dispatch_action_messages_to_display(self, action: ActionBase) -> None:
+        async for event in action.read_messages():
+            self._events_flow.put_nowait(event)
 
     async def _run_action(self, action: ActionBase) -> None:
         if not action.enabled:
@@ -179,33 +197,26 @@ class Runner(classlogging.LoggerMixin):
         except Exception as e:
             details: str = str(e) if isinstance(e, ActionRenderError) else repr(e)
             message = f"Action {action.name!r} rendering failed: {details}"
-            self.display.on_action_error(source=action, message=message)
+            await self._send_display_event(DisplayEventName.ON_ACTION_ERROR, source=action, message=message)
             self.logger.warning(message, exc_info=not isinstance(e, ActionRenderError))
             action._internal_fail(e)  # pylint: disable=protected-access
             self._execution_failed = True
             return
-        self.logger.trace(f"Calling `on_action_start` for {action.name!r}")
-        try:
-            self.display.on_action_start(action)
-        except Exception:
-            self.logger.exception(f"`on_action_start` callback failed on {action.name!r} for {self.display}")
+        self.logger.trace(f"Calling `{DisplayEventName.ON_ACTION_START}` for {action.name!r}")
+        await self._send_display_event(DisplayEventName.ON_ACTION_START, source=action)
         self.logger.trace(f"Allocating action dispatcher for {action.name!r}")
         action_messages_reader_task: asyncio.Task = asyncio.create_task(
-            self._dispatch_action_messages_to_display(
-                action=action,
-                display=self.display,
-            )
+            self._dispatch_action_messages_to_display(action=action)
         )
         try:
             await action
         except Exception as e:
-            try:
-                self.display.on_action_error(
+            if message := str(e) if isinstance(e, ActionRunError) else f"Action {action.name!r} run exception: {e!r}":
+                await self._send_display_event(
+                    DisplayEventName.ON_ACTION_ERROR,
                     source=action,
-                    message=str(e) if isinstance(e, ActionRunError) else f"Action {action.name!r} run exception: {e!r}",
+                    message=message,
                 )
-            except Exception:
-                self.logger.exception(f"`on_action_error` failed for {action.name!r}")
             if action.status == ActionStatus.WARNING:
                 self.logger.warning(f"Action {action.name!r} finished with warning status")
             else:
@@ -215,11 +226,8 @@ class Runner(classlogging.LoggerMixin):
         finally:
             self._outcomes[action.name].update(action.get_outcomes())
             await action_messages_reader_task
-            self.logger.trace(f"Calling `on_action_finish` for {action.name!r}")
-            try:
-                self.display.on_action_finish(action)
-            except Exception:
-                self.logger.exception(f"`on_action_finish` callback failed on {action.name!r} for {self.display}")
+            self.logger.trace(f"Calling `{DisplayEventName.ON_ACTION_FINISH.value}` for {action.name!r}")
+            await self._send_display_event(DisplayEventName.ON_ACTION_FINISH, source=action)
 
     def run_sync(self):
         """Wrap async run into an event loop"""

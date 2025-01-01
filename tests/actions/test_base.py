@@ -33,8 +33,8 @@ async def test_action_messages_handling():
     messages: t.List[str] = []
 
     async def reader():
-        async for message in action.read_messages():
-            messages.append(message)
+        async for event in action.read_messages():
+            messages.append(event.kwargs.get("message", ""))
 
     reader_task = asyncio.create_task(reader())
     await action

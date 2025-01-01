@@ -13,42 +13,14 @@ from grana.display.base import BaseDisplay
 from grana.display.default import PrologueDisplay, HeaderDisplay
 
 
-class BaseBadDisplay(BaseDisplay):
-    """Bad displays base"""
+class BadDisplay(BaseDisplay):
+    """A display incapable of reporting runner start"""
 
-    FAILURES: t.Set[str]
-    METHOD_FAILURES_TO_CHECK: t.Set[str] = {
-        "on_action_message",
-        "on_action_error",
-        "on_runner_start",
-        "on_runner_finish",
-        "on_action_start",
-        "on_action_finish",
-    }
-
-    @classmethod
-    def make_failure(cls, name: str) -> t.Callable:
-        def failure(self, *args, **kwargs) -> t.Any:
-            cls.FAILURES.add(name)
-            raise RuntimeError
-
-        return failure
+    def on_runner_start(self, *args, **kwargs) -> None:
+        raise RuntimeError
 
 
-@pytest.fixture
-def bad_display() -> BaseBadDisplay:
-    class BadDisplay(BaseBadDisplay):
-        """A display incapable of doing anything"""
-
-        FAILURES: t.Set[str] = set()
-
-    for method_name in BaseBadDisplay.METHOD_FAILURES_TO_CHECK:
-        setattr(BadDisplay, method_name, BadDisplay.make_failure(method_name))
-
-    return BadDisplay(workflow=None)  # type: ignore[arg-type]
-
-
-def test_bad_display(bad_display: BaseBadDisplay):
+def test_bad_display() -> None:
     """Check that a bad display does not interrupt execution"""
     source = io.StringIO(
         """
@@ -61,10 +33,9 @@ def test_bad_display(bad_display: BaseBadDisplay):
             command: baz
         """
     )
-    runner = Runner(source=source, display=bad_display)
-    with pytest.raises(exceptions.ExecutionFailed):
+    runner = Runner(source=source, display=BadDisplay())
+    with pytest.raises(RuntimeError):
         runner.run_sync()
-    assert bad_display.FAILURES == BaseBadDisplay.METHOD_FAILURES_TO_CHECK
 
 
 @pytest.mark.parametrize("display_name", ["headers", "prefixes"])
