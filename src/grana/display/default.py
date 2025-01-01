@@ -1,7 +1,6 @@
 """Runner output processor default"""
 
 import dataclasses
-import itertools
 import sys
 import typing as t
 
@@ -9,6 +8,7 @@ import inquirer  # type: ignore
 
 from .base import BaseDisplay
 from .color import Color
+from .utils import locate_insert_position_py_prefix
 from ..actions.types import Stderr, NamedMessageSource, ActionStatus
 from ..exceptions import InteractionError
 from ..workflow import Workflow
@@ -87,17 +87,12 @@ class PrologueDisplay(BaseDisplay):
             self._nodes_map = {node.action.name: node for node in self._root_nodes_list}
             return
         children_list: t.List[NamedMessageSource] = list(children)
-        incoming_actions_names_common_prefix: str = self._get_common_prefix(*(child.name for child in children_list))
-        slice_position: int = -1
-        longest_match_length: int = -1
-        corr_action_name: str = ""
-        for position, action in enumerate(self._actions):
-            match_length = len(self._get_common_prefix(action.name, incoming_actions_names_common_prefix))
-            if match_length > longest_match_length:
-                longest_match_length = match_length
-                slice_position = position + 1
-                corr_action_name = action.name
-        self._actions[slice_position:slice_position] = children_list
+        receiver_position, longest_match_length = locate_insert_position_py_prefix(
+            receiver=(action.name for action in self._actions),
+            source=(action.name for action in children_list),
+        )
+        corr_action_name = self._actions[receiver_position].name
+        self._actions[receiver_position + 1 : receiver_position + 1] = children_list
         nodes_list: t.List[ActionNode] = []
         for action in children_list:
             node = ActionNode(
@@ -139,12 +134,6 @@ class PrologueDisplay(BaseDisplay):
                 prefix_stack.append("   " if is_last_node else "│  ")
                 yield from self._generate_status_tree_components_for_nodes(node.children, prefix_stack)
             prefix_stack.pop()
-
-    @classmethod
-    def _get_common_prefix(cls, *strings: str) -> str:
-        character_tuples: t.Iterable[t.Tuple[str, ...]] = zip(*strings)
-        common_prefix_iterator = itertools.takewhile(lambda chars: all(chars[0] == c for c in chars), character_tuples)
-        return "".join(common_chars[0] for common_chars in common_prefix_iterator)
 
     def _generate_status_banner_lines(self) -> t.Generator[str, None, None]:
         for source, tree_prefix, color in self._generate_status_tree_components_for_nodes(
