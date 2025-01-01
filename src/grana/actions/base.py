@@ -14,14 +14,14 @@ from dataclasses import dataclass, fields
 import classlogging
 
 from .constants import ACTION_RESERVED_FIELD_NAMES
-from .types import Stderr, OutcomeStorageType
+from .types import Stderr, OutcomeStorageType, ActionStatus
+from ..display.types import DisplayEvent, DisplayEventName
 from ..exceptions import ActionRunError
 
 __all__ = [
     "ActionDependency",
     "ActionSeverity",
     "ActionBase",
-    "ActionStatus",
     "ActionSkip",
     "ArgsBase",
     "EmissionScannerActionBase",
@@ -30,23 +30,6 @@ __all__ = [
 
 class ActionSkip(BaseException):
     """Stop executing action"""
-
-
-class ActionStatus(enum.Enum):
-    """Action valid states"""
-
-    PENDING = "PENDING"  # Enabled, but not started yet
-    RUNNING = "RUNNING"  # Execution in process
-    SUCCESS = "SUCCESS"  # Finished without errors
-    WARNING = "WARNING"  # Erroneous action with low severity
-    FAILURE = "FAILURE"  # Erroneous action
-    SKIPPED = "SKIPPED"  # May be set by action itself
-    OMITTED = "OMITTED"  # Disabled during interaction
-
-    def __repr__(self) -> str:
-        return self.name
-
-    __str__ = __repr__
 
 
 class ActionSeverity(enum.Enum):
@@ -106,7 +89,7 @@ class ActionBase(classlogging.LoggerMixin):
         self._enabled: bool = True
         # Do not create asyncio-related objects on constructing object to decouple from the event loop
         self._maybe_finish_flag: t.Optional[asyncio.Future] = None
-        self._maybe_message_queue: t.Optional[asyncio.Queue[str]] = None
+        self._maybe_message_queue: t.Optional[asyncio.Queue[DisplayEvent]] = None
         self._running_task: t.Optional[asyncio.Task] = None
         self._severity: ActionSeverity = severity
 
@@ -141,7 +124,7 @@ class ActionBase(classlogging.LoggerMixin):
         return self._maybe_finish_flag
 
     @property
-    def _message_queue(self) -> asyncio.Queue[str]:
+    def _event_queue(self) -> asyncio.Queue[DisplayEvent]:
         if self._maybe_message_queue is None:
             self._maybe_message_queue = asyncio.Queue()
         return self._maybe_message_queue
@@ -185,7 +168,7 @@ class ActionBase(classlogging.LoggerMixin):
 
     def say(self, message: str) -> None:
         """Send a message to the display"""
-        self._message_queue.put_nowait(message)
+        self._event_queue.put_nowait(DisplayEvent(DisplayEventName.ON_ACTION_MESSAGE, source=self, message=message))
 
     def skip(self) -> t.NoReturn:
         """Set status to SKIPPED and stop execution"""
@@ -202,7 +185,7 @@ class ActionBase(classlogging.LoggerMixin):
         self.get_future().set_result(None)
         self.logger.info(f"Action {self.name!r} omitted")
 
-    def fail(self, message: str) -> t.NoReturn:
+    def fail(self, message: str = "") -> t.NoReturn:
         """Set corresponding error message and raise an exception"""
         exception = ActionRunError(message)
         self._internal_fail(exception)
@@ -214,11 +197,11 @@ class ActionBase(classlogging.LoggerMixin):
             self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
             self.get_future().set_exception(exception)
 
-    async def read_messages(self) -> t.AsyncGenerator[str, None]:
+    async def read_messages(self) -> t.AsyncGenerator[DisplayEvent, None]:
         """Obtain all said messages sequentially"""
         while True:
             # Wait for either an event or action finish
-            queue_getter = asyncio.create_task(self._message_queue.get())
+            queue_getter = asyncio.create_task(self._event_queue.get())
             await asyncio.wait(
                 [self.get_future(), queue_getter],
                 return_when=asyncio.FIRST_COMPLETED,
@@ -231,7 +214,7 @@ class ActionBase(classlogging.LoggerMixin):
                 queue_getter.cancel()
                 while True:
                     try:
-                        yield self._message_queue.get_nowait()
+                        yield self._event_queue.get_nowait()
                     except asyncio.QueueEmpty:
                         break
                 return

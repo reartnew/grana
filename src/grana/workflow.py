@@ -88,8 +88,12 @@ class Workflow(t.Dict[str, ActionBase], LoggerMixin):
             action_tier: int = action_name_to_tier_mapping[action_name]
             self._tiers_sequence[action_tier].append(action)
 
-    def iter_actions_by_tier(self) -> t.Generator[t.Tuple[int, ActionBase], None, None]:
+    def _iter_actions_by_tier(self) -> t.Generator[t.Tuple[int, ActionBase], None, None]:
         """Yield actions tier by tier"""
         for tier_num, tier_actions in enumerate(self._tiers_sequence):
             for action in tier_actions:
                 yield tier_num, action
+
+    def iterate_actions(self) -> t.Iterator[ActionBase]:
+        """Iterate actions sorted natively"""
+        return (action for _, action in self._iter_actions_by_tier())

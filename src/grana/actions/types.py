@@ -1,17 +1,49 @@
 """Types collection"""
 
 import dataclasses
+import enum
 import typing as t
 
 OutcomeStorageType = t.Dict[str, str]
 
 __all__ = [
     "OutcomeStorageType",
+    "NamedMessageSource",
     "Stderr",
     "Import",
     "ObjectTemplate",
     "qualify_string_as_potentially_renderable",
+    "ActionStatus",
 ]
+
+
+class ActionStatus(enum.Enum):
+    """Action valid states"""
+
+    PENDING = "PENDING"  # Enabled, but not started yet
+    RUNNING = "RUNNING"  # Execution in process
+    SUCCESS = "SUCCESS"  # Finished without errors
+    WARNING = "WARNING"  # Erroneous action with low severity
+    FAILURE = "FAILURE"  # Erroneous action
+    SKIPPED = "SKIPPED"  # May be set by action itself
+    OMITTED = "OMITTED"  # Disabled during interaction
+
+    def __repr__(self) -> str:
+        return self.name
+
+    __str__ = __repr__
+
+
+class NamedMessageSource(t.Protocol):
+    """Anything that can be a message source (e.g. an action instance)"""
+
+    @property
+    def name(self) -> str:
+        """Source name"""
+
+    @property
+    def status(self) -> ActionStatus:
+        """Source status"""
 
 
 class Stderr(str):
