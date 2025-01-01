@@ -19,13 +19,23 @@ __all__ = [
     "KNOWN_DISPLAYS",
 ]
 
+ColorWrapperType = t.Callable[[str], str]
+
 
 class PrologueDisplay(BaseDisplay):
     """Default display base"""
 
     NAME: str
-
-    STATUS_TO_COLOR_WRAPPER_MAP: t.Dict[ActionStatus, t.Callable[[str], str]] = {
+    STATUS_TO_MARK_SYMBOL_MAP: t.Dict[ActionStatus, str] = {
+        ActionStatus.SKIPPED: "◯",
+        ActionStatus.PENDING: "◯",
+        ActionStatus.FAILURE: "✗",
+        ActionStatus.WARNING: "✓",
+        ActionStatus.RUNNING: "◯",
+        ActionStatus.SUCCESS: "✓",
+        ActionStatus.OMITTED: "◯",
+    }
+    STATUS_TO_COLOR_WRAPPER_MAP: t.Dict[ActionStatus, ColorWrapperType] = {
         ActionStatus.SKIPPED: Color.gray,
         ActionStatus.PENDING: Color.gray,
         ActionStatus.FAILURE: Color.red,
@@ -61,9 +71,17 @@ class PrologueDisplay(BaseDisplay):
                 message=f"{line_prefix}{Color.red(line)}",
             )
 
+    def _generate_status_banner_lines(self) -> t.Generator[str, None, None]:
+        for action in self._actions:
+            status_mark: str = self.STATUS_TO_MARK_SYMBOL_MAP[action.status]
+            color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
+            status_prefix: str = f"{status_mark} {action.status.value}"
+            yield f"{color_wrapper(status_prefix)}: {color_wrapper(action.name)}"
+
     def _display_status_banner(self) -> None:
         """Show a text banner with the status info"""
-        raise NotImplementedError
+        for line in self._generate_status_banner_lines():
+            self.display(line)
 
     def on_runner_finish(self) -> None:
         self._display_status_banner()
@@ -137,27 +155,11 @@ class PrefixDisplay(PrologueDisplay):
         self._last_displayed_name = source.name
         return Color.gray(f"{formatted_name} {mark}| ")
 
-    def _display_status_banner(self) -> None:
-        justification_len: int = self._action_names_max_len + 9  # "9" here stands for (e.g.) "SUCCESS: "
-        self.display(Color.gray("=" * justification_len))
-        for action in self._actions:
-            color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
-            self.display(f"{color_wrapper(action.status.value)}: {action.name}")
-
 
 class HeaderDisplay(PrologueDisplay):
     """Adds headers to output chunks"""
 
     NAME = "headers"
-    _STATUS_TO_MARK_SYMBOL_MAP: t.Dict[ActionStatus, str] = {
-        ActionStatus.SKIPPED: "◯",
-        ActionStatus.PENDING: "◯",
-        ActionStatus.FAILURE: "✗",
-        ActionStatus.WARNING: "✓",
-        ActionStatus.RUNNING: "◯",
-        ActionStatus.SUCCESS: "✓",
-        ActionStatus.OMITTED: "◯",
-    }
 
     def _close_block_if_necessary(self) -> None:
         if self._last_displayed_name is not None:
@@ -171,13 +173,14 @@ class HeaderDisplay(PrologueDisplay):
             self._last_displayed_name = source.name
         return Color.gray(f"{mark}│ ")
 
-    def _display_status_banner(self) -> None:
+    def _generate_status_banner_lines(self) -> t.Generator[str, None, None]:
+        """Add extra space in the beginning of the message, so it is aligned with the stream"""
+        for line in super()._generate_status_banner_lines():
+            yield f" {line}"
+
+    def on_runner_finish(self) -> None:
         self._close_block_if_necessary()
-        for action in self._actions:
-            color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
-            mark_symbol: str = self._STATUS_TO_MARK_SYMBOL_MAP[action.status]
-            state_string = f" {mark_symbol} {action.status.value}: {action.name}"
-            self.display(color_wrapper(state_string))
+        super().on_runner_finish()
 
 
 DefaultDisplay = PrefixDisplay

@@ -125,9 +125,8 @@ def test_strategy_runner_call(
     assert set(display_collector) == {
         "[Foo]  | foo",
         "[Bar] *| bar",
-        "============",
-        "SUCCESS: Foo",
-        "SUCCESS: Bar",
+        "✓ SUCCESS: Foo",
+        "✓ SUCCESS: Bar",
     }
 
 
@@ -275,8 +274,7 @@ async def test_docker_good_context(
     await grana.Runner().run_async()
     assert display_collector == [
         "[Foo]  | bar-baz",
-        "============",
-        "SUCCESS: Foo",
+        "✓ SUCCESS: Foo",
     ]
 
 
@@ -355,8 +353,7 @@ def test_empty_echo_context(run_text: RunFactoryType) -> None:
     )
     assert output == [
         "[Foo]  | ",
-        "============",
-        "SUCCESS: Foo",
+        "✓ SUCCESS: Foo",
     ]
 
 
@@ -399,10 +396,9 @@ def test_interaction_context(
         """
     )
     assert output == [
-        "============",
-        "SUCCESS: Foo",
-        "SUCCESS: Bar",
-        "OMITTED: Baz",
+        "✓ SUCCESS: Foo",
+        "✓ SUCCESS: Bar",
+        "◯ OMITTED: Baz",
     ]
 
 
@@ -465,8 +461,7 @@ def test_complex_vars_context(run_text: RunFactoryType) -> None:
     )
     assert output == [
         "[Test]  | Hello world!",
-        "=============",
-        "SUCCESS: Test",
+        "✓ SUCCESS: Test",
     ]
 
 
@@ -512,8 +507,7 @@ def test_runner_accepts_object_template(run_text: RunFactoryType) -> None:
     )
     assert output == [
         "[Foo]  | FOO",
-        "============",
-        "SUCCESS: Foo",
+        "✓ SUCCESS: Foo",
     ]
 
 
@@ -564,8 +558,7 @@ def test_runner_lazy_proxy_unwrapping(run_text: RunFactoryType) -> None:
     )
     assert output == [
         "[Foo]  | Foo Bar",
-        "============",
-        "SUCCESS: Foo",
+        "✓ SUCCESS: Foo",
     ]
 
 
@@ -581,8 +574,7 @@ def test_implicit_naming(run_text: RunFactoryType) -> None:
     )
     assert output == [
         "[shell-0]  | Foo",
-        "================",
-        "SUCCESS: shell-0",
+        "✓ SUCCESS: shell-0",
     ]
 
 
@@ -600,8 +592,7 @@ def test_low_severity(run_text: RunFactoryType) -> None:
     assert output == [
         "[shell-0]  | Foo",
         "          !| Exit code: 1",
-        "================",
-        "WARNING: shell-0",
+        "✓ WARNING: shell-0",
     ]
 
 
@@ -663,8 +654,7 @@ def test_colored_output(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatc
     )
     assert output == [
         "\x1b[90m[shell-0]  | \x1b[0mFoo",
-        "\x1b[90m================\x1b[0m",
-        "\x1b[32mSUCCESS\x1b[0m: shell-0",
+        "\x1b[32m✓ SUCCESS\x1b[0m: \x1b[32mshell-0\x1b[0m",
     ]
 
 
