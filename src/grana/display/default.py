@@ -1,5 +1,7 @@
 """Runner output processor default"""
 
+import dataclasses
+import itertools
 import sys
 import typing as t
 
@@ -19,7 +21,30 @@ __all__ = [
     "KNOWN_DISPLAYS",
 ]
 
+
+@dataclasses.dataclass
+class ActionNode:
+    """Subflow relations representation"""
+
+    action: NamedMessageSource
+    children: list
+
+
+class RenamedMessageSource:
+    """Renamed message source"""
+
+    def __init__(self, origin: NamedMessageSource, name: str) -> None:
+        self._origin = origin
+        self.name = name
+
+    @property
+    def status(self) -> ActionStatus:
+        """Proxy to the origin status"""
+        return self._origin.status
+
+
 ColorWrapperType = t.Callable[[str], str]
+TreeComponentType = str
 
 
 class PrologueDisplay(BaseDisplay):
@@ -48,14 +73,40 @@ class PrologueDisplay(BaseDisplay):
     def __init__(self) -> None:
         super().__init__()
         self._actions: t.List[NamedMessageSource] = []
+        self._nodes_map: t.Dict[str, ActionNode] = {}
+        self._root_nodes_list: t.List[ActionNode] = []
         self._last_displayed_name: t.Optional[str] = None
 
     def _make_prologue(self, source: NamedMessageSource, mark: str) -> str:
         raise NotImplementedError
 
     def on_runner_start(self, children: t.Iterable[NamedMessageSource]) -> None:
-        super().on_runner_start(children)
-        self._actions.extend(children)
+        if not self._actions:
+            self._actions.extend(children)
+            self._root_nodes_list = [ActionNode(action=action, children=[]) for action in self._actions]
+            self._nodes_map = {node.action.name: node for node in self._root_nodes_list}
+            return
+        children_list: t.List[NamedMessageSource] = list(children)
+        incoming_actions_names_common_prefix: str = self._get_common_prefix(*(child.name for child in children_list))
+        slice_position: int = -1
+        longest_match_length: int = -1
+        corr_action_name: str = ""
+        for position, action in enumerate(self._actions):
+            match_length = len(self._get_common_prefix(action.name, incoming_actions_names_common_prefix))
+            if match_length > longest_match_length:
+                longest_match_length = match_length
+                slice_position = position + 1
+                corr_action_name = action.name
+        self._actions[slice_position:slice_position] = children_list
+        nodes_list: t.List[ActionNode] = []
+        for action in children_list:
+            node = ActionNode(
+                action=RenamedMessageSource(origin=action, name=action.name[longest_match_length + 1 :]),
+                children=[],
+            )
+            self._nodes_map[action.name] = node
+            nodes_list.append(node)
+        self._nodes_map[corr_action_name].children = nodes_list
 
     def on_action_message(self, source: NamedMessageSource, message: str) -> None:
         is_stderr: bool = isinstance(message, Stderr)
@@ -71,12 +122,38 @@ class PrologueDisplay(BaseDisplay):
                 message=f"{line_prefix}{Color.red(line)}",
             )
 
+    def _generate_status_tree_components_for_nodes(
+        self,
+        nodes: t.List[ActionNode],
+        prefix_stack: t.List[str],
+    ) -> t.Generator[t.Tuple[NamedMessageSource, TreeComponentType, ColorWrapperType], None, None]:
+        last_node_num: int = len(nodes) - 1
+        for num, node in enumerate(nodes):
+            is_last_node: bool = num == last_node_num
+            prefix_stack.append("└──" if is_last_node else "├──")
+            color_wrapper: ColorWrapperType = self.STATUS_TO_COLOR_WRAPPER_MAP[node.action.status]
+            stack = "".join(prefix_stack[1:])
+            yield node.action, stack, color_wrapper
+            if node.children:
+                prefix_stack.pop()
+                prefix_stack.append("   " if is_last_node else "│  ")
+                yield from self._generate_status_tree_components_for_nodes(node.children, prefix_stack)
+            prefix_stack.pop()
+
+    @classmethod
+    def _get_common_prefix(cls, *strings: str) -> str:
+        character_tuples: t.Iterable[t.Tuple[str, ...]] = zip(*strings)
+        common_prefix_iterator = itertools.takewhile(lambda chars: all(chars[0] == c for c in chars), character_tuples)
+        return "".join(common_chars[0] for common_chars in common_prefix_iterator)
+
     def _generate_status_banner_lines(self) -> t.Generator[str, None, None]:
-        for action in self._actions:
-            status_mark: str = self.STATUS_TO_MARK_SYMBOL_MAP[action.status]
-            color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
-            status_prefix: str = f"{status_mark} {action.status.value}"
-            yield f"{color_wrapper(status_prefix)}: {color_wrapper(action.name)}"
+        for source, tree_prefix, color in self._generate_status_tree_components_for_nodes(
+            nodes=self._root_nodes_list,
+            prefix_stack=[],
+        ):
+            status_mark: str = self.STATUS_TO_MARK_SYMBOL_MAP[source.status]
+            status_part: str = f"{status_mark} {source.status.value}"
+            yield f"{color(status_part)}: {Color.gray(tree_prefix)}{color(source.name)}"
 
     def _display_status_banner(self) -> None:
         """Show a text banner with the status info"""

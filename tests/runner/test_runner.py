@@ -10,6 +10,7 @@ import typing as t
 from pathlib import Path
 
 import pytest
+from py.path import LocalPath  # type: ignore  # pylint: disable=import-error
 
 import grana
 from grana import exceptions
@@ -713,3 +714,50 @@ def test_different_shells_globally(run_text: RunFactoryType, monkeypatch: pytest
             command: echo $0
         """
     )
+
+
+def test_simple_subflow(
+    run_text: RunFactoryType,
+    display_collector: t.List[str],
+    tmpdir: LocalPath,
+) -> None:
+    """pass"""
+    subflow_file: LocalPath = tmpdir / "subflow.yaml"
+    subflow_file.write_text(
+        """---
+configuration:
+  strategy: strict-sequential
+actions:
+  - name: SubFoo
+    type: echo
+    message: Foo
+  - name: SubBar
+    type: shell
+    command: bad-command
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(Exception):
+        run_text(
+            f"""
+        ---
+        actions:
+          - name: Foo
+            type: shell
+            command: echo Foo
+          - name: CallSubflow
+            type: subflow
+            expects: Foo
+            path: {subflow_file}
+        """
+        )
+    assert display_collector == [
+        "[Foo]          | Foo",
+        "[CallSubflow/SubFoo]  | Foo",
+        "[CallSubflow/SubBar] *| /bin/sh: line 24: bad-command: command not found",
+        "                     !| Exit code: 127",
+        "✓ SUCCESS: Foo",
+        "✗ FAILURE: CallSubflow",
+        "✓ SUCCESS: ├──SubFoo",
+        "✗ FAILURE: └──SubBar",
+    ]
