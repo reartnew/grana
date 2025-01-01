@@ -102,8 +102,7 @@ def test_cli_run(run: RunnerType) -> None:
     """Default run"""
     assert run(text=GOOD_WORKFLOW_TEXT) == [
         "[echo-0]  | foo",
-        "===============",
-        "SUCCESS: echo-0",
+        "✓ SUCCESS: echo-0",
     ]
 
 
@@ -128,8 +127,7 @@ def test_cli_run_explicit_strategy(run: RunnerType, strategy: str) -> None:
         opts=["--strategy", strategy],
     ) == [
         "[echo-0]  | foo",
-        "===============",
-        "SUCCESS: echo-0",
+        "✓ SUCCESS: echo-0",
     ]
 
 

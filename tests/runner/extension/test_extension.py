@@ -20,8 +20,7 @@ def test_good_ext_loader(echo_context: None, monkeypatch: pytest.MonkeyPatch, di
     grana.Runner().run_sync()
     assert display_collector == [
         "[Foo]  | foo",
-        "============",
-        "SUCCESS: Foo",
+        "✓ SUCCESS: Foo",
     ]
 
 
@@ -70,8 +69,7 @@ def test_ext_loader_return_string(
     monkeypatch.setenv("GRANA_EXTERNAL_MODULES_PATHS", str(MODULES_DIR))
     grana.Runner().run_sync()
     assert display_collector == [
-        "============",
-        "SUCCESS: Foo",
+        "✓ SUCCESS: Foo",
     ]
 
 
