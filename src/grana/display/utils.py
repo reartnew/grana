@@ -10,7 +10,7 @@ __all__ = [
 ]
 
 T = t.TypeVar("T")
-TopologyGeneratorType = t.Generator[t.Tuple[T, str], None, None]
+TopologyGeneratorType = t.Generator[t.Tuple[str, T], None, None]
 
 
 @dataclasses.dataclass
@@ -28,27 +28,20 @@ class AsciiTree(t.Generic[T]):
         self._root_nodes_list: list[Node[T]] = []
         self._nodes_map: dict[str, Node[T]] = {}
 
-    def put(
-        self,
-        *,
-        items: t.Iterable[T],
-        names: t.Callable[[T], str],
-        parent_name: t.Optional[str] = None,
-    ) -> None:
+    def put(self, items: t.Iterable[t.Tuple[str, T]], *, parent_name: t.Optional[str] = None) -> None:
         """Put items into the topology"""
         nodes_list: t.List[Node[T]] = []
-        for item in items:
+        for name, item in items:
             node: Node[T] = Node(content=item, children=[])
             nodes_list.append(node)
-            name: str = names(item)
             self._nodes_map[name] = node
         if parent_name is None:
             self._root_nodes_list = nodes_list
         else:
             self._nodes_map[parent_name].children = nodes_list
 
-    def generate_status_tree_components(self) -> TopologyGeneratorType:
-        """Generate status tree components"""
+    def generate_tree(self) -> TopologyGeneratorType:
+        """Generate tree components"""
         yield from self._internal_tree_generate(nodes=self._root_nodes_list, prefix=None)
 
     def _internal_tree_generate(self, nodes: t.List[Node[T]], prefix: t.Optional[str]) -> TopologyGeneratorType:
@@ -56,13 +49,13 @@ class AsciiTree(t.Generic[T]):
         for num, node in enumerate(nodes):
             is_last_node: bool = num == last_node_num
             if prefix is None:
-                yield node.content, ""
+                yield "", node.content
                 yield from self._internal_tree_generate(
                     nodes=node.children,
                     prefix="",
                 )
             else:
-                yield node.content, prefix + ("└──" if is_last_node else "├──")
+                yield prefix + ("└──" if is_last_node else "├──"), node.content
                 yield from self._internal_tree_generate(
                     nodes=node.children,
                     prefix=prefix + ("   " if is_last_node else "│  "),

@@ -31,9 +31,6 @@ class RenamedMessageSource:
     origin: NamedMessageSource
     name: str
 
-    def __repr__(self) -> str:
-        return f"RenamedMessageSource(name={self.name}, status={self.status})"
-
     @property
     def status(self) -> ActionStatus:
         """Proxy to the origin status"""
@@ -75,28 +72,20 @@ class PrologueDisplay(BaseDisplay):
     def on_runner_start(self, children: t.Iterable[NamedMessageSource]) -> None:
         if not self._actions:
             self._actions.extend(children)
-            self._status_topology.put(
-                items=self._actions,
-                names=lambda source: source.name,
-            )
+            self._status_topology.put((action.name, action) for action in self._actions)
             return
         children_list: t.List[NamedMessageSource] = list(children)
         receiver_position, longest_match_length = locate_insert_position_py_prefix(
             receiver=(action.name for action in self._actions),
             source=(action.name for action in children_list),
         )
-        corr_action_name = self._actions[receiver_position].name
-        renamed_children: t.List[NamedMessageSource] = [
-            RenamedMessageSource(
-                origin=action,
-                name=action.name[longest_match_length + 1 :],
-            )
-            for action in children_list
-        ]
+        corresponding_action_name = self._actions[receiver_position].name
         self._status_topology.put(
-            items=renamed_children,
-            names=lambda source: source.origin.name,  # type: ignore
-            parent_name=corr_action_name,
+            (
+                (action.name, RenamedMessageSource(origin=action, name=action.name[longest_match_length + 1 :]))
+                for action in children_list
+            ),
+            parent_name=corresponding_action_name,
         )
         self._actions[receiver_position + 1 : receiver_position + 1] = children_list
 
@@ -115,7 +104,7 @@ class PrologueDisplay(BaseDisplay):
             )
 
     def _generate_status_banner_lines(self) -> t.Generator[str, None, None]:
-        for source, tree_prefix in self._status_topology.generate_status_tree_components():
+        for tree_prefix, source in self._status_topology.generate_tree():
             color = self.STATUS_TO_COLOR_WRAPPER_MAP[source.status]
             status_mark: str = self.STATUS_TO_MARK_SYMBOL_MAP[source.status]
             status_part: str = f"{status_mark} {source.status.value}"
