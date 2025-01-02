@@ -52,21 +52,24 @@ class StatusTopology:
             self._nodes_map[parent].children = nodes_list
 
     def generate_status_tree_components(self) -> TopologyGeneratorType:
-        yield from self._internal_tree_generate(nodes=self._root_nodes_list, branch_items=[])
+        yield from self._internal_tree_generate(nodes=self._root_nodes_list, prefix=None)
 
-    def _internal_tree_generate(self, nodes: t.List[ActionNode], branch_items: t.List[str]) -> TopologyGeneratorType:
+    def _internal_tree_generate(self, nodes: t.List[ActionNode], prefix: t.Optional[str]) -> TopologyGeneratorType:
         last_node_num: int = len(nodes) - 1
         for num, node in enumerate(nodes):
             is_last_node: bool = num == last_node_num
-            fork: str = "└──" if is_last_node else "├──"
-            continuation: str = "   " if is_last_node else "│  "
-            branch_items.append(fork)
-            prefix = "".join(branch_items[1:])
-            yield node.action, prefix
-            if node.children:
-                branch_items[-1] = continuation
-                yield from self._internal_tree_generate(node.children, branch_items)
-            branch_items.pop()
+            if prefix is None:
+                yield node.action, ""
+                yield from self._internal_tree_generate(
+                    nodes=node.children,
+                    prefix="",
+                )
+            else:
+                yield node.action, prefix + ("└──" if is_last_node else "├──")
+                yield from self._internal_tree_generate(
+                    nodes=node.children,
+                    prefix=prefix + ("   " if is_last_node else "│  "),
+                )
 
 
 @dataclasses.dataclass
