@@ -21,6 +21,9 @@ __all__ = [
     "KNOWN_DISPLAYS",
 ]
 
+ColorWrapperType = t.Callable[[str], str]
+TopologyGeneratorType = t.Generator[t.Tuple[NamedMessageSource, str], None, None]
+
 
 @dataclasses.dataclass
 class ActionNode:
@@ -30,21 +33,56 @@ class ActionNode:
     children: list
 
 
+class StatusTopology:
+
+    def __init__(self):
+        self._root_nodes_list: list[ActionNode] = []
+        self._nodes_map: dict[str, ActionNode] = {}
+
+    def put(self, sources: t.Iterable[NamedMessageSource], *, parent: t.Optional[str] = None) -> None:
+        nodes_list: t.List[ActionNode] = []
+        for source in sources:
+            node: ActionNode = ActionNode(action=source, children=[])
+            nodes_list.append(node)
+            name: str = source.origin.name if isinstance(source, RenamedMessageSource) else source.name
+            self._nodes_map[name] = node
+        if parent is None:
+            self._root_nodes_list = nodes_list
+        else:
+            self._nodes_map[parent].children = nodes_list
+
+    def generate_status_tree_components(self) -> TopologyGeneratorType:
+        yield from self._internal_tree_generate(nodes=self._root_nodes_list, branch_items=[])
+
+    def _internal_tree_generate(self, nodes: t.List[ActionNode], branch_items: t.List[str]) -> TopologyGeneratorType:
+        last_node_num: int = len(nodes) - 1
+        for num, node in enumerate(nodes):
+            is_last_node: bool = num == last_node_num
+            fork: str = "└──" if is_last_node else "├──"
+            continuation: str = "   " if is_last_node else "│  "
+            branch_items.append(fork)
+            prefix = "".join(branch_items[1:])
+            yield node.action, prefix
+            if node.children:
+                branch_items[-1] = continuation
+                yield from self._internal_tree_generate(node.children, branch_items)
+            branch_items.pop()
+
+
+@dataclasses.dataclass
 class RenamedMessageSource:
     """Renamed message source"""
 
-    def __init__(self, origin: NamedMessageSource, name: str) -> None:
-        self._origin = origin
-        self.name = name
+    origin: NamedMessageSource
+    name: str
+
+    def __repr__(self) -> str:
+        return f"RenamedMessageSource(name={self.name}, status={self.status})"
 
     @property
     def status(self) -> ActionStatus:
         """Proxy to the origin status"""
-        return self._origin.status
-
-
-ColorWrapperType = t.Callable[[str], str]
-TreeComponentType = str
+        return self.origin.status
 
 
 class PrologueDisplay(BaseDisplay):
@@ -73,9 +111,8 @@ class PrologueDisplay(BaseDisplay):
     def __init__(self) -> None:
         super().__init__()
         self._actions: t.List[NamedMessageSource] = []
-        self._nodes_map: t.Dict[str, ActionNode] = {}
-        self._root_nodes_list: t.List[ActionNode] = []
         self._last_displayed_name: t.Optional[str] = None
+        self._status_topology: StatusTopology = StatusTopology()
 
     def _make_prologue(self, source: NamedMessageSource, mark: str) -> str:
         raise NotImplementedError
@@ -83,8 +120,7 @@ class PrologueDisplay(BaseDisplay):
     def on_runner_start(self, children: t.Iterable[NamedMessageSource]) -> None:
         if not self._actions:
             self._actions.extend(children)
-            self._root_nodes_list = [ActionNode(action=action, children=[]) for action in self._actions]
-            self._nodes_map = {node.action.name: node for node in self._root_nodes_list}
+            self._status_topology.put(self._actions)
             return
         children_list: t.List[NamedMessageSource] = list(children)
         receiver_position, longest_match_length = locate_insert_position_py_prefix(
@@ -92,16 +128,15 @@ class PrologueDisplay(BaseDisplay):
             source=(action.name for action in children_list),
         )
         corr_action_name = self._actions[receiver_position].name
-        self._actions[receiver_position + 1 : receiver_position + 1] = children_list
-        nodes_list: t.List[ActionNode] = []
-        for action in children_list:
-            node = ActionNode(
-                action=RenamedMessageSource(origin=action, name=action.name[longest_match_length + 1 :]),
-                children=[],
+        renamed_children: t.List[NamedMessageSource] = [
+            RenamedMessageSource(
+                origin=action,
+                name=action.name[longest_match_length + 1 :],
             )
-            self._nodes_map[action.name] = node
-            nodes_list.append(node)
-        self._nodes_map[corr_action_name].children = nodes_list
+            for action in children_list
+        ]
+        self._status_topology.put(renamed_children, parent=corr_action_name)
+        self._actions[receiver_position + 1 : receiver_position + 1] = children_list
 
     def on_action_message(self, source: NamedMessageSource, message: str) -> None:
         is_stderr: bool = isinstance(message, Stderr)
@@ -117,40 +152,17 @@ class PrologueDisplay(BaseDisplay):
                 message=f"{line_prefix}{Color.red(line)}",
             )
 
-    def _generate_status_tree_components_for_nodes(
-        self,
-        nodes: t.List[ActionNode],
-        prefix_stack: t.List[str],
-    ) -> t.Generator[t.Tuple[NamedMessageSource, TreeComponentType, ColorWrapperType], None, None]:
-        last_node_num: int = len(nodes) - 1
-        for num, node in enumerate(nodes):
-            is_last_node: bool = num == last_node_num
-            prefix_stack.append("└──" if is_last_node else "├──")
-            color_wrapper: ColorWrapperType = self.STATUS_TO_COLOR_WRAPPER_MAP[node.action.status]
-            stack = "".join(prefix_stack[1:])
-            yield node.action, stack, color_wrapper
-            if node.children:
-                prefix_stack.pop()
-                prefix_stack.append("   " if is_last_node else "│  ")
-                yield from self._generate_status_tree_components_for_nodes(node.children, prefix_stack)
-            prefix_stack.pop()
-
     def _generate_status_banner_lines(self) -> t.Generator[str, None, None]:
-        for source, tree_prefix, color in self._generate_status_tree_components_for_nodes(
-            nodes=self._root_nodes_list,
-            prefix_stack=[],
-        ):
+        for source, tree_prefix in self._status_topology.generate_status_tree_components():
+            color = self.STATUS_TO_COLOR_WRAPPER_MAP[source.status]
             status_mark: str = self.STATUS_TO_MARK_SYMBOL_MAP[source.status]
             status_part: str = f"{status_mark} {source.status.value}"
             yield f"{color(status_part)}: {Color.gray(tree_prefix)}{color(source.name)}"
 
-    def _display_status_banner(self) -> None:
+    def on_runner_finish(self) -> None:
         """Show a text banner with the status info"""
         for line in self._generate_status_banner_lines():
             self.display(line)
-
-    def on_runner_finish(self) -> None:
-        self._display_status_banner()
 
     def on_plan_interaction(self, workflow: Workflow) -> None:
         displayed_action_names_with_descriptions: t.List[str] = []
