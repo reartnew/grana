@@ -8,7 +8,7 @@ import inquirer  # type: ignore
 
 from .base import BaseDisplay
 from .color import Color
-from .utils import locate_insert_position_py_prefix, AsciiTree
+from .utils import Tree, locate_parent_name_by_prefix
 from ..actions.types import Stderr, NamedMessageSource, ActionStatus
 from ..exceptions import InteractionError
 from ..workflow import Workflow
@@ -62,24 +62,22 @@ class PrologueDisplay(BaseDisplay):
 
     def __init__(self) -> None:
         super().__init__()
-        self._actions: t.List[NamedMessageSource] = []
+        self._status_topology: Tree[NamedMessageSource] = Tree()
         self._last_displayed_name: t.Optional[str] = None
-        self._status_topology: AsciiTree[NamedMessageSource] = AsciiTree()
 
     def _make_prologue(self, source: NamedMessageSource, mark: str) -> str:
         raise NotImplementedError
 
     def on_runner_start(self, children: t.Iterable[NamedMessageSource]) -> None:
-        if not self._actions:
-            self._actions.extend(children)
-            self._status_topology.put((action.name, action) for action in self._actions)
+        if not self._status_topology:
+            self._status_topology.put((action.name, action) for action in children)
             return
         children_list: t.List[NamedMessageSource] = list(children)
-        receiver_position, longest_match_length = locate_insert_position_py_prefix(
-            receiver=(action.name for action in self._actions),
-            source=(action.name for action in children_list),
+        corresponding_action_name = locate_parent_name_by_prefix(
+            children=(action.name for action in children_list),
+            candidates=self._status_topology,
         )
-        corresponding_action_name = self._actions[receiver_position].name
+        longest_match_length = len(corresponding_action_name)
         self._status_topology.put(
             (
                 (action.name, RenamedMessageSource(origin=action, name=action.name[longest_match_length + 1 :]))
@@ -87,7 +85,6 @@ class PrologueDisplay(BaseDisplay):
             ),
             parent_name=corresponding_action_name,
         )
-        self._actions[receiver_position + 1 : receiver_position + 1] = children_list
 
     def on_action_message(self, source: NamedMessageSource, message: str) -> None:
         is_stderr: bool = isinstance(message, Stderr)
@@ -104,11 +101,11 @@ class PrologueDisplay(BaseDisplay):
             )
 
     def _generate_status_banner_lines(self) -> t.Generator[str, None, None]:
-        for tree_prefix, source in self._status_topology.generate_tree():
-            color = self.STATUS_TO_COLOR_WRAPPER_MAP[source.status]
+        for ascii_tree_prefix, source in self._status_topology.generate_ascii_representation():
+            color: ColorWrapperType = self.STATUS_TO_COLOR_WRAPPER_MAP[source.status]
             status_mark: str = self.STATUS_TO_MARK_SYMBOL_MAP[source.status]
             status_part: str = f"{status_mark} {source.status.value}"
-            yield f"{color(status_part)}: {Color.gray(tree_prefix)}{color(source.name)}"
+            yield f"{color(status_part)}: {Color.gray(ascii_tree_prefix)}{color(source.name)}"
 
     def on_runner_finish(self) -> None:
         """Show a text banner with the status info"""
@@ -171,7 +168,7 @@ class PrefixDisplay(PrologueDisplay):
 
     def on_runner_start(self, children: t.Iterable[NamedMessageSource]) -> None:
         super().on_runner_start(children)
-        self._action_names_max_len = max(self._action_names_max_len, *(len(action.name) for action in self._actions))
+        self._action_names_max_len = max(self._action_names_max_len, *map(len, self._status_topology))
 
     def _make_prologue(self, source: NamedMessageSource, mark: str) -> str:
         """Construct prefix based on previous emitter action name"""

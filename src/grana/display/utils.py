@@ -5,12 +5,12 @@ import itertools
 import typing as t
 
 __all__ = [
-    "AsciiTree",
-    "locate_insert_position_py_prefix",
+    "Tree",
+    "locate_parent_name_by_prefix",
 ]
 
 T = t.TypeVar("T")
-TopologyGeneratorType = t.Generator[t.Tuple[str, T], None, None]
+AsciiLinesGeneratorType = t.Generator[t.Tuple[str, T], None, None]
 
 
 @dataclasses.dataclass
@@ -21,8 +21,8 @@ class Node(t.Generic[T]):
     children: list
 
 
-class AsciiTree(t.Dict[str, Node[T]]):
-    """ASCII tree generic builder"""
+class Tree(t.Dict[str, Node[T]]):
+    """Generic tree builder"""
 
     def __init__(self):
         super().__init__()
@@ -38,13 +38,16 @@ class AsciiTree(t.Dict[str, Node[T]]):
         if parent_name is None:
             self.__root_nodes_list = nodes_list
         else:
-            self[parent_name].children = nodes_list
+            self[parent_name].children.extend(nodes_list)
 
-    def generate_tree(self) -> TopologyGeneratorType:
-        """Generate tree components"""
+    def generate_ascii_representation(self) -> AsciiLinesGeneratorType:
+        """Generate tree representation components. A component is a pair of:
+        - Prefix: a string containing aligned ASCII box drawing symbols, respective to the tree node graph
+        - Object: the content of the corresponding node
+        """
         yield from self._internal_tree_generate(nodes=self.__root_nodes_list, prefix=None)
 
-    def _internal_tree_generate(self, nodes: t.List[Node[T]], prefix: t.Optional[str]) -> TopologyGeneratorType:
+    def _internal_tree_generate(self, nodes: t.List[Node[T]], prefix: t.Optional[str]) -> AsciiLinesGeneratorType:
         last_node_num: int = len(nodes) - 1
         for num, node in enumerate(nodes):
             is_last_node: bool = num == last_node_num
@@ -62,20 +65,23 @@ class AsciiTree(t.Dict[str, Node[T]]):
                 )
 
 
-def _get_common_prefix(*strings: str) -> str:
+def get_common_prefix(*strings: str) -> str:
+    """Calculate the longest common prefix of a sequence of strings"""
     character_tuples: t.Iterable[t.Tuple[str, ...]] = zip(*strings)
     common_prefix_iterator = itertools.takewhile(lambda chars: all(chars[0] == c for c in chars), character_tuples)
     return "".join(common_chars[0] for common_chars in common_prefix_iterator)
 
 
-def locate_insert_position_py_prefix(source: t.Iterable[str], receiver: t.Iterable[str]) -> t.Tuple[int, int]:
-    """Define the proper position to insert data into the existing source"""
-    slice_position: int = -1
+def locate_parent_name_by_prefix(children: t.Iterable[str], candidates: t.Iterable[str]) -> str:
+    """Define the optimal parent among candidates for the children"""
     longest_match_length: int = -1
-    sources_common_prefix: str = _get_common_prefix(*source)
-    for receiver_position, receiver_item in enumerate(receiver):
-        match_length = len(_get_common_prefix(receiver_item, sources_common_prefix))
+    sources_common_prefix: str = get_common_prefix(*children)
+    optimal_item_name: str = ""
+    for candidate in candidates:
+        match_length = len(get_common_prefix(candidate, sources_common_prefix))
         if match_length > longest_match_length:
             longest_match_length = match_length
-            slice_position = receiver_position
-    return slice_position, longest_match_length
+            optimal_item_name = candidate
+        elif match_length == longest_match_length and len(optimal_item_name) > len(candidate):
+            optimal_item_name = candidate
+    return optimal_item_name
