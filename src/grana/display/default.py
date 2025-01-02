@@ -22,50 +22,59 @@ __all__ = [
 ]
 
 ColorWrapperType = t.Callable[[str], str]
-TopologyGeneratorType = t.Generator[t.Tuple[NamedMessageSource, str], None, None]
+NodeContentType = t.TypeVar("NodeContentType")
+TopologyGeneratorType = t.Generator[t.Tuple[NodeContentType, str], None, None]
 
 
 @dataclasses.dataclass
-class ActionNode:
-    """Subflow relations representation"""
+class Node(t.Generic[NodeContentType]):
+    """Topology relations representation"""
 
-    action: NamedMessageSource
+    content: NodeContentType
     children: list
 
 
-class StatusTopology:
+class AsciiTree(t.Generic[NodeContentType]):
 
     def __init__(self):
-        self._root_nodes_list: list[ActionNode] = []
-        self._nodes_map: dict[str, ActionNode] = {}
+        self._root_nodes_list: list[Node[NodeContentType]] = []
+        self._nodes_map: dict[str, Node[NodeContentType]] = {}
 
-    def put(self, sources: t.Iterable[NamedMessageSource], *, parent: t.Optional[str] = None) -> None:
-        nodes_list: t.List[ActionNode] = []
-        for source in sources:
-            node: ActionNode = ActionNode(action=source, children=[])
+    def put(
+        self,
+        *,
+        items: t.Iterable[NodeContentType],
+        names: t.Callable[[NodeContentType], str],
+        parent_name: t.Optional[str] = None,
+    ) -> None:
+        nodes_list: t.List[Node[NodeContentType]] = []
+        for item in items:
+            node: NodeContentType = Node(content=item, children=[])
             nodes_list.append(node)
-            name: str = source.origin.name if isinstance(source, RenamedMessageSource) else source.name
+            name: str = names(item)
             self._nodes_map[name] = node
-        if parent is None:
+        if parent_name is None:
             self._root_nodes_list = nodes_list
         else:
-            self._nodes_map[parent].children = nodes_list
+            self._nodes_map[parent_name].children = nodes_list
 
     def generate_status_tree_components(self) -> TopologyGeneratorType:
         yield from self._internal_tree_generate(nodes=self._root_nodes_list, prefix=None)
 
-    def _internal_tree_generate(self, nodes: t.List[ActionNode], prefix: t.Optional[str]) -> TopologyGeneratorType:
+    def _internal_tree_generate(
+        self, nodes: t.List[Node[NodeContentType]], prefix: t.Optional[str]
+    ) -> TopologyGeneratorType:
         last_node_num: int = len(nodes) - 1
         for num, node in enumerate(nodes):
             is_last_node: bool = num == last_node_num
             if prefix is None:
-                yield node.action, ""
+                yield node.content, ""
                 yield from self._internal_tree_generate(
                     nodes=node.children,
                     prefix="",
                 )
             else:
-                yield node.action, prefix + ("└──" if is_last_node else "├──")
+                yield node.content, prefix + ("└──" if is_last_node else "├──")
                 yield from self._internal_tree_generate(
                     nodes=node.children,
                     prefix=prefix + ("   " if is_last_node else "│  "),
@@ -115,7 +124,7 @@ class PrologueDisplay(BaseDisplay):
         super().__init__()
         self._actions: t.List[NamedMessageSource] = []
         self._last_displayed_name: t.Optional[str] = None
-        self._status_topology: StatusTopology = StatusTopology()
+        self._status_topology: AsciiTree[NamedMessageSource] = AsciiTree()
 
     def _make_prologue(self, source: NamedMessageSource, mark: str) -> str:
         raise NotImplementedError
@@ -123,7 +132,10 @@ class PrologueDisplay(BaseDisplay):
     def on_runner_start(self, children: t.Iterable[NamedMessageSource]) -> None:
         if not self._actions:
             self._actions.extend(children)
-            self._status_topology.put(self._actions)
+            self._status_topology.put(
+                items=self._actions,
+                names=lambda source: source.name,
+            )
             return
         children_list: t.List[NamedMessageSource] = list(children)
         receiver_position, longest_match_length = locate_insert_position_py_prefix(
@@ -138,7 +150,11 @@ class PrologueDisplay(BaseDisplay):
             )
             for action in children_list
         ]
-        self._status_topology.put(renamed_children, parent=corr_action_name)
+        self._status_topology.put(
+            items=renamed_children,
+            names=lambda source: source.origin.name,
+            parent_name=corr_action_name,
+        )
         self._actions[receiver_position + 1 : receiver_position + 1] = children_list
 
     def on_action_message(self, source: NamedMessageSource, message: str) -> None:
