@@ -8,7 +8,7 @@ import inquirer  # type: ignore
 
 from .base import BaseDisplay
 from .color import Color
-from .utils import locate_insert_position_py_prefix
+from .utils import locate_insert_position_py_prefix, AsciiTree
 from ..actions.types import Stderr, NamedMessageSource, ActionStatus
 from ..exceptions import InteractionError
 from ..workflow import Workflow
@@ -22,63 +22,6 @@ __all__ = [
 ]
 
 ColorWrapperType = t.Callable[[str], str]
-NodeContentType = t.TypeVar("NodeContentType")
-TopologyGeneratorType = t.Generator[t.Tuple[NodeContentType, str], None, None]
-
-
-@dataclasses.dataclass
-class Node(t.Generic[NodeContentType]):
-    """Topology relations representation"""
-
-    content: NodeContentType
-    children: list
-
-
-class AsciiTree(t.Generic[NodeContentType]):
-
-    def __init__(self):
-        self._root_nodes_list: list[Node[NodeContentType]] = []
-        self._nodes_map: dict[str, Node[NodeContentType]] = {}
-
-    def put(
-        self,
-        *,
-        items: t.Iterable[NodeContentType],
-        names: t.Callable[[NodeContentType], str],
-        parent_name: t.Optional[str] = None,
-    ) -> None:
-        nodes_list: t.List[Node[NodeContentType]] = []
-        for item in items:
-            node: NodeContentType = Node(content=item, children=[])
-            nodes_list.append(node)
-            name: str = names(item)
-            self._nodes_map[name] = node
-        if parent_name is None:
-            self._root_nodes_list = nodes_list
-        else:
-            self._nodes_map[parent_name].children = nodes_list
-
-    def generate_status_tree_components(self) -> TopologyGeneratorType:
-        yield from self._internal_tree_generate(nodes=self._root_nodes_list, prefix=None)
-
-    def _internal_tree_generate(
-        self, nodes: t.List[Node[NodeContentType]], prefix: t.Optional[str]
-    ) -> TopologyGeneratorType:
-        last_node_num: int = len(nodes) - 1
-        for num, node in enumerate(nodes):
-            is_last_node: bool = num == last_node_num
-            if prefix is None:
-                yield node.content, ""
-                yield from self._internal_tree_generate(
-                    nodes=node.children,
-                    prefix="",
-                )
-            else:
-                yield node.content, prefix + ("└──" if is_last_node else "├──")
-                yield from self._internal_tree_generate(
-                    nodes=node.children,
-                    prefix=prefix + ("   " if is_last_node else "│  "),
-                )
 
 
 @dataclasses.dataclass
@@ -152,7 +95,7 @@ class PrologueDisplay(BaseDisplay):
         ]
         self._status_topology.put(
             items=renamed_children,
-            names=lambda source: source.origin.name,
+            names=lambda source: source.origin.name,  # type: ignore
             parent_name=corr_action_name,
         )
         self._actions[receiver_position + 1 : receiver_position + 1] = children_list
