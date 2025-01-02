@@ -21,12 +21,12 @@ class Node(t.Generic[T]):
     children: list
 
 
-class AsciiTree(t.Generic[T]):
+class AsciiTree(t.Dict[str, Node[T]]):
     """ASCII tree generic builder"""
 
     def __init__(self):
-        self._root_nodes_list: list[Node[T]] = []
-        self._nodes_map: dict[str, Node[T]] = {}
+        super().__init__()
+        self.__root_nodes_list: list[Node[T]] = []
 
     def put(self, items: t.Iterable[t.Tuple[str, T]], *, parent_name: t.Optional[str] = None) -> None:
         """Put items into the topology"""
@@ -34,15 +34,15 @@ class AsciiTree(t.Generic[T]):
         for name, item in items:
             node: Node[T] = Node(content=item, children=[])
             nodes_list.append(node)
-            self._nodes_map[name] = node
+            self[name] = node
         if parent_name is None:
-            self._root_nodes_list = nodes_list
+            self.__root_nodes_list = nodes_list
         else:
-            self._nodes_map[parent_name].children = nodes_list
+            self[parent_name].children = nodes_list
 
     def generate_tree(self) -> TopologyGeneratorType:
         """Generate tree components"""
-        yield from self._internal_tree_generate(nodes=self._root_nodes_list, prefix=None)
+        yield from self._internal_tree_generate(nodes=self.__root_nodes_list, prefix=None)
 
     def _internal_tree_generate(self, nodes: t.List[Node[T]], prefix: t.Optional[str]) -> TopologyGeneratorType:
         last_node_num: int = len(nodes) - 1
