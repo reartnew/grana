@@ -717,6 +717,7 @@ def test_different_shells_globally(run_text: RunFactoryType, monkeypatch: pytest
 
 def test_simple_subflow(
     display_collector: t.List[str],
+    actions_definitions_directory: None,
     tmp_path: Path,
 ) -> None:
     """Try subflow"""
@@ -755,8 +756,8 @@ actions:
     type: echo
     message: "@{ ctx.vars.bar } @{ ctx.to_replace }"
   - name: SubBaz
-    type: shell
-    command: bad-command
+    type: fail
+    message: bad-command
 """,
         encoding="utf-8",
     )
@@ -766,8 +767,7 @@ actions:
         "[Foo]          | Foo",
         "[CallSubflow/SubFoo]  | Foo",
         "[CallSubflow/SubBar]  | Bar Qux",
-        "[CallSubflow/SubBaz] *| /bin/sh: line 24: bad-command: command not found",
-        "                     !| Exit code: 127",
+        "[CallSubflow/SubBaz] !| bad-command",
         "✓ SUCCESS: Foo",
         "✗ FAILURE: CallSubflow",
         "✓ SUCCESS: ├──SubFoo",
