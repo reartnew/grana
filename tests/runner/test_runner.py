@@ -10,7 +10,6 @@ import typing as t
 from pathlib import Path
 
 import pytest
-from py.path import LocalPath  # type: ignore  # pylint: disable=import-error
 
 import grana
 from grana import exceptions
@@ -717,12 +716,29 @@ def test_different_shells_globally(run_text: RunFactoryType, monkeypatch: pytest
 
 
 def test_simple_subflow(
-    run_text: RunFactoryType,
     display_collector: t.List[str],
-    tmpdir: LocalPath,
+    tmp_path: Path,
 ) -> None:
-    """pass"""
-    subflow_file: LocalPath = tmpdir / "subflow.yaml"
+    """Try subflow"""
+    flow_file: Path = tmp_path / "flow.yaml"
+    subflow_file: Path = tmp_path / "subflow.yaml"
+    flow_file.write_text(
+        """---
+actions:
+  - name: Foo
+    type: shell
+    command: echo Foo
+  - name: CallSubflow
+    type: subflow
+    expects: Foo
+    path: "@{ meta.here }/subflow.yaml" 
+    context:
+        vars:
+            bar: Bar
+        to_replace: Qux
+""",
+        encoding="utf-8",
+    )
     subflow_file.write_text(
         """---
 configuration:
@@ -744,24 +760,8 @@ actions:
 """,
         encoding="utf-8",
     )
-    with pytest.raises(Exception):
-        run_text(
-            f"""
-        ---
-        actions:
-          - name: Foo
-            type: shell
-            command: echo Foo
-          - name: CallSubflow
-            type: subflow
-            expects: Foo
-            path: {subflow_file}
-            context:
-                vars:
-                    bar: Bar
-                to_replace: Qux
-        """
-        )
+    with pytest.raises(exceptions.ExecutionFailed):
+        grana.Runner(source=flow_file).run_sync()
     assert display_collector == [
         "[Foo]          | Foo",
         "[CallSubflow/SubFoo]  | Foo",
