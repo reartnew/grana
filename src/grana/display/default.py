@@ -1,5 +1,6 @@
 """Runner output processor default"""
 
+import dataclasses
 import sys
 import typing as t
 
@@ -7,6 +8,7 @@ import inquirer  # type: ignore
 
 from .base import BaseDisplay
 from .color import Color
+from .utils import Tree, locate_parent_name_by_prefix
 from ..actions.types import Stderr, NamedMessageSource, ActionStatus
 from ..exceptions import InteractionError
 from ..workflow import Workflow
@@ -20,6 +22,19 @@ __all__ = [
 ]
 
 ColorWrapperType = t.Callable[[str], str]
+
+
+@dataclasses.dataclass
+class RenamedMessageSource:
+    """Renamed message source"""
+
+    origin: NamedMessageSource
+    name: str
+
+    @property
+    def status(self) -> ActionStatus:
+        """Proxy to the origin status"""
+        return self.origin.status
 
 
 class PrologueDisplay(BaseDisplay):
@@ -47,15 +62,29 @@ class PrologueDisplay(BaseDisplay):
 
     def __init__(self) -> None:
         super().__init__()
-        self._actions: t.List[NamedMessageSource] = []
+        self._status_topology: Tree[NamedMessageSource] = Tree()
         self._last_displayed_name: t.Optional[str] = None
 
     def _make_prologue(self, source: NamedMessageSource, mark: str) -> str:
         raise NotImplementedError
 
     def on_runner_start(self, children: t.Iterable[NamedMessageSource]) -> None:
-        super().on_runner_start(children)
-        self._actions.extend(children)
+        if not self._status_topology:
+            self._status_topology.put((action.name, action) for action in children)
+            return
+        children_list: t.List[NamedMessageSource] = list(children)
+        corresponding_action_name = locate_parent_name_by_prefix(
+            children=(action.name for action in children_list),
+            candidates=self._status_topology,
+        )
+        longest_match_length = len(corresponding_action_name)
+        self._status_topology.put(
+            (
+                (action.name, RenamedMessageSource(origin=action, name=action.name[longest_match_length + 1 :]))
+                for action in children_list
+            ),
+            parent_name=corresponding_action_name,
+        )
 
     def on_action_message(self, source: NamedMessageSource, message: str) -> None:
         is_stderr: bool = isinstance(message, Stderr)
@@ -72,19 +101,16 @@ class PrologueDisplay(BaseDisplay):
             )
 
     def _generate_status_banner_lines(self) -> t.Generator[str, None, None]:
-        for action in self._actions:
-            status_mark: str = self.STATUS_TO_MARK_SYMBOL_MAP[action.status]
-            color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
-            status_prefix: str = f"{status_mark} {action.status.value}"
-            yield f"{color_wrapper(status_prefix)}: {color_wrapper(action.name)}"
+        for ascii_tree_prefix, source in self._status_topology.generate_ascii_representation():
+            color: ColorWrapperType = self.STATUS_TO_COLOR_WRAPPER_MAP[source.status]
+            status_mark: str = self.STATUS_TO_MARK_SYMBOL_MAP[source.status]
+            status_part: str = f"{status_mark} {source.status.value}"
+            yield f"{color(status_part)}: {Color.gray(ascii_tree_prefix)}{color(source.name)}"
 
-    def _display_status_banner(self) -> None:
+    def on_runner_finish(self) -> None:
         """Show a text banner with the status info"""
         for line in self._generate_status_banner_lines():
             self.display(line)
-
-    def on_runner_finish(self) -> None:
-        self._display_status_banner()
 
     def on_plan_interaction(self, workflow: Workflow) -> None:
         displayed_action_names_with_descriptions: t.List[str] = []
@@ -142,7 +168,7 @@ class PrefixDisplay(PrologueDisplay):
 
     def on_runner_start(self, children: t.Iterable[NamedMessageSource]) -> None:
         super().on_runner_start(children)
-        self._action_names_max_len = max(self._action_names_max_len, *(len(action.name) for action in self._actions))
+        self._action_names_max_len = max(self._action_names_max_len, *map(len, self._status_topology))
 
     def _make_prologue(self, source: NamedMessageSource, mark: str) -> str:
         """Construct prefix based on previous emitter action name"""

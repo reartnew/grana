@@ -10,7 +10,6 @@ from .constants import MAX_RECURSION_DEPTH
 from .containers import LazyProxy
 from .tokenizing import TemplarStringLexer
 from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
-from ..config.constants import C
 from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
 
 __all__ = [
@@ -28,26 +27,27 @@ class Templar(LoggerMixin):
         outcomes_map: t.Mapping[str, t.Mapping[str, str]],
         action_states: t.Mapping[str, str],
         context_map: t.Mapping[str, t.Any],
+        metadata: t.Optional[t.Mapping[str, t.Any]] = None,
     ) -> None:
-        outcomes_leaf_class: t.Type[dict] = (
-            c.StrictOutcomeDict if C.STRICT_OUTCOMES_RENDERING else c.LooseDict  # type: ignore
-        )
         outcomes_container: c.AttrDict = c.ActionContainingDict(
-            {name: outcomes_leaf_class(outcomes_map.get(name, {})) for name in action_states}
+            {name: c.OutcomeDict(outcomes_map.get(name, {})) for name in action_states}
         )
         status_container: c.AttrDict = c.ActionContainingDict(action_states)
         context_container: c.AttrDict = c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
         environment_container: c.AttrDict = c.LooseDict(os.environ)
+        metadata_container: c.AttrDict = c.LooseDict(metadata or {})
         self._locals: t.Dict[str, c.AttrDict] = {
             # Full names
             "outcomes": outcomes_container,
             "status": status_container,
             "context": context_container,
             "environment": environment_container,
+            "metadata": metadata_container,
             # Aliases
             "out": outcomes_container,
             "ctx": context_container,
             "env": environment_container,
+            "meta": metadata_container,
         }
         self._globals: t.Dict[str, t.Any] = {
             f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS

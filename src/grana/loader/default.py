@@ -13,6 +13,7 @@ from ..actions.base import ActionBase
 from ..actions.bundled import (
     EchoAction,
     ShellAction,
+    SubflowAction,
     DockerShellAction,
 )
 from ..actions.types import ObjectTemplate, Import
@@ -53,6 +54,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
         for name, klass in (
             ("echo", EchoAction),
             ("shell", ShellAction),
+            ("subflow", SubflowAction),
             ("docker-shell", DockerShellAction),
         )
         if klass is not None

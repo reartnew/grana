@@ -4,12 +4,13 @@ import typing as t
 
 import lazy_object_proxy  # type: ignore
 
+from ..config.constants import C
 from ..exceptions import ActionRenderError
 
 __all__ = [
     "AttrDict",
     "LooseDict",
-    "StrictOutcomeDict",
+    "OutcomeDict",
     "ActionContainingDict",
     "ContextDict",
     "LazyProxy",
@@ -39,14 +40,16 @@ class LooseDict(AttrDict):
             return ""
 
 
-class StrictOutcomeDict(AttrDict):
+class OutcomeDict(AttrDict):
     """A dictionary that allows attribute read access to its keys with a default value fallback"""
 
     def __getitem__(self, item: str):
         try:
             return super().__getitem__(item)
         except KeyError as e:
-            raise ActionRenderError(f"Outcome key {e} not found") from e
+            if C.STRICT_OUTCOMES_RENDERING:
+                raise ActionRenderError(f"Outcome key {e} not found") from e
+            return ""
 
 
 class ActionContainingDict(AttrDict):

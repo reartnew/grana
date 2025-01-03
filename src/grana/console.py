@@ -10,14 +10,15 @@ import classlogging
 import click
 from dotenv.main import DotEnv
 
-import grana
-from grana.config.constants import C, LOG_LEVELS
-from grana.config.constants.cli import cliargs_receiver
-from grana.config.environment import Env
-from grana.display.default import KNOWN_DISPLAYS
-from grana.exceptions import BaseError, ExecutionFailed
-from grana.strategy import KNOWN_STRATEGIES
-from grana.tools.proxy import DeferredCallsProxy
+from .config.constants import C, LOG_LEVELS
+from .config.constants.cli import cliargs_receiver
+from .config.environment import Env
+from .display.default import KNOWN_DISPLAYS
+from .exceptions import BaseError, ExecutionFailed
+from .runner import Runner
+from .strategy import KNOWN_STRATEGIES
+from .tools.proxy import DeferredCallsProxy
+from .version import __version__
 
 logger = DeferredCallsProxy(obj=classlogging.get_module_logger())
 
@@ -138,14 +139,14 @@ def wrap_cli_command(func):
 @click.argument("workflow", cls=_WorkflowPositionalArgument)
 def run() -> None:
     """Run pipeline immediately."""
-    grana.Runner().run_sync()
+    Runner().run_sync()
 
 
 @wrap_cli_command
 @click.argument("workflow", cls=_WorkflowPositionalArgument)
 def validate() -> None:
     """Check workflow validity."""
-    action_num: int = len(grana.Runner().workflow)
+    action_num: int = len(Runner().workflow)
     logger.info(f"Located actions number: {action_num}")
 
 
@@ -157,7 +158,7 @@ def info() -> None:
 @info.command
 def version() -> None:
     """Show package version."""
-    print(grana.__version__)
+    print(__version__)
 
 
 @info.command

@@ -713,3 +713,74 @@ def test_different_shells_globally(run_text: RunFactoryType, monkeypatch: pytest
             command: echo $0
         """
     )
+
+
+def test_simple_subflow(
+    display_collector: t.List[str],
+    actions_definitions_directory: None,
+    tmp_path: Path,
+) -> None:
+    """Try subflow"""
+    flow_file: Path = tmp_path / "flow.yaml"
+    subflow_file: Path = tmp_path / "subflow.yaml"
+    flow_file.write_text(
+        """---
+actions:
+  - name: Foo
+    type: shell
+    command: echo Foo
+  - name: CallSubflow
+    type: subflow
+    expects: Foo
+    path: "@{ meta.here }/subflow.yaml" 
+    context:
+        vars:
+            bar: Bar
+        to_replace: Qux
+  - name: Bar
+    type: echo
+    expects: CallSubflow
+    message: "@{ out.CallSubflow.SubBaz.deep_key }"
+""",
+        encoding="utf-8",
+    )
+    subflow_file.write_text(
+        """---
+configuration:
+  strategy: strict-sequential
+context:
+    vars:
+        foo: Foo
+    to_replace: []
+actions:
+  - name: SubFoo
+    type: echo
+    message: !@ ctx.vars.foo
+  - name: SubBar
+    type: echo
+    message: "@{ ctx.vars.bar } @{ ctx.to_replace }"
+  - name: SubBaz
+    type: shell
+    command: yield_outcome deep_key Bar
+  - name: SubQux
+    type: fail
+    message: bad-command
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(exceptions.ExecutionFailed):
+        grana.Runner(source=flow_file).run_sync()
+    assert display_collector == [
+        "[Foo]          | Foo",
+        "[CallSubflow/SubFoo]  | Foo",
+        "[CallSubflow/SubBar]  | Bar Qux",
+        "[CallSubflow/SubQux] !| bad-command",
+        "[Bar]                 | Bar",
+        "✓ SUCCESS: Foo",
+        "✗ FAILURE: CallSubflow",
+        "✓ SUCCESS: ├──SubFoo",
+        "✓ SUCCESS: ├──SubBar",
+        "✓ SUCCESS: ├──SubBaz",
+        "✗ FAILURE: └──SubQux",
+        "✓ SUCCESS: Bar",
+    ]
