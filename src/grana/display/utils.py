@@ -26,7 +26,7 @@ class Tree(t.Dict[str, Node[T]]):
 
     def __init__(self):
         super().__init__()
-        self.__root_nodes_list: list[Node[T]] = []
+        self.__root_nodes_list: t.List[Node[T]] = []
 
     def put(self, items: t.Iterable[t.Tuple[str, T]], *, parent_name: t.Optional[str] = None) -> None:
         """Put items into the topology"""
