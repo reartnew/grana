@@ -239,6 +239,7 @@ class Runner(classlogging.LoggerMixin):
             outcomes_map=self._outcomes,
             action_states={name: self.workflow[name].status.value for name in self.workflow},
             context_map=self.workflow.context,
+            metadata=self.workflow.get_metadata(),
         )
 
         rendered_args_dict: dict = templar.recursive_render(self.loader.get_original_args_dict_for_action(action))

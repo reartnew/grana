@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import collections
+import pathlib
 import typing as t
 
 from classlogging import LoggerMixin
@@ -22,8 +23,10 @@ class Workflow(t.Dict[str, ActionBase], LoggerMixin):
         self,
         actions_map: t.Dict[str, ActionBase],
         context: t.Optional[t.Dict[str, t.Any]] = None,
+        source_file: t.Optional[pathlib.Path] = None,
     ) -> None:
         super().__init__(actions_map)
+        self.source_file: t.Optional[pathlib.Path] = source_file
         self._entrypoints: t.Set[str] = set()
         self._tiers_sequence: t.List[t.List[ActionBase]] = []
         self._descendants_map: t.Dict[str, t.Dict[str, ActionDependency]] = collections.defaultdict(dict)
@@ -32,6 +35,15 @@ class Workflow(t.Dict[str, ActionBase], LoggerMixin):
         self._establish_descendants()
         # Create order map to check all actions are reachable
         self._allocate_tiers()
+
+    def get_metadata(self) -> t.Dict[str, t.Any]:
+        """Obtain workflow metadata for further use in templating"""
+        if self.source_file is None:
+            return {}
+        return {
+            "source_file": self.source_file,
+            "here": self.source_file.parent,
+        }
 
     def _establish_descendants(self) -> None:
         missing_non_external_deps: t.Set[str] = set()

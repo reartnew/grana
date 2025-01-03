@@ -121,7 +121,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
     def load(self, source_file: t.Union[str, Path]) -> Workflow:
         """Load workflow from file"""
         self._internal_load(source_file=source_file)
-        return Workflow(self._actions, context=self._gathered_context)
+        return Workflow(self._actions, context=self._gathered_context, source_file=Path(source_file))
 
     def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> t.Tuple[str, ActionDependency]:
         """Unified method to process transform dependency source data"""
