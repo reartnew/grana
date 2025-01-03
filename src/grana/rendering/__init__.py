@@ -10,7 +10,6 @@ from .constants import MAX_RECURSION_DEPTH
 from .containers import LazyProxy
 from .tokenizing import TemplarStringLexer
 from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
-from ..config.constants import C
 from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
 
 __all__ = [
@@ -30,11 +29,8 @@ class Templar(LoggerMixin):
         context_map: t.Mapping[str, t.Any],
         metadata: t.Optional[t.Mapping[str, t.Any]] = None,
     ) -> None:
-        outcomes_leaf_class: t.Type[dict] = (
-            c.StrictOutcomeDict if C.STRICT_OUTCOMES_RENDERING else c.LooseDict  # type: ignore
-        )
         outcomes_container: c.AttrDict = c.ActionContainingDict(
-            {name: outcomes_leaf_class(outcomes_map.get(name, {})) for name in action_states}
+            {name: c.OutcomeDict(outcomes_map.get(name, {})) for name in action_states}
         )
         status_container: c.AttrDict = c.ActionContainingDict(action_states)
         context_container: c.AttrDict = c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})

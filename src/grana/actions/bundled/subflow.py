@@ -103,8 +103,7 @@ class SubflowAction(ActionBase):
                     return await super().run_async()
                 finally:
                     for sub_action_name, sub_action_outcomes in self._outcomes.items():
-                        outcome_wrapper_type: t.Type[AttrDict] = get_outcome_container_type()
-                        action.yield_outcome(sub_action_name, outcome_wrapper_type(sub_action_outcomes))
+                        action.yield_outcome(sub_action_name, OutcomeDict(sub_action_outcomes))
 
         runner = SubflowRunner(source=self.args.path)
         try:
