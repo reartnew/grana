@@ -1,5 +1,6 @@
 """Types collection"""
 
+import abc
 import dataclasses
 import enum
 import typing as t
@@ -9,6 +10,7 @@ OutcomeStorageType = t.Dict[str, str]
 __all__ = [
     "OutcomeStorageType",
     "NamedMessageSource",
+    "RenamedMessageSource",
     "Stderr",
     "Import",
     "ObjectTemplate",
@@ -38,12 +40,37 @@ class NamedMessageSource(t.Protocol):
     """Anything that can be a message source (e.g. an action instance)"""
 
     @property
+    @abc.abstractmethod
     def name(self) -> str:
         """Source name"""
 
     @property
+    @abc.abstractmethod
     def status(self) -> ActionStatus:
         """Source status"""
+
+    @property
+    @abc.abstractmethod
+    def description(self) -> t.Optional[str]:
+        """Source info"""
+
+
+class RenamedMessageSource:
+    """Renamed message source"""
+
+    def __init__(self, name: str, origin: NamedMessageSource) -> None:
+        self.name: str = name
+        self._origin: NamedMessageSource = origin
+
+    @property
+    def status(self) -> ActionStatus:
+        """Proxy to the origin status"""
+        return self._origin.status
+
+    @property
+    def description(self) -> t.Optional[str]:
+        """Proxy to the origin description"""
+        return self._origin.description  # pragma: no cover
 
 
 class Stderr(str):

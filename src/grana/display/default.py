@@ -1,6 +1,5 @@
 """Runner output processor default"""
 
-import dataclasses
 import sys
 import typing as t
 
@@ -9,7 +8,12 @@ import inquirer  # type: ignore
 from .base import BaseDisplay
 from .color import Color
 from .utils import Tree, locate_parent_name_by_prefix
-from ..actions.types import Stderr, NamedMessageSource, ActionStatus
+from ..actions.types import (
+    Stderr,
+    NamedMessageSource,
+    RenamedMessageSource,
+    ActionStatus,
+)
 from ..exceptions import InteractionError
 from ..workflow import Workflow
 
@@ -22,19 +26,6 @@ __all__ = [
 ]
 
 ColorWrapperType = t.Callable[[str], str]
-
-
-@dataclasses.dataclass
-class RenamedMessageSource:
-    """Renamed message source"""
-
-    origin: NamedMessageSource
-    name: str
-
-    @property
-    def status(self) -> ActionStatus:
-        """Proxy to the origin status"""
-        return self.origin.status
 
 
 class PrologueDisplay(BaseDisplay):

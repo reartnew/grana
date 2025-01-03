@@ -7,7 +7,10 @@ from dataclasses import field
 from pathlib import Path
 
 from ..base import ArgsBase, ActionBase
-from ..types import NamedMessageSource, ActionStatus
+from ..types import (
+    NamedMessageSource,
+    RenamedMessageSource,
+)
 from ...display.types import DisplayEvent, DisplayEventName
 from ...exceptions import ExecutionFailed
 from ...rendering.containers import OutcomeDict
@@ -23,24 +26,7 @@ class SubflowArgs(ArgsBase):
     """Arguments applied to the subflow action."""
 
     path: Path
-    context: ContextType = field(default_factory=dict)  # pylint: disable=invalid-field-call
-
-
-class CompositeSource:
-    """Event source built from multiple sources"""
-
-    def __init__(self, *sources: NamedMessageSource) -> None:
-        self._sources: t.Tuple[NamedMessageSource, ...] = sources
-
-    @functools.cached_property
-    def name(self) -> str:
-        """Join component names"""
-        return "/".join(source.name for source in self._sources)
-
-    @property
-    def status(self) -> ActionStatus:
-        """Composite source status is the status of the first origin"""
-        return self._sources[-1].status
+    context: t.Dict[str, t.Any] = field(default_factory=dict)  # pylint: disable=invalid-field-call
 
 
 class SubflowAction(ActionBase):
@@ -54,8 +40,8 @@ class SubflowAction(ActionBase):
         action: SubflowAction = self
 
         @functools.lru_cache()
-        def _compose_source(origin: NamedMessageSource) -> CompositeSource:
-            return CompositeSource(self, origin)
+        def _compose_source(origin: NamedMessageSource) -> NamedMessageSource:
+            return RenamedMessageSource(name=f"{self.name}/{origin.name}", origin=origin)
 
         def _resend_event_via_action(event: DisplayEvent) -> None:
             if event.name == DisplayEventName.ON_RUNNER_FINISH:
