@@ -6,9 +6,10 @@ from collections.abc import Mapping, MutableMapping
 from dataclasses import field
 from pathlib import Path
 
-from grana import ArgsBase, ActionBase, exceptions
+from grana.actions.base import ArgsBase, ActionBase
 from grana.actions.types import NamedMessageSource, ActionStatus
 from grana.display.types import DisplayEvent, DisplayEventName
+from grana.exceptions import ExecutionFailed
 
 __all__ = [
     "SubflowAction",
@@ -45,7 +46,7 @@ class SubflowAction(ActionBase):
     args: SubflowArgs
 
     async def run(self) -> None:
-        from grana.runner import Runner  # pylint: disable=import-outside-toplevel
+        from grana.runner import Runner  # pylint: disable=import-outside-toplevel,cyclic-import
 
         @functools.lru_cache()
         def _compose_source(origin: NamedMessageSource) -> CompositeSource:
@@ -93,5 +94,5 @@ class SubflowAction(ActionBase):
         runner.update_context(self.args.context)
         try:
             await runner.run_async()
-        except exceptions.ExecutionFailed:
+        except ExecutionFailed:
             self.fail()
