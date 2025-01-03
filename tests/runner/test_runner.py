@@ -727,11 +727,18 @@ def test_simple_subflow(
         """---
 configuration:
   strategy: strict-sequential
+context:
+    vars:
+        foo: Foo
+    to_replace: []
 actions:
   - name: SubFoo
     type: echo
-    message: Foo
+    message: !@ ctx.vars.foo
   - name: SubBar
+    type: echo
+    message: "@{ ctx.vars.bar } @{ ctx.to_replace }"
+  - name: SubBaz
     type: shell
     command: bad-command
 """,
@@ -749,15 +756,21 @@ actions:
             type: subflow
             expects: Foo
             path: {subflow_file}
+            context:
+                vars:
+                    bar: Bar
+                to_replace: Qux
         """
         )
     assert display_collector == [
         "[Foo]          | Foo",
         "[CallSubflow/SubFoo]  | Foo",
-        "[CallSubflow/SubBar] *| /bin/sh: line 24: bad-command: command not found",
+        "[CallSubflow/SubBar]  | Bar Qux",
+        "[CallSubflow/SubBaz] *| /bin/sh: line 24: bad-command: command not found",
         "                     !| Exit code: 127",
         "✓ SUCCESS: Foo",
         "✗ FAILURE: CallSubflow",
         "✓ SUCCESS: ├──SubFoo",
-        "✗ FAILURE: └──SubBar",
+        "✓ SUCCESS: ├──SubBar",
+        "✗ FAILURE: └──SubBaz",
     ]
