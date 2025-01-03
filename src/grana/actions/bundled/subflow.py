@@ -6,11 +6,11 @@ from collections.abc import Mapping, MutableMapping
 from dataclasses import field
 from pathlib import Path
 
-from grana.actions.base import ArgsBase, ActionBase
-from grana.actions.types import NamedMessageSource, ActionStatus
-from grana.display.types import DisplayEvent, DisplayEventName
-from grana.exceptions import ExecutionFailed
-from grana.rendering.containers import get_outcome_container_type, AttrDict
+from ..base import ArgsBase, ActionBase
+from ..types import NamedMessageSource, ActionStatus
+from ...display.types import DisplayEvent, DisplayEventName
+from ...exceptions import ExecutionFailed
+from ...rendering.containers import OutcomeDict
 
 __all__ = [
     "SubflowAction",
@@ -49,7 +49,7 @@ class SubflowAction(ActionBase):
     args: SubflowArgs
 
     async def run(self) -> None:
-        from grana.runner import Runner  # pylint: disable=import-outside-toplevel,cyclic-import
+        from ...runner import Runner  # pylint: disable=import-outside-toplevel,cyclic-import
 
         action: SubflowAction = self
 
