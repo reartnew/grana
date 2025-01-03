@@ -36,7 +36,7 @@ class Tree(t.Dict[str, Node[T]]):
             nodes_list.append(node)
             self[name] = node
         if parent_name is None:
-            self.__root_nodes_list = nodes_list
+            self.__root_nodes_list.extend(nodes_list)
         else:
             self[parent_name].children.extend(nodes_list)
 
