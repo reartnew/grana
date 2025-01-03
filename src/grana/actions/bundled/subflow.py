@@ -10,17 +10,20 @@ from grana.actions.base import ArgsBase, ActionBase
 from grana.actions.types import NamedMessageSource, ActionStatus
 from grana.display.types import DisplayEvent, DisplayEventName
 from grana.exceptions import ExecutionFailed
+from grana.rendering.containers import get_outcome_container_type, AttrDict
 
 __all__ = [
     "SubflowAction",
 ]
+
+ContextType = t.Dict[str, t.Any]
 
 
 class SubflowArgs(ArgsBase):
     """Arguments applied to the subflow action."""
 
     path: Path
-    context: t.Dict[str, t.Any] = field(default_factory=dict)  # pylint: disable=invalid-field-call
+    context: ContextType = field(default_factory=dict)  # pylint: disable=invalid-field-call
 
 
 class CompositeSource:
@@ -48,13 +51,16 @@ class SubflowAction(ActionBase):
     async def run(self) -> None:
         from grana.runner import Runner  # pylint: disable=import-outside-toplevel,cyclic-import
 
+        action: SubflowAction = self
+
         @functools.lru_cache()
         def _compose_source(origin: NamedMessageSource) -> CompositeSource:
             return CompositeSource(self, origin)
 
         def _resend_event_via_action(event: DisplayEvent) -> None:
             if event.name == DisplayEventName.ON_RUNNER_FINISH:
-                # Unlock the execution and continue
+                # This event shall not pass to the parent runner since it triggers final status output.
+                # Unlock the execution and continue.
                 event.future.set_result(None)
                 return
             if event.name == DisplayEventName.ON_RUNNER_START:
@@ -72,7 +78,8 @@ class SubflowAction(ActionBase):
                     _resend_event_via_action(event)
 
             @classmethod
-            def _deep_update(cls, receiver: t.Dict[str, t.Any], source: Mapping, path: str) -> t.Dict[str, t.Any]:
+            def _deep_update_context(cls, receiver: ContextType, source: Mapping, path: str) -> ContextType:
+                """Apply changes to the context"""
                 for source_key, source_value in source.items():
                     sub_path: str = f"{path}.{source_key}" if path else source_key
                     if source_key not in receiver:
@@ -80,18 +87,26 @@ class SubflowAction(ActionBase):
                         receiver[source_key] = source_value
                     elif isinstance(source_value, Mapping) and isinstance(receiver[source_key], MutableMapping):
                         cls.logger.trace(f"Merging context: {sub_path}")
-                        receiver[source_key] = cls._deep_update(receiver[source_key], source_value, sub_path)
+                        receiver[source_key] = cls._deep_update_context(receiver[source_key], source_value, sub_path)
                     else:
                         cls.logger.debug(f"Rewriting context: {sub_path}")
                         receiver[source_key] = source_value
                 return receiver
 
-            def update_context(self, source: Mapping) -> None:
-                """Apply changes to the context"""
-                self.workflow.context = self._deep_update(receiver=self.workflow.context, source=source, path="")
+            async def run_async(self) -> None:
+                self.workflow.context = self._deep_update_context(
+                    receiver=self.workflow.context,
+                    source=action.args.context,
+                    path="",
+                )
+                try:
+                    return await super().run_async()
+                finally:
+                    for sub_action_name, sub_action_outcomes in self._outcomes.items():
+                        outcome_wrapper_type: t.Type[AttrDict] = get_outcome_container_type()
+                        action.yield_outcome(sub_action_name, outcome_wrapper_type(sub_action_outcomes))
 
         runner = SubflowRunner(source=self.args.path)
-        runner.update_context(self.args.context)
         try:
             await runner.run_async()
         except ExecutionFailed:

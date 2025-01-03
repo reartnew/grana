@@ -4,6 +4,7 @@ import typing as t
 
 import lazy_object_proxy  # type: ignore
 
+from ..config.constants import C
 from ..exceptions import ActionRenderError
 
 __all__ = [
@@ -13,6 +14,7 @@ __all__ = [
     "ActionContainingDict",
     "ContextDict",
     "LazyProxy",
+    "get_outcome_container_type",
 ]
 
 RenderHookType = t.Callable[[str], str]
@@ -75,3 +77,7 @@ class LazyProxy(lazy_object_proxy.Proxy):
 
     def __repr__(self, __getattr__=object.__getattribute__) -> str:
         return repr(self.__wrapped__)
+
+
+def get_outcome_container_type() -> t.Type[AttrDict]:
+    return StrictOutcomeDict if C.STRICT_OUTCOMES_RENDERING else LooseDict
