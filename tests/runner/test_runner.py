@@ -737,6 +737,10 @@ actions:
         vars:
             bar: Bar
         to_replace: Qux
+  - name: Bar
+    type: echo
+    expects: CallSubflow
+    message: "@{ out.CallSubflow.SubBaz.deep_key }"
 """,
         encoding="utf-8",
     )
@@ -756,6 +760,9 @@ actions:
     type: echo
     message: "@{ ctx.vars.bar } @{ ctx.to_replace }"
   - name: SubBaz
+    type: shell
+    command: yield_outcome deep_key Bar
+  - name: SubQux
     type: fail
     message: bad-command
 """,
@@ -767,10 +774,13 @@ actions:
         "[Foo]          | Foo",
         "[CallSubflow/SubFoo]  | Foo",
         "[CallSubflow/SubBar]  | Bar Qux",
-        "[CallSubflow/SubBaz] !| bad-command",
+        "[CallSubflow/SubQux] !| bad-command",
+        "[Bar]                 | Bar",
         "✓ SUCCESS: Foo",
         "✗ FAILURE: CallSubflow",
         "✓ SUCCESS: ├──SubFoo",
         "✓ SUCCESS: ├──SubBar",
-        "✗ FAILURE: └──SubBaz",
+        "✓ SUCCESS: ├──SubBaz",
+        "✗ FAILURE: └──SubQux",
+        "✓ SUCCESS: Bar",
     ]
