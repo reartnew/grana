@@ -31,7 +31,6 @@ dacite-cjunct = "1.8.1a0"
 inquirer = "^3.4.0"
 aiodocker = { version = "^0.23.0", optional = true }
 lazy-object-proxy = "^1.10.0"
-packaging = "^24.1"
 
 [tool.poetry.extras]
 docker = ["aiodocker"]

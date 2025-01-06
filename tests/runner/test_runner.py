@@ -623,24 +623,6 @@ def test_render_wrong_type(
     )
 
 
-def test_unsatisfied_package_requirements(run_text: RunFactoryType) -> None:
-    """Check requirements failures"""
-    with pytest.raises(exceptions.PackageRequirementsError):
-        run_text(
-            """
-            ---
-            configuration:
-              requires_packages:
-                - wtf_is_this_package
-                - pytest<1.0.0
-            actions:
-              - name: Foo
-                type: echo
-                message: foo
-            """
-        )
-
-
 def test_colored_output(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatch) -> None:
     """Check colors processing"""
     monkeypatch.setattr(C, "USE_COLOR", True)
