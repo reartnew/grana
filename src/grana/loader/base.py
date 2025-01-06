@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import collections
 import contextlib
-import importlib.metadata as im
 import typing as t
 from enum import Enum
 from pathlib import Path
@@ -12,11 +11,10 @@ from pathlib import Path
 import dacite
 from classlogging import LoggerMixin
 from dacite.types import is_subclass
-from packaging.requirements import Requirement
 
 from ..actions.base import ActionBase, ArgsBase, ActionDependency, ActionSeverity
 from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
-from ..exceptions import LoadError, PackageRequirementsError
+from ..exceptions import LoadError
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
 from ..tools.concealment import represent_object_type
 from ..tools.inspect import get_class_annotations
@@ -57,7 +55,6 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         self._gathered_context: t.Dict[str, t.Any] = {}
         self._original_args_map: t.Dict[str, t.Dict[str, t.Any]] = {}
         self._action_type_counters: t.Dict[str, int] = collections.defaultdict(int)
-        self._package_requirements: t.List[Requirement] = []
         self._explicit_strategy_class: t.Optional[t.Type[BaseStrategy]] = None
 
     @property
@@ -253,50 +250,16 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         """Obtain dictionary representation of the action arguments as was initially loaded"""
         return self._original_args_map[action.name]
 
-    def check_requirements(self) -> None:
-        """Check that all loaded requirements are met"""
-        failed_constrains: t.List[t.Tuple[t.Optional[str,], Requirement]] = []
-        for package_constrain in self._package_requirements:
-            self.logger.debug(f"Checking package requirement: {package_constrain}")
-            try:
-                installed_version: str = im.version(package_constrain.name)
-            except im.PackageNotFoundError:
-                failed_constrains.append((None, package_constrain))
-            else:
-                if installed_version not in package_constrain.specifier:
-                    failed_constrains.append((installed_version, package_constrain))
-        if failed_constrains:
-            fails_info: t.List[str] = ["Following package requirements were not satisfied:"]
-            for version, constrain in failed_constrains:
-                required_version_details: str = f" of version {constrain.specifier}" if constrain.specifier else ""
-                fails_info.append(f"    Requested {constrain.name}{required_version_details}, got {version}")
-            raise PackageRequirementsError("\n".join(fails_info))
-
     def load_configuration_from_dict(self, configuration_dict: t.Dict[str, t.Any]) -> None:
         """Process configuration dictionary"""
         if not isinstance(configuration_dict, dict):
             self._throw(f"'configuration' contents should be a dict (got {type(configuration_dict)!r})")
-        allowed_cfg_keys: t.Set[str] = {"requires_packages", "strategy"}
+        allowed_cfg_keys: t.Set[str] = {"strategy"}
         if bad_cfg_keys := set(configuration_dict) - allowed_cfg_keys:
             self._throw(
                 f"Unrecognized configuration keys: {sorted(bad_cfg_keys)}"
                 f" (expected some of: {sorted(allowed_cfg_keys)})"
             )
-        if "requires_packages" in configuration_dict:
-            required_packages_list: t.Union[t.List[str], str] = configuration_dict["requires_packages"]
-            if isinstance(required_packages_list, str):
-                required_packages_list = [required_packages_list]
-            elif not isinstance(required_packages_list, list):
-                self._throw(
-                    f"'configuration.requires_packages' contents should be "
-                    f"a list of strings or a string (got {type(required_packages_list)!r})"
-                )
-            for package_constrain_str in required_packages_list:
-                if not isinstance(package_constrain_str, str):
-                    self._throw(f"Unexpected package constrain: {package_constrain_str!r} (expected a string)")
-                package_constrain = Requirement(package_constrain_str)
-                self.logger.debug(f"Defining package constrain: {package_constrain!r}")
-                self._package_requirements.append(package_constrain)
         if "strategy" in configuration_dict:
             strategy_value: str = configuration_dict["strategy"]
             if strategy_value not in KNOWN_STRATEGIES:

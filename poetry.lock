@@ -1590,4 +1590,4 @@ docker = ["aiodocker"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8.1, <3.13"
-content-hash = "5238f1144b949ba9a4a0421c0a07e6892ee56b013eb8d67e705ea9a735d83f0d"
+content-hash = "a8cbf64337d4b78c53f4df238a8edbbcf234ab4b33ec7c2194d36880c4f7a88e"
