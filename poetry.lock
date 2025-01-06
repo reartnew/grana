@@ -156,13 +156,13 @@ typing-extensions = {version = ">=4.0.0", markers = "python_version < \"3.11\""}
 
 [[package]]
 name = "async-shell"
-version = "1.0.8"
+version = "1.0.9"
 description = "Asyncio subprocess shell command wrapper"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "async_shell-1.0.8-py3-none-any.whl", hash = "sha256:587da7599c9b8bea93f01bc647360b9bdc0aee8d9b74b475980db04e026bca01"},
-    {file = "async_shell-1.0.8.tar.gz", hash = "sha256:f71d00b3e35236b5c65780a2a4b68f16f1dd4f1706b22dc1ffb6af33182f53ba"},
+    {file = "async_shell-1.0.9-py3-none-any.whl", hash = "sha256:8b586e5aee2c6a6eb960da754da303f48c73a6045a9416dd221e62a731cdbe89"},
+    {file = "async_shell-1.0.9.tar.gz", hash = "sha256:c1ccc2219721b8292a7fca74f1b836970988b37e5c4408868e64bd647e7702d6"},
 ]
 
 [package.dependencies]
@@ -319,13 +319,13 @@ files = [
 
 [[package]]
 name = "click"
-version = "8.1.7"
+version = "8.1.8"
 description = "Composable command line interface toolkit"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "click-8.1.7-py3-none-any.whl", hash = "sha256:ae74fb96c20a0277a1d615f1e4d73c8414f5a98db8b799a7931d1582f3390c28"},
-    {file = "click-8.1.7.tar.gz", hash = "sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de"},
+    {file = "click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2"},
+    {file = "click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a"},
 ]
 
 [package.dependencies]
@@ -1589,5 +1589,5 @@ docker = ["aiodocker"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = "^3.8.1, <3.13"
-content-hash = "a8cbf64337d4b78c53f4df238a8edbbcf234ab4b33ec7c2194d36880c4f7a88e"
+python-versions = "^3.8.1, <3.14"
+content-hash = "ccc923b2ce5e8ad23f8714bc73aca04c4376be085fc9d88d30ad74e5aba0c913"
