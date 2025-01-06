@@ -18,17 +18,16 @@ class RepresentDataSuite(DataSuite):
     """Concealed representation test cases"""
 
     none = RepresentTestCase(obj=None, representation="NoneType")
-    empty_list = RepresentTestCase(obj=[], representation="typing.List")
-    empty_dict = RepresentTestCase(obj={}, representation="typing.Dict")
-    simple_list = RepresentTestCase(obj=["a"], representation="typing.List[str]")
-    simple_dict = RepresentTestCase(obj={"a": "b"}, representation="typing.Dict[str, str]")
-    optional_first = RepresentTestCase(obj=[None, "a"], representation="typing.List[typing.Optional[str]]")
-    optional_last = RepresentTestCase(obj=["a", None], representation="typing.List[typing.Optional[str]]")
-    nested_dict = RepresentTestCase(obj={"a": {"b": "c"}}, representation="typing.Dict[str, typing.Dict[str, str]]")
+    empty_list = RepresentTestCase(obj=[], representation="list")
+    empty_dict = RepresentTestCase(obj={}, representation="dict")
+    simple_list = RepresentTestCase(obj=["a"], representation="list[str]")
+    simple_dict = RepresentTestCase(obj={"a": "b"}, representation="dict[str, str]")
+    optional_first = RepresentTestCase(obj=[None, "a"], representation="list[typing.Optional[str]]")
+    optional_last = RepresentTestCase(obj=["a", None], representation="list[typing.Optional[str]]")
+    nested_dict = RepresentTestCase(obj={"a": {"b": "c"}}, representation="dict[str, dict[str, str]]")
     complex_union = RepresentTestCase(
         obj={"a": 1, "b": None, 2: ["c", 1.0]},
-        representation="typing.Dict[typing.Union[int, str], "
-        "typing.Union[NoneType, int, typing.List[typing.Union[float, str]]]]",
+        representation="dict[typing.Union[int, str], typing.Union[NoneType, int, list[typing.Union[float, str]]]]",
     )
 
 

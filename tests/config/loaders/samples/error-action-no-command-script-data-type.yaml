@@ -1,5 +1,5 @@
 # exception: LoadError
-# match: Unrecognized 'file' content type: typing.Dict
+# match: Unrecognized 'file' content type: dict
 ---
 actions:
   - name: foo

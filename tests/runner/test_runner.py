@@ -616,7 +616,7 @@ def test_render_wrong_type(
     assert any(
         k.startswith(
             "[shell-0] !| Action 'shell-0' rendering failed: Unrecognized 'environment' "
-            "content type: typing.Dict[str, NoneType]"
+            "content type: dict[str, NoneType]"
         )
         for k in display_collector
     )

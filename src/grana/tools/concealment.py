@@ -11,12 +11,12 @@ def represent_object_type(obj: t.Any) -> str:
     """Build a string representation of an object type to disguise real values"""
     if isinstance(obj, t.Mapping):
         if not obj:
-            return "typing.Dict"
-        return f"typing.Dict[{_represent_collection_as_union(obj)}, {_represent_collection_as_union(obj.values())}]"
+            return "dict"
+        return f"dict[{_represent_collection_as_union(obj)}, {_represent_collection_as_union(obj.values())}]"
     if isinstance(obj, list):
         if not obj:
-            return "typing.List"
-        return f"typing.List[{_represent_collection_as_union(obj)}]"
+            return "list"
+        return f"list[{_represent_collection_as_union(obj)}]"
     return obj.__class__.__name__
 
 
