@@ -55,7 +55,7 @@ def test_invalid_display_init(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_headers_display(monkeypatch: pytest.MonkeyPatch) -> None:
     """Check headers display"""
-    display_data: t.List[str] = []
+    display_data: list[str] = []
     monkeypatch.setattr(HeaderDisplay, "display", display_data.append)
     monkeypatch.setattr(C, "DISPLAY_CLASS", HeaderDisplay)
     runner = Runner(

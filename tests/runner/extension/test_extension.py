@@ -2,7 +2,6 @@
 
 # pylint: disable=unused-argument
 
-import typing as t
 from pathlib import Path
 
 import pytest
@@ -13,7 +12,7 @@ from grana.exceptions import SourceError, LoadError, ExecutionFailed
 MODULES_DIR: Path = Path(__file__).parent / "modules"
 
 
-def test_good_ext_loader(echo_context: None, monkeypatch: pytest.MonkeyPatch, display_collector: t.List[str]) -> None:
+def test_good_ext_loader(echo_context: None, monkeypatch: pytest.MonkeyPatch, display_collector: list[str]) -> None:
     """Validate external loader"""
     monkeypatch.setenv("GRANA_WORKFLOW_LOADER_SOURCE_FILE", str(MODULES_DIR / "good_loader.py"))
     monkeypatch.setenv("GRANA_EXTERNAL_MODULES_PATHS", str(MODULES_DIR))
@@ -62,7 +61,7 @@ def test_ext_loader_missing_source(echo_context: None, monkeypatch: pytest.Monke
 def test_ext_loader_return_string(
     string_returning_context: None,
     monkeypatch: pytest.MonkeyPatch,
-    display_collector: t.List[str],
+    display_collector: list[str],
 ) -> None:
     """Check exotic returns from actions"""
     monkeypatch.setenv("GRANA_WORKFLOW_LOADER_SOURCE_FILE", str(MODULES_DIR / "good_loader.py"))
@@ -76,7 +75,7 @@ def test_ext_loader_return_string(
 def test_imports_context_isolation(
     context_keys_isolation_context: None,
     monkeypatch: pytest.MonkeyPatch,
-    display_collector: t.List[str],
+    display_collector: list[str],
 ) -> None:
     """Check that 'context' fields are not being imported"""
     monkeypatch.setenv("GRANA_WORKFLOW_LOADER_SOURCE_FILE", str(MODULES_DIR / "good_loader.py"))

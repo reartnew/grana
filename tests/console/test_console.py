@@ -11,7 +11,7 @@ from dotenv.main import DotEnv
 from grana import console, version
 from grana.config.environment import Env
 
-OptsType = t.Optional[t.List[str]]
+OptsType = t.Optional[list[str]]
 
 
 class CLIError(Exception):
@@ -30,13 +30,13 @@ class RunnerType(t.Protocol):
 
     def __call__(
         self, text: t.Optional[str] = None, opts: OptsType = None, global_opts: OptsType = None
-    ) -> t.List[str]: ...
+    ) -> list[str]: ...
 
 
 BuilderType = t.Callable[[str], RunnerType]
 
 
-def _invoke(*args, **kwargs) -> t.List[str]:
+def _invoke(*args, **kwargs) -> list[str]:
     result = CliRunner(mix_stderr=False).invoke(*args, **kwargs)
     if result.exit_code:
         raise CLIError(code=result.exit_code, message=result.stderr) from None
@@ -55,7 +55,7 @@ def builder(monkeypatch: pytest.MonkeyPatch) -> BuilderType:
     monkeypatch.setattr(classlogging, "configure_logging", _noop)
 
     def build(subcommand: str):
-        def execute(text: t.Optional[str] = None, opts: OptsType = None, global_opts: OptsType = None) -> t.List[str]:
+        def execute(text: t.Optional[str] = None, opts: OptsType = None, global_opts: OptsType = None) -> list[str]:
             return _invoke(console.main, (global_opts or []) + [subcommand, "-"] + (opts or []), input=text)
 
         return execute

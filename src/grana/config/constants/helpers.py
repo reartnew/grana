@@ -33,7 +33,7 @@ EXTERNALS_MODULES_PACKAGE: str = "grana.external"
 @contextmanager
 def add_sys_paths(*paths: str) -> t.Iterator[None]:
     """Temporarily add paths to sys.path"""
-    normalized_paths: t.List[str] = [os.path.expanduser(os.path.abspath(path)) for path in paths]
+    normalized_paths: list[str] = [os.path.expanduser(os.path.abspath(path)) for path in paths]
     for path in normalized_paths:
         sys.path.insert(0, path)
     try:

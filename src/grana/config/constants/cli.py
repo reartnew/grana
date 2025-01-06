@@ -10,7 +10,7 @@ __all__ = [
     "get_cli_arg",
 ]
 
-_CLI_PARAMS: t.Dict[str, t.Any] = {}
+_CLI_PARAMS: dict[str, t.Any] = {}
 
 
 def cliargs_receiver(func):  # pragma: no cover
@@ -19,7 +19,7 @@ def cliargs_receiver(func):  # pragma: no cover
     @functools.wraps(func)
     # pylint: disable=unused-argument
     def wrapped(ctx: click.Context, **kwargs):
-        old_cli_params: t.Dict[str, t.Any] = _CLI_PARAMS.copy()
+        old_cli_params: dict[str, t.Any] = _CLI_PARAMS.copy()
         current_ctx: t.Optional[click.Context] = ctx
         while current_ctx:
             for k, v in current_ctx.params.items():

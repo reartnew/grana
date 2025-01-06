@@ -21,7 +21,7 @@ class ShellArgs(ArgsBase):
 
     command: t.Optional[str] = None
     file: t.Optional[str] = None
-    environment: t.Optional[t.Dict[str, str]] = None
+    environment: t.Optional[dict[str, str]] = None
     cwd: t.Optional[str] = None
     executable: t.Optional[str] = None
 
@@ -49,7 +49,7 @@ class ShellAction(EmissionScannerActionBase):
         command: str = self.args.command or f"source '{self.args.file}'"
         if C.SHELL_INJECT_YIELD_FUNCTION:
             command = f"{self._SHELL_SERVICE_FUNCTIONS_DEFINITIONS}\n{command}"
-        environment: t.Optional[t.Dict[str, str]] = None
+        environment: t.Optional[dict[str, str]] = None
         if self.args.environment is not None:
             environment = os.environ.copy()
             environment.update(self.args.environment)
@@ -62,7 +62,7 @@ class ShellAction(EmissionScannerActionBase):
 
     async def run(self) -> None:
         async with await self._create_shell() as shell_process:
-            tasks: t.List[asyncio.Task] = [
+            tasks: list[asyncio.Task] = [
                 asyncio.create_task(self._read_stdout(shell_process)),
                 asyncio.create_task(self._read_stderr(shell_process)),
             ]

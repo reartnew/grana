@@ -13,7 +13,7 @@ def represent_object_type(obj: t.Any) -> str:
         if not obj:
             return "typing.Dict"
         return f"typing.Dict[{_represent_collection_as_union(obj)}, {_represent_collection_as_union(obj.values())}]"
-    if isinstance(obj, t.List):
+    if isinstance(obj, list):
         if not obj:
             return "typing.List"
         return f"typing.List[{_represent_collection_as_union(obj)}]"
@@ -21,7 +21,7 @@ def represent_object_type(obj: t.Any) -> str:
 
 
 def _represent_collection_as_union(collection: t.Iterable) -> str:
-    sorted_unique_types_names: t.List[str] = sorted({represent_object_type(item) for item in collection})
+    sorted_unique_types_names: list[str] = sorted({represent_object_type(item) for item in collection})
     if len(sorted_unique_types_names) == 1:
         return sorted_unique_types_names[0]
     none_type_name: str = type(None).__name__

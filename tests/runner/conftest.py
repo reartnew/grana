@@ -4,7 +4,6 @@
 
 import base64
 import textwrap
-import typing as t
 from pathlib import Path
 
 import aiodocker
@@ -25,9 +24,9 @@ def disable_env_cache() -> None:
 
 
 @pytest.fixture
-def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
+def display_collector(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     """Creates display messages list instead of putting them to stdout"""
-    results: t.List[str] = []
+    results: list[str] = []
 
     # pylint: disable=unused-argument
     def display(self, message: str) -> None:
@@ -36,9 +35,9 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     # pylint: disable=unused-argument
     def _run_dialog(
         cls,
-        choices: t.List[str],
-        default: t.List[str],
-    ) -> t.List[str]:
+        choices: list[str],
+        default: list[str],
+    ) -> list[str]:
         return default[:1]
 
     monkeypatch.setattr(DefaultDisplay, "display", display)
@@ -62,12 +61,12 @@ def ctx_from_text(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> CtxFactory
 @pytest.fixture
 def run_text(
     ctx_from_text: CtxFactoryType,
-    display_collector: t.List[str],
+    display_collector: list[str],
     actions_definitions_directory: None,
 ) -> RunFactoryType:
     """Runner factory"""
 
-    def run(data: str) -> t.List[str]:
+    def run(data: str) -> list[str]:
         ctx_from_text(data)
         grana.Runner().run_sync()
         return display_collector

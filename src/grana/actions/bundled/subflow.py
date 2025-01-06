@@ -19,14 +19,14 @@ __all__ = [
     "SubflowAction",
 ]
 
-ContextType = t.Dict[str, t.Any]
+ContextType = dict[str, t.Any]
 
 
 class SubflowArgs(ArgsBase):
     """Arguments applied to the subflow action."""
 
     path: Path
-    context: t.Dict[str, t.Any] = field(default_factory=dict)  # pylint: disable=invalid-field-call
+    context: dict[str, t.Any] = field(default_factory=dict)  # pylint: disable=invalid-field-call
 
 
 class SubflowAction(ActionBase):

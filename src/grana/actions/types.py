@@ -5,7 +5,7 @@ import dataclasses
 import enum
 import typing as t
 
-OutcomeStorageType = t.Dict[str, str]
+OutcomeStorageType = dict[str, str]
 
 __all__ = [
     "OutcomeStorageType",

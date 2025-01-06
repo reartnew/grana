@@ -12,7 +12,7 @@ class LexerTestCase(t.TypedDict):
     """Lexer test case variables"""
 
     source: str
-    result: t.List[t.Tuple[int, str]]
+    result: list[t.Tuple[int, str]]
 
 
 class LexerDataSuite(DataSuite):
@@ -53,7 +53,7 @@ class LexerDataSuite(DataSuite):
 
 
 @LexerDataSuite.parametrize
-def test_lexer(source: str, result: t.List[t.Tuple[int, str]]) -> None:
+def test_lexer(source: str, result: list[t.Tuple[int, str]]) -> None:
     """Check lexer result validity"""
     assert list(TemplarStringLexer(source)) == result
 
