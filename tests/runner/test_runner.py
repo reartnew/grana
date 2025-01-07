@@ -6,7 +6,6 @@ import io
 import random
 import string
 import textwrap
-import typing as t
 from pathlib import Path
 
 import pytest
@@ -115,8 +114,8 @@ def test_unrecognized_workflow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 )
 def test_strategy_runner_call(
     runner_good_context: None,
-    strategy_class: t.Type[BaseStrategy],
-    display_collector: t.List[str],
+    strategy_class: type[BaseStrategy],
+    display_collector: list[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Check all strategies"""
@@ -248,7 +247,7 @@ async def test_docker_good_context(
     check_docker: None,
     ctx_from_text: CtxFactoryType,
     tmp_path: Path,
-    display_collector: t.List[str],
+    display_collector: list[str],
 ) -> None:
     """Check docker shell action step"""
     tmp_file_to_bind: Path = tmp_path / "bind_file.txt"
@@ -359,7 +358,7 @@ def test_empty_echo_context(run_text: RunFactoryType) -> None:
 
 def test_misplaced_disable_context(
     run_text: RunFactoryType,
-    display_collector: t.List[str],
+    display_collector: list[str],
 ) -> None:
     """Test context with misplaced action disable call"""
 
@@ -598,7 +597,7 @@ def test_low_severity(run_text: RunFactoryType) -> None:
 
 def test_render_wrong_type(
     run_text: RunFactoryType,
-    display_collector: t.List[str],
+    display_collector: list[str],
 ) -> None:
     """Check late render type mismatch"""
 
@@ -617,7 +616,7 @@ def test_render_wrong_type(
     assert any(
         k.startswith(
             "[shell-0] !| Action 'shell-0' rendering failed: Unrecognized 'environment' "
-            "content type: typing.Dict[str, NoneType]"
+            "content type: dict[str, NoneType]"
         )
         for k in display_collector
     )
@@ -643,7 +642,7 @@ def test_colored_output(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatc
 def test_explicit_strategy(
     run_text: RunFactoryType,
     monkeypatch: pytest.MonkeyPatch,
-    display_collector: t.List[str],
+    display_collector: list[str],
 ) -> None:
     """Check explicit strategy from workflow"""
 
@@ -698,7 +697,7 @@ def test_different_shells_globally(run_text: RunFactoryType, monkeypatch: pytest
 
 
 def test_simple_subflow(
-    display_collector: t.List[str],
+    display_collector: list[str],
     actions_definitions_directory: None,
     tmp_path: Path,
 ) -> None:

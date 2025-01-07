@@ -68,7 +68,7 @@ class Env(EnvironmentNamespace):
     GRANA_STRATEGY_NAME: str = OptionalString("")
     GRANA_FORCE_COLOR: t.Optional[bool] = OptionalTernary(None)  # type: ignore
     GRANA_SHELL_INJECT_YIELD_FUNCTION: bool = OptionalBoolean(True)  # type: ignore
-    GRANA_EXTERNAL_MODULES_PATHS: t.List[str] = OptionalList([])
-    GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY: t.List[str] = OptionalList([])
+    GRANA_EXTERNAL_MODULES_PATHS: list[str] = OptionalList([])
+    GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY: list[str] = OptionalList([])
     GRANA_STRICT_OUTCOMES_RENDERING: bool = OptionalBoolean(True)  # type: ignore
     GRANA_DEFAULT_SHELL_EXECUTABLE: str = OptionalString("/bin/sh")

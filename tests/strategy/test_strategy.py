@@ -14,7 +14,7 @@ from grana.workflow import Workflow
 @pytest.mark.asyncio
 async def test_chain_success(strict_successful_workflow: Workflow) -> None:
     """Chain successful execution"""
-    result: t.List[ActionBase] = []
+    result: list[ActionBase] = []
     strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_successful_workflow)
     async for action in strategy:  # type: ActionBase
         await action
@@ -25,9 +25,9 @@ async def test_chain_success(strict_successful_workflow: Workflow) -> None:
 
 @pytest.mark.parametrize("strategy_class", [LooseStrategy, StrictSequentialStrategy])
 @pytest.mark.asyncio
-async def test_chain_failure(strict_failing_workflow: Workflow, strategy_class: t.Type[BaseStrategy]) -> None:
+async def test_chain_failure(strict_failing_workflow: Workflow, strategy_class: type[BaseStrategy]) -> None:
     """Chain failing execution"""
-    result: t.List[ActionBase] = []
+    result: list[ActionBase] = []
     strategy: t.AsyncIterable[ActionBase] = strategy_class(strict_failing_workflow)
     async for action in strategy:  # type: ActionBase
         with pytest.raises(RuntimeError):
@@ -45,7 +45,7 @@ async def test_chain_failure(strict_failing_workflow: Workflow, strategy_class: 
 @pytest.mark.asyncio
 async def test_chain_skip(strict_skipping_workflow: Workflow) -> None:
     """Chain skipping execution"""
-    result: t.List[ActionBase] = []
+    result: list[ActionBase] = []
     strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_skipping_workflow)
     async for action in strategy:  # type: ActionBase
         await action

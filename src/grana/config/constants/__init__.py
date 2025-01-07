@@ -28,7 +28,7 @@ __all__ = [
     "LOG_LEVELS",
 ]
 
-LOG_LEVELS: t.Dict[str, str] = {
+LOG_LEVELS: dict[str, str] = {
     "0": LogLevel.ERROR,
     "1": LogLevel.WARNING,
     "2": LogLevel.INFO,
@@ -121,7 +121,7 @@ class C:
             submodule_name="workflow.loader",
         )
     )
-    ACTION_CLASSES_DIRECTORIES: Mandatory[t.List[str]] = Mandatory(
+    ACTION_CLASSES_DIRECTORIES: Mandatory[list[str]] = Mandatory(
         lambda: Env.GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY,
     )
     DISPLAY_CLASS: Mandatory[DisplayClassType] = Mandatory(

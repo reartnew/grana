@@ -12,11 +12,11 @@ from grana.loader.helpers import get_default_loader_class_for_source
 
 
 def test_workflow_load_over_sample(
-    sample_workflow: t.Tuple[Path, t.Optional[t.Type[Exception]], t.Optional[str]]
+    sample_workflow: t.Tuple[Path, t.Optional[type[Exception]], t.Optional[str]]
 ) -> None:
     """Check different variations of good/bad workflows"""
     workflow_path, maybe_exception, maybe_match = sample_workflow
-    loader_class: t.Type[AbstractBaseWorkflowLoader] = get_default_loader_class_for_source(workflow_path)
+    loader_class: type[AbstractBaseWorkflowLoader] = get_default_loader_class_for_source(workflow_path)
     # Check good workflow
     if maybe_exception is None:
         loader_class().load(workflow_path)

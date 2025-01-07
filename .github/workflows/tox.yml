@@ -10,11 +10,11 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.8"
           - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
+          - "3.13"
     steps:
 
       - name: Checkout source
@@ -30,7 +30,6 @@ jobs:
 
       - name: Tox tests
         run: python -m tox
-
 
       - name: Report coverage
         run: python -m coverage report

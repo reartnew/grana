@@ -21,16 +21,16 @@ class Node(t.Generic[T]):
     children: list
 
 
-class Tree(t.Dict[str, Node[T]]):
+class Tree(dict[str, Node[T]]):
     """Generic tree builder"""
 
     def __init__(self):
         super().__init__()
-        self.__root_nodes_list: t.List[Node[T]] = []
+        self.__root_nodes_list: list[Node[T]] = []
 
     def put(self, items: t.Iterable[t.Tuple[str, T]], *, parent_name: t.Optional[str] = None) -> None:
         """Put items into the topology"""
-        nodes_list: t.List[Node[T]] = []
+        nodes_list: list[Node[T]] = []
         for name, item in items:
             node: Node[T] = Node(content=item, children=[])
             nodes_list.append(node)
@@ -47,7 +47,7 @@ class Tree(t.Dict[str, Node[T]]):
         """
         yield from self._internal_tree_generate(nodes=self.__root_nodes_list, prefix=None)
 
-    def _internal_tree_generate(self, nodes: t.List[Node[T]], prefix: t.Optional[str]) -> AsciiLinesGeneratorType:
+    def _internal_tree_generate(self, nodes: list[Node[T]], prefix: t.Optional[str]) -> AsciiLinesGeneratorType:
         last_node_num: int = len(nodes) - 1
         for num, node in enumerate(nodes):
             is_last_node: bool = num == last_node_num

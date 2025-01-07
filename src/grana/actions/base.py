@@ -52,7 +52,7 @@ class ArgsMeta(type):
 
     def __new__(cls, name, bases, dct):
         sub_dataclass = dataclass(super().__new__(cls, name, bases, dct))
-        reserved_names_collisions: t.Set[str] = {f.name for f in fields(sub_dataclass)} & ACTION_RESERVED_FIELD_NAMES
+        reserved_names_collisions: set[str] = {f.name for f in fields(sub_dataclass)} & ACTION_RESERVED_FIELD_NAMES
         if reserved_names_collisions:
             raise TypeError(f"Reserved names found in {name!r} class definition: {sorted(reserved_names_collisions)}")
         return sub_dataclass
@@ -71,9 +71,10 @@ class ActionBase(classlogging.LoggerMixin):
 
     def __init__(
         self,
+        *,
         name: str,
         args: ArgsBase = ArgsBase(),
-        ancestors: t.Optional[t.Dict[str, ActionDependency]] = None,
+        ancestors: t.Optional[dict[str, ActionDependency]] = None,
         description: t.Optional[str] = None,
         selectable: bool = True,
         severity: ActionSeverity = ActionSeverity.NORMAL,
@@ -81,7 +82,7 @@ class ActionBase(classlogging.LoggerMixin):
         self.name: str = name
         self.args: ArgsBase = args
         self.description: t.Optional[str] = description
-        self.ancestors: t.Dict[str, ActionDependency] = ancestors or {}
+        self.ancestors: dict[str, ActionDependency] = ancestors or {}
         self.selectable: bool = selectable
 
         self._yielded_keys: OutcomeStorageType = {}
@@ -270,7 +271,7 @@ class EmissionScannerActionBase(ActionBase):
 
     def __init__(self, *a, **kw) -> None:
         super().__init__(*a, **kw)
-        self._outcomes_base64_chunks: t.Dict[str, t.List[str]] = collections.defaultdict(list)
+        self._outcomes_base64_chunks: dict[str, list[str]] = collections.defaultdict(list)
 
     @classmethod
     def _decode_base64_string(cls, data: str) -> str:

@@ -16,27 +16,27 @@ __all__ = [
 ]
 
 
-class Workflow(t.Dict[str, ActionBase], LoggerMixin):
+class Workflow(dict[str, ActionBase], LoggerMixin):
     """Action relations map"""
 
     def __init__(
         self,
-        actions_map: t.Dict[str, ActionBase],
-        context: t.Optional[t.Dict[str, t.Any]] = None,
+        actions_map: dict[str, ActionBase],
+        context: t.Optional[dict[str, t.Any]] = None,
         source_file: t.Optional[pathlib.Path] = None,
     ) -> None:
         super().__init__(actions_map)
         self.source_file: t.Optional[pathlib.Path] = source_file
-        self._entrypoints: t.Set[str] = set()
-        self._tiers_sequence: t.List[t.List[ActionBase]] = []
-        self._descendants_map: t.Dict[str, t.Dict[str, ActionDependency]] = collections.defaultdict(dict)
-        self.context: t.Dict[str, t.Any] = context or {}
+        self._entrypoints: set[str] = set()
+        self._tiers_sequence: list[list[ActionBase]] = []
+        self._descendants_map: dict[str, dict[str, ActionDependency]] = collections.defaultdict(dict)
+        self.context: dict[str, t.Any] = context or {}
         # Check dependencies integrity
         self._establish_descendants()
         # Create order map to check all actions are reachable
         self._allocate_tiers()
 
-    def get_metadata(self) -> t.Dict[str, t.Any]:
+    def get_metadata(self) -> dict[str, t.Any]:
         """Obtain workflow metadata for further use in templating"""
         if self.source_file is None:
             return {}
@@ -46,7 +46,7 @@ class Workflow(t.Dict[str, ActionBase], LoggerMixin):
         }
 
     def _establish_descendants(self) -> None:
-        missing_non_external_deps: t.Set[str] = set()
+        missing_non_external_deps: set[str] = set()
         for action in self.values():  # type: ActionBase
             for dependency_action_name, dependency in list(action.ancestors.items()):
                 if dependency_action_name not in self:
@@ -74,11 +74,11 @@ class Workflow(t.Dict[str, ActionBase], LoggerMixin):
         Tier #N consists of all tasks requiring exactly N-1 preceding tiers to be finished.
         """
         step_tier: int = 0
-        action_name_to_tier_mapping: t.Dict[str, int] = {}
+        action_name_to_tier_mapping: dict[str, int] = {}
         #
-        current_tier_actions_names: t.Set[str] = self._entrypoints
+        current_tier_actions_names: set[str] = self._entrypoints
         while True:
-            next_tier_candidate_actions_names: t.Set[str] = set()
+            next_tier_candidate_actions_names: set[str] = set()
             for tier_action_name in current_tier_actions_names:
                 tier_action: ActionBase = self[tier_action_name]
                 if tier_action.name in action_name_to_tier_mapping:
@@ -90,7 +90,7 @@ class Workflow(t.Dict[str, ActionBase], LoggerMixin):
             step_tier += 1
             current_tier_actions_names = next_tier_candidate_actions_names
         self.logger.debug(f"Number of tiers: {step_tier + 1}")
-        unreachable_action_names: t.Set[str] = {
+        unreachable_action_names: set[str] = {
             action.name for action in self.values() if action.name not in action_name_to_tier_mapping
         }
         if unreachable_action_names:

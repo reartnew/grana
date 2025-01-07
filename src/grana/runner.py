@@ -44,7 +44,7 @@ class Runner(classlogging.LoggerMixin):
         self._workflow_source: t.Union[Path, IOType] = self._detect_workflow_source(explicit_source=source)
         self._explicit_display: t.Optional[types.DisplayType] = display
         self._started: bool = False
-        self._outcomes: t.Dict[str, t.Dict[str, t.Any]] = {}
+        self._outcomes: dict[str, dict[str, t.Any]] = {}
         self._execution_failed: bool = False
 
     @functools.cached_property
@@ -163,7 +163,7 @@ class Runner(classlogging.LoggerMixin):
         if self._started:
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
-        action_runners: t.Dict[ActionBase, asyncio.Task] = {}
+        action_runners: dict[ActionBase, asyncio.Task] = {}
         # Prefill outcomes map
         for action_name in self.workflow:
             self._outcomes[action_name] = {}

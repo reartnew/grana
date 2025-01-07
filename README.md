@@ -70,7 +70,7 @@ grana info env-vars
 Requires system-wide poetry>=1.3.2, see [official documentation](https://python-poetry.org).
 
 ```shell
-poetry env use python3.8
+poetry env use python3.9
 poetry install --no-root --sync --all-extras
 ```
 

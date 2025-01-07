@@ -9,4 +9,4 @@ __all__ = [
 ]
 
 CtxFactoryType = t.Callable[[str], Path]
-RunFactoryType = t.Callable[[str], t.List[str]]
+RunFactoryType = t.Callable[[str], list[str]]

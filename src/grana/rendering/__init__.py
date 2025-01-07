@@ -20,7 +20,7 @@ __all__ = [
 class Templar(LoggerMixin):
     """Expression renderer"""
 
-    DISABLED_GLOBALS: t.List[str] = ["exec", "eval", "compile", "setattr", "delattr"]
+    DISABLED_GLOBALS: list[str] = ["exec", "eval", "compile", "setattr", "delattr"]
 
     def __init__(
         self,
@@ -36,7 +36,7 @@ class Templar(LoggerMixin):
         context_container: c.AttrDict = c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
         environment_container: c.AttrDict = c.LooseDict(os.environ)
         metadata_container: c.AttrDict = c.LooseDict(metadata or {})
-        self._locals: t.Dict[str, c.AttrDict] = {
+        self._locals: dict[str, c.AttrDict] = {
             # Full names
             "outcomes": outcomes_container,
             "status": status_container,
@@ -49,9 +49,7 @@ class Templar(LoggerMixin):
             "env": environment_container,
             "meta": metadata_container,
         }
-        self._globals: t.Dict[str, t.Any] = {
-            f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS
-        }
+        self._globals: dict[str, t.Any] = {f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS}
         self._depth: int = 0
 
     def render(self, value: str) -> str:
@@ -73,7 +71,7 @@ class Templar(LoggerMixin):
             # This exception floats to the very "render" call without any logging
             raise ActionRenderRecursionError(f"Recursion depth exceeded: {self._depth}/{MAX_RECURSION_DEPTH}")
         try:
-            chunks: t.List[str] = []
+            chunks: list[str] = []
             # Cheap check
             if not qualify_string_as_potentially_renderable(value):
                 return value
