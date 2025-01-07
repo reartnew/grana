@@ -74,6 +74,22 @@ setuptools = "^75.7.0"
 [tool.poetry.scripts]
 grana = "grana.console:main"
 
+[tool.tox]
+envlist = ["py39", "py310", "py311", "py312", "py313"]
+
+[tool.tox.env_run_base]
+extras = ["all", "tests"]
+commands = [["coverage", "run", "-m", "pytest", "-vv"]]
+
+[tool.tox.gh-actions]
+python = """
+    3.9: py39
+    3.10: py310
+    3.11: py311
+    3.12: py312
+    3.13: py313
+"""
+
 [tool.pytest.ini_options]
 testpaths = [
     "src",
