@@ -40,7 +40,7 @@ def _invoke(*args, **kwargs) -> list[str]:
     result = CliRunner(mix_stderr=False).invoke(*args, **kwargs)
     if result.exit_code:
         raise CLIError(code=result.exit_code, message=result.stderr) from None
-    return result.stdout.splitlines()
+    return result.stdout.rstrip().splitlines()
 
 
 def _noop(*args, **kwargs) -> None:  # pylint: disable=unused-argument
@@ -95,7 +95,7 @@ def test_cli_validate(validate: RunnerType) -> None:
 def test_cli_env_vars() -> None:
     """Check env vars command"""
     doc: str = t.cast(str, Env.__doc__)
-    assert _invoke(console.main, ["info", "env-vars"]) == doc.splitlines()
+    assert _invoke(console.main, ["info", "env-vars"]) == doc.rstrip().splitlines()
 
 
 def test_cli_run(run: RunnerType) -> None:

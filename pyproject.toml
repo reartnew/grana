@@ -21,38 +21,55 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.9, <3.14"
-named-env = "^2.3.2"
-classlogging = "^1.1.1"
+named-env = "^2.4.0"
+classlogging = "^1.2.0"
 python-dotenv = "^1.0.1"
-async-shell = "^1.0.9"
+async-shell = "^1.1.0"
 pyyaml = "^6.0.2"
 click = "^8.1.8"
 dacite-cjunct = "1.8.1a0"
 inquirer = "^3.4.0"
 aiodocker = { version = "^0.24.0", optional = true }
 lazy-object-proxy = "^1.10.0"
+# Tests dependencies
+pytest = { version = "^8.3.2", optional = true }
+pylint = { version = "^3.2.6", optional = true }
+mypy = { version = "^1.11.1", optional = true }
+black = { version = "^24.8.0", optional = true }
+bandit = { version = "^1.7.9", optional = true }
+coverage = { version = "^7.6.1", optional = true }
+pytest-pylint = { version = "^0.21.0", optional = true }
+pytest-mypy = { version = "^0.10.3", optional = true }
+pytest-black = { version = "^0.3.12", optional = true }
+pytest-bandit = { version = "^0.6.1", optional = true }
+pytest-cov = { version = "^5.0.0", optional = true }
+pytest-asyncio = { version = "^0.23.8", optional = true }
+types-pyyaml = { version = "^6.0.12.20240311", optional = true }
+pytest-data-suites = { version = "^1.0.5", optional = true }
 
 [tool.poetry.extras]
 docker = ["aiodocker"]
 all = ["aiodocker"]
+tests = [
+    "pytest",
+    "pylint",
+    "mypy",
+    "black",
+    "bandit",
+    "coverage",
+    "pytest-pylint",
+    "pytest-mypy",
+    "pytest-black",
+    "pytest-bandit",
+    "pytest-cov",
+    "pytest-asyncio",
+    "types-pyyaml",
+    "pytest-data-suites",
+]
 
 [tool.poetry.group.dev.dependencies]
-tox = "^4.14.1"
-pytest = "^8.3.2"
-pylint = "^3.2.6"
-mypy = "^1.11.1"
-black = "^24.8.0"
-bandit = "^1.7.9"
-coverage = "^7.6.1"
-pytest-pylint = "^0.21.0"
-pytest-mypy = "^0.10.3"
-pytest-black = "^0.3.12"
-pytest-bandit = "^0.6.1"
-pytest-cov = "^5.0.0"
-pytest-asyncio = "^0.23.8"
-types-pyyaml = "^6.0.12.20240311"
-setuptools = "^72.1.0"
-pytest-data-suites = "^1.0.5"
+tox = "^4.23.2"
+setuptools = "^75.7.0"
 
 [tool.poetry.scripts]
 grana = "grana.console:main"

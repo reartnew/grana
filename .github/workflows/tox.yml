@@ -26,11 +26,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: python -m pip install --upgrade pip poetry tox coverage tox-gh-actions
+        run: python -m pip install --upgrade pip poetry tox tox-gh-actions
 
       - name: Tox tests
         run: python -m tox
-
 
       - name: Report coverage
         run: python -m coverage report

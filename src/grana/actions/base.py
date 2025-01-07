@@ -71,6 +71,7 @@ class ActionBase(classlogging.LoggerMixin):
 
     def __init__(
         self,
+        *,
         name: str,
         args: ArgsBase = ArgsBase(),
         ancestors: t.Optional[dict[str, ActionDependency]] = None,
