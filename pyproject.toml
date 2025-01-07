@@ -102,6 +102,7 @@ addopts = """
 --black
 --bandit
 """
+asyncio_default_fixture_loop_scope = "function"
 
 bandit_targets = ["src"]
 filterwarnings = [
