@@ -6,6 +6,7 @@ import pytest
 
 from grana.exceptions import ActionRenderError
 from grana.rendering import Templar
+from grana.rendering.containers import LazyProxy
 
 
 def test_outcome_rendering(loose_templar: Templar) -> None:
@@ -129,3 +130,9 @@ def test_render_deep_context(loose_templar: Templar) -> None:
     """Test rendering of deep context references"""
     assert loose_templar.render("@{ context.deepRenderData.foo }") == "This is a test"
     assert loose_templar.render("@{ context.deepRenderData.bar }") == "['a', '20']"
+
+
+def test_recursive_render_unwrap(loose_templar: Templar) -> None:
+    """Check that an object is totally unwrapped from lazy proxies during recursive rendering"""
+    test_object = object()
+    assert loose_templar.recursive_render(LazyProxy(lambda: LazyProxy(lambda: test_object))) is test_object
