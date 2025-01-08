@@ -134,6 +134,5 @@ def test_render_deep_context(loose_templar: Templar) -> None:
 
 def test_recursive_render_unwrap(loose_templar: Templar) -> None:
     """Check that an object is totally unwrapped from lazy proxies during recursive rendering"""
-    test_set: set[str] = {"a", "b", "c"}
-    nested_lazy_object = LazyProxy(lambda: LazyProxy(lambda: test_set))
-    assert loose_templar.recursive_render(nested_lazy_object) is test_set
+    test_object = object()
+    assert loose_templar.recursive_render(LazyProxy(lambda: LazyProxy(lambda: test_object))) is test_object
