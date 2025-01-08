@@ -7,7 +7,6 @@ from classlogging import LoggerMixin
 
 from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
-from .containers import LazyProxy
 from .tokenizing import TemplarStringLexer
 from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
 from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
@@ -139,10 +138,11 @@ class Templar(LoggerMixin):
         elif isinstance(data, str):
             result = self.render(data)
         elif isinstance(data, ObjectTemplate):
-            result = self._eval(data.expression)
+            evaluated_expression: t.Any = self._eval(data.expression)
+            result = self.recursive_render(evaluated_expression)
         else:
             result = data
         # Unwrap lazy proxies
-        if isinstance(result, LazyProxy):
+        while isinstance(result, c.LazyProxy):
             result = result.__wrapped__
         return result
