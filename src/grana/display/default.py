@@ -104,32 +104,28 @@ class PrologueDisplay(BaseDisplay):
             self.display(line)
 
     def on_plan_interaction(self, workflow: Workflow) -> None:
-        displayed_action_names_with_descriptions: t.List[str] = []
-        default_selected_action_names_with_descriptions: t.List[str] = []
-        full_description_to_names_map: t.Dict[str, str] = {}
+        displayed_action_names_with_descriptions: t.List[t.Tuple[str, str]] = []
+        default_selected_action_names: t.List[str] = []
         for action in workflow.iterate_actions():
             if action.selectable:
                 action_name_with_description: str = action.name
                 if action.description is not None:
                     action_name_with_description = f"{action_name_with_description}: {action.description}"
-                displayed_action_names_with_descriptions.append(action_name_with_description)
-                default_selected_action_names_with_descriptions.append(action_name_with_description)
-                if action_name_with_description in full_description_to_names_map:
-                    raise InteractionError(f"Action full descriptions collision: {action_name_with_description!r}")
-                full_description_to_names_map[action_name_with_description] = action.name
+                displayed_action_names_with_descriptions.append((action_name_with_description, action.name))
+                default_selected_action_names.append(action.name)
         if not displayed_action_names_with_descriptions:
             raise InteractionError("No selectable actions found")
         selected_action_names: t.List[str] = self._run_dialog(
             choices=displayed_action_names_with_descriptions,
-            default=default_selected_action_names_with_descriptions,
+            default=default_selected_action_names,
         )
         self.logger.warning(f"Interactively selected actions: {selected_action_names}")
         for action in workflow.iterate_actions():
-            if action.name in displayed_action_names_with_descriptions and action.name not in selected_action_names:
+            if action.name in default_selected_action_names and action.name not in selected_action_names:
                 action.disable()
 
     @classmethod
-    def _run_dialog(cls, choices: t.List[str], default: t.List[str]) -> t.List[str]:  # pragma: no cover
+    def _run_dialog(cls, choices: t.List[t.Tuple[str, str]], default: t.List[str]) -> t.List[str]:  # pragma: no cover
         if not sys.stdin.isatty():
             raise InteractionError
         answers: t.Dict[str, t.List[str]] = inquirer.prompt(

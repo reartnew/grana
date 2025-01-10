@@ -388,6 +388,7 @@ def test_interaction_context(
         actions:
           - name: Foo
             type: noop
+            description: Some description
           - name: Bar
             type: noop
             selectable: False
@@ -400,25 +401,6 @@ def test_interaction_context(
         "✓ SUCCESS: Bar",
         "◯ OMITTED: Baz",
     ]
-
-
-def test_interaction_full_description_collision(
-    run_text: RunFactoryType,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Test interaction description collision"""
-    monkeypatch.setattr(C, "INTERACTIVE_MODE", True)
-    with pytest.raises(exceptions.InteractionError, match="Action full descriptions collision: 'Foo: Bar'"):
-        run_text(
-            """
-            actions:
-              - name: "Foo: Bar"
-                type: noop
-              - name: Foo
-                description: Bar
-                type: noop
-            """
-        )
 
 
 def test_empty_interaction(
