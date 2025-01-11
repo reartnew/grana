@@ -67,11 +67,11 @@ grana info env-vars
 
 #### Development environment setup
 
-Requires system-wide poetry>=1.3.2, see [official documentation](https://python-poetry.org).
+Requires system-wide poetry>=1.8.3, see [official documentation](https://python-poetry.org).
 
 ```shell
-poetry env use python3.9
-poetry install --no-root --sync --all-extras
+poetry env use python3.11
+poetry install --sync --all-extras
 ```
 
 The root directory for the source code is `src`,
