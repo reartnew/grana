@@ -4,6 +4,14 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 import os
+from grana.version import __version__
+
+# version_switch_json_url = "https://grana.readthedocs.io/en/latest/_static/version-switch.json"
+version_switch_json_url = "_static/version-switch.json"
+# Effective check of the RTD env
+version_match = os.environ.get("READTHEDOCS_VERSION")
+if version_match == "latest":
+    version_match = f"v{__version__}"
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -50,11 +58,56 @@ html_theme = "pydata_sphinx_theme"
 html_sourcelink_suffix = ""
 html_last_updated_fmt = ""
 
-# Define the json_url for our version switcher.
-json_url = "https://pydata-sphinx-theme.readthedocs.io/en/latest/_static/switcher.json"
-
 # Define the version we use for matching in the version switcher.
 html_static_path = ["_static"]
-html_css_files = ["custom.css"]
-html_js_files = ["pydata-icon.js", "custom-icon.js"]
+# html_css_files = ["custom.css"]
+html_js_files = ["pypi-fontawesome-icon.js"]
 todo_include_todos = True
+
+html_theme_options = {
+    "header_links_before_dropdown": 4,
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/reartnew/grana",
+            "icon": "fa-brands fa-github",
+        },
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/grana",
+            "icon": "fa-extra fa-pypi",
+        },
+    ],
+    "logo": {
+        "text": "Grana",
+        # "image_dark": "_static/logo-dark.svg",
+    },
+    "use_edit_page_button": True,
+    "show_toc_level": 1,
+    # [left, content, right] For testing that the navbar items align properly
+    "navbar_align": "left",
+    # "show_nav_level": 2,
+    "show_version_warning_banner": True,
+    "navbar_center": [
+        # "version-switcher",
+        "navbar-nav",
+    ],
+    "footer_start": ["copyright"],
+    "footer_center": ["sphinx-version"],
+    "secondary_sidebar_items": {
+        "**/*": ["page-toc", "edit-this-page", "sourcelink"],
+        "examples/no-sidebar": [],
+    },
+    # "switcher": {
+    #     "json_url": version_switch_json_url,
+    #     "version_match": version_match,
+    # },
+    "back_to_top_button": True,
+}
+
+html_context = {
+    "github_user": "reartnew",
+    "github_repo": "grana",
+    "github_version": "main",
+    "doc_path": "docs",
+}

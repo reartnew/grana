@@ -13,15 +13,10 @@ The original philosophy of the project is to provide the following features:
 - Actions are parametrized, and parameters can be results of lazy evaluation of expressions.
 - Custom action types can be created by implementing a very simple interface.
 
-```{warning}
-This theme is still under active development, and we make no promises
-about the stability of any specific HTML structure, CSS variables, etc.
-Make these customizations at your own risk, and pin versions if you're
-worried about breaking changes!
-```
+And here we are.
 
 ```{toctree}
-:caption: Get started
+:caption: Contents
 
-install
+user_guide/index
 ```
