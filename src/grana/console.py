@@ -150,15 +150,15 @@ def validate() -> None:
     logger.info(f"Located actions number: {action_num}")
 
 
-@main.group
-def info() -> None:
-    """Package information."""
-
-
-@info.command
+@wrap_cli_command
 def version() -> None:
     """Show package version."""
     print(__version__)
+
+
+@main.group
+def info() -> None:
+    """Tool information."""
 
 
 @info.command

@@ -33,7 +33,10 @@ class RunnerType(t.Protocol):
     ) -> list[str]: ...
 
 
-BuilderType = t.Callable[[str], RunnerType]
+class BuilderType(t.Protocol):
+    """Protocol for the `builder` fixture return type"""
+
+    def __call__(self, *commands: str) -> RunnerType: ...
 
 
 def _invoke(*args, **kwargs) -> list[str]:
@@ -54,9 +57,9 @@ def builder(monkeypatch: pytest.MonkeyPatch) -> BuilderType:
     monkeypatch.setattr(DotEnv, "set_as_environment_variables", _noop)
     monkeypatch.setattr(classlogging, "configure_logging", _noop)
 
-    def build(subcommand: str):
+    def build(*subcommand: str):
         def execute(text: t.Optional[str] = None, opts: OptsType = None, global_opts: OptsType = None) -> list[str]:
-            return _invoke(console.main, (global_opts or []) + [subcommand, "-"] + (opts or []), input=text)
+            return _invoke(console.main, (global_opts or []) + list(subcommand) + (opts or []), input=text)
 
         return execute
 
@@ -64,15 +67,21 @@ def builder(monkeypatch: pytest.MonkeyPatch) -> BuilderType:
 
 
 @pytest.fixture
-def run(builder: BuilderType) -> RunnerType:
+def run_cmd(builder: BuilderType) -> RunnerType:
     """Setup test run fed from stdin"""
-    return builder("run")
+    return builder("run", "-")
 
 
 @pytest.fixture
-def validate(builder: BuilderType) -> RunnerType:
+def validate_cmd(builder: BuilderType) -> RunnerType:
     """Setup test validate fed from stdin"""
-    return builder("validate")
+    return builder("validate", "-")
+
+
+@pytest.fixture
+def version_cmd(builder: BuilderType) -> RunnerType:
+    """Setup test version"""
+    return builder("version")
 
 
 GOOD_WORKFLOW_TEXT: str = """---
@@ -82,14 +91,14 @@ actions:
 """
 
 
-def test_cli_version() -> None:
+def test_cli_version(version_cmd: RunnerType) -> None:
     """Check version command"""
-    assert _invoke(console.main, ["info", "version"]) == [version.__version__]
+    assert version_cmd() == [version.__version__]
 
 
-def test_cli_validate(validate: RunnerType) -> None:
+def test_cli_validate(validate_cmd: RunnerType) -> None:
     """Check validate command"""
-    assert validate(GOOD_WORKFLOW_TEXT) == []
+    assert validate_cmd(GOOD_WORKFLOW_TEXT) == []
 
 
 def test_cli_env_vars() -> None:
@@ -98,17 +107,17 @@ def test_cli_env_vars() -> None:
     assert _invoke(console.main, ["info", "env-vars"]) == doc.rstrip().splitlines()
 
 
-def test_cli_run(run: RunnerType) -> None:
+def test_cli_run(run_cmd: RunnerType) -> None:
     """Default run"""
-    assert run(text=GOOD_WORKFLOW_TEXT) == [
+    assert run_cmd(text=GOOD_WORKFLOW_TEXT) == [
         "[echo-0]  | foo",
         "✓ SUCCESS: echo-0",
     ]
 
 
-def test_cli_run_display(run: RunnerType) -> None:
+def test_cli_run_display(run_cmd: RunnerType) -> None:
     """Run with overridden display"""
-    assert run(
+    assert run_cmd(
         text=GOOD_WORKFLOW_TEXT,
         global_opts=["--display", "headers"],
     ) == [
@@ -120,9 +129,9 @@ def test_cli_run_display(run: RunnerType) -> None:
 
 
 @pytest.mark.parametrize("strategy", ["free", "sequential", "loose", "strict", "strict-sequential"])
-def test_cli_run_explicit_strategy(run: RunnerType, strategy: str) -> None:
+def test_cli_run_explicit_strategy(run_cmd: RunnerType, strategy: str) -> None:
     """Run with overridden strategy"""
-    assert run(
+    assert run_cmd(
         text=GOOD_WORKFLOW_TEXT,
         opts=["--strategy", strategy],
     ) == [
@@ -131,36 +140,36 @@ def test_cli_run_explicit_strategy(run: RunnerType, strategy: str) -> None:
     ]
 
 
-def test_cli_run_execution_failed(run: RunnerType) -> None:
+def test_cli_run_execution_failed(run_cmd: RunnerType) -> None:
     """Catch ExecutionFailed"""
     with pytest.raises(CLIError, match="<1>"):
-        run(text="{actions: [{type: shell, command: foobar}]}")
+        run_cmd(text="{actions: [{type: shell, command: foobar}]}")
 
 
-def test_cli_run_load_error(run: RunnerType) -> None:
+def test_cli_run_load_error(run_cmd: RunnerType) -> None:
     """Catch LoadError"""
     with pytest.raises(CLIError, match="<102>"):
-        run(text="actions:")
+        run_cmd(text="actions:")
 
 
-def test_cli_run_integrity_error(run: RunnerType) -> None:
+def test_cli_run_integrity_error(run_cmd: RunnerType) -> None:
     """Catch IntegrityError"""
     with pytest.raises(CLIError, match="<103>"):
-        run(text="actions: []")
+        run_cmd(text="actions: []")
 
 
-def test_cli_run_unhandled_exception(run: RunnerType) -> None:
+def test_cli_run_unhandled_exception(run_cmd: RunnerType) -> None:
     """Catch YAML parse error"""
     with pytest.raises(CLIError, match="<2>"):
-        run(text="!@#$%^")
+        run_cmd(text="!@#$%^")
 
 
-def test_cli_run_help(run: RunnerType) -> None:
+def test_cli_run_help(run_cmd: RunnerType) -> None:
     """CLI help"""
-    assert "  Run pipeline immediately." in run(opts=["--help"])
+    assert "  Run pipeline immediately." in run_cmd(opts=["--help"])
 
 
-def test_cli_multiple_positional_args(run: RunnerType) -> None:
+def test_cli_multiple_positional_args(run_cmd: RunnerType) -> None:
     """Only one positional argument should be accepted"""
     with pytest.raises(CLIError, match="<2>"):
-        run(opts=["foo", "bar"])
+        run_cmd(opts=["foo", "bar"])
