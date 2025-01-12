@@ -25,6 +25,7 @@ author = "Artem Novikov"
 
 extensions = [
     "myst_parser",
+    "sphinx_copybutton",
 ]
 
 templates_path = ["_templates"]
@@ -49,8 +50,8 @@ language = "en"
 # Exclude copy button from appearing over notebook cell numbers by using :not()
 # The default copybutton selector is `div.highlight pre`
 # https://github.com/executablebooks/sphinx-copybutton/blob/master/sphinx_copybutton/__init__.py#L82
-copybutton_exclude = ".linenos, .gp"
 copybutton_selector = ":not(.prompt) > div.highlight pre"
+copybutton_prompt_text = "$ "
 
 html_theme = "pydata_sphinx_theme"
 # html_logo = "_static/logo.svg"
