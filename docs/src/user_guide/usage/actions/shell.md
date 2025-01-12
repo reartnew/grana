@@ -15,6 +15,7 @@ On how to call actions in general, refer to [Calling actions](./index).
 ## Overview
 This action allocates a shell and runs a script,
 piping standard output/error streams to the end user.
+The action is considered successful, when the return code of the shell equals zero.
 By default, a few helper functions definitions are added (see [#helpers](#helpers)).
 
 ## Parameters
