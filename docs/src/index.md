@@ -17,6 +17,5 @@ And here we are.
 
 ```{toctree}
 :caption: Contents
-
 user_guide/index
 ```

@@ -1,7 +1,6 @@
-User Guide
+Usage
 ================
 
 ```{toctree}
-install
-usage/index
+running_workflow
 ```
