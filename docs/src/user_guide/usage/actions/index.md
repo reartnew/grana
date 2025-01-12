@@ -5,4 +5,5 @@ Actions in a nutshell
 :caption: Action index
 :maxdepth: 1
 shell
+subflow
 ```
