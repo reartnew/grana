@@ -6,4 +6,5 @@ Actions in a nutshell
 :maxdepth: 1
 shell
 subflow
+echo
 ```

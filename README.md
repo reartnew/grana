@@ -52,3 +52,8 @@ $ poetry run pytest --cov --cov-report=html:.coverage_report
 ```shell
 $ poetry run tox
 ```
+
+#### Running docs builder development server
+```shell
+$ poetry run sphinx-autobuild -aEb html docs/src docs/dist
+```
