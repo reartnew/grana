@@ -95,10 +95,11 @@ html_theme_options = {
     ],
     "footer_start": ["copyright"],
     "footer_center": ["sphinx-version"],
-    "secondary_sidebar_items": {
-        "**/*": ["page-toc", "edit-this-page", "sourcelink"],
-        "examples/no-sidebar": [],
-    },
+    "secondary_sidebar_items": [
+        # "page-toc",
+        # "edit-this-page",
+        # "sourcelink",
+    ],
     # "switcher": {
     #     "json_url": version_switch_json_url,
     #     "version_match": version_match,
