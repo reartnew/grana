@@ -25,7 +25,7 @@ For more details, see the [Installation guide](https://grana.readthedocs.io/en/l
 $ grana run workflow.yaml
 ```
 
-Take a look at the [usage documentation](https://grana.readthedocs.io/en/latest/user_guide/usage.html) also.
+Take a look at the [usage documentation](https://grana.readthedocs.io/en/latest/user_guide/usage) also.
 ## Documentation
 
 You're welcome to read the documentation at [grana.readthedocs.io](https://grana.readthedocs.io/en/latest/index.html).
