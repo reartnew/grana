@@ -1,7 +1,6 @@
-# exception: LoadError
-# match: Unrecognized configuration keys
 ---
 configuration:
+  # Must warn, but not fail
   foo: bar
 actions:
 

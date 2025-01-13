@@ -255,11 +255,8 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         if not isinstance(configuration_dict, dict):
             self._throw(f"'configuration' contents should be a dict (got {type(configuration_dict)!r})")
         allowed_cfg_keys: set[str] = {"strategy"}
-        if bad_cfg_keys := set(configuration_dict) - allowed_cfg_keys:
-            self._throw(
-                f"Unrecognized configuration keys: {sorted(bad_cfg_keys)}"
-                f" (expected some of: {sorted(allowed_cfg_keys)})"
-            )
+        for unrecognized_cfg_key in sorted(set(configuration_dict) - allowed_cfg_keys):
+            self.logger.warning(f"Unrecognized configuration key: {unrecognized_cfg_key!r}")
         if "strategy" in configuration_dict:
             strategy_value: str = configuration_dict["strategy"]
             if strategy_value not in KNOWN_STRATEGIES:
