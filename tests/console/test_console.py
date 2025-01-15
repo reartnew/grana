@@ -110,8 +110,8 @@ def test_cli_env_vars() -> None:
 def test_cli_run(run_cmd: RunnerType) -> None:
     """Default run"""
     assert run_cmd(text=GOOD_WORKFLOW_TEXT) == [
-        "[echo-0]  | foo",
-        "✓ SUCCESS: echo-0",
+        "[echo]  | foo",
+        "✓ SUCCESS: echo",
     ]
 
 
@@ -121,10 +121,10 @@ def test_cli_run_display(run_cmd: RunnerType) -> None:
         text=GOOD_WORKFLOW_TEXT,
         global_opts=["--display", "headers"],
     ) == [
-        " ┌─[echo-0]",
+        " ┌─[echo]",
         " │ foo",
         " ╵",
-        " ✓ SUCCESS: echo-0",
+        " ✓ SUCCESS: echo",
     ]
 
 
@@ -135,8 +135,8 @@ def test_cli_run_explicit_strategy(run_cmd: RunnerType, strategy: str) -> None:
         text=GOOD_WORKFLOW_TEXT,
         opts=["--strategy", strategy],
     ) == [
-        "[echo-0]  | foo",
-        "✓ SUCCESS: echo-0",
+        "[echo]  | foo",
+        "✓ SUCCESS: echo",
     ]
 
 

@@ -166,7 +166,11 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
             if not name:
                 self._throw("Action node name is empty")
         else:
-            name = f"{action_type}-{self._action_type_counters[action_type]}"
+            if (action_counter := self._action_type_counters[action_type]) > 0:
+                auto_name_suffix: str = f"-{action_counter + 1}"
+            else:
+                auto_name_suffix = ""
+            name = f"{action_type}{auto_name_suffix}"
         self._action_type_counters[action_type] += 1
         # Description
         description: t.Optional[str] = node.pop("description", None)
