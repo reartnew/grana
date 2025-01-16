@@ -2,7 +2,7 @@ Usage
 ================
 
 ```{toctree}
-running_workflow
+getting_started
 workflow_structure/index
 actions/index
 ```

@@ -1,4 +1,4 @@
-Running workflows
+Getting started
 =================
 
 ```{attention}
