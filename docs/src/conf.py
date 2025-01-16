@@ -41,7 +41,7 @@ if not os.environ.get("READTHEDOCS"):
     sitemap_url_scheme = "{link}"
 
 myst_enable_extensions = ["colon_fence", "linkify", "substitution"]
-myst_heading_anchors = 2
+myst_heading_anchors = 4
 myst_substitutions = {"rtd": "[Read the Docs](https://readthedocs.org/)"}
 
 language = "en"

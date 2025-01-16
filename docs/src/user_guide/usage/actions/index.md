@@ -19,7 +19,7 @@ During the execution, an action can report named values, which are called *Outco
 and can later be reused as input for another actions. For an example of doing so,
 refer to the shell [yield_outcome](./shell.md#helpers) function.
 
-## Action index
+## Action types index
 ```{toctree}
 :maxdepth: 1
 echo

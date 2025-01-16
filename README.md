@@ -55,5 +55,5 @@ $ poetry run tox
 
 #### Running docs builder development server
 ```shell
-$ poetry run sphinx-autobuild -aEb html docs/src docs/dist
+$ poetry run sphinx-autobuild -aEWb html docs/src docs/dist
 ```
