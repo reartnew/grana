@@ -3,9 +3,9 @@ Getting started
 
 ```{attention}
 Since Grana is a CLI tool,
-this section covers command-line scenarios only. 
+this section covers command-line scenarios only.
 ```
-   
+
 ```{contents} On this page:
    :depth: 1
    :local:
@@ -23,7 +23,7 @@ actions:
     type: shell
     command: echo "Grana works!"
 ```
-Then, staying in the same directory, call a command: 
+Then, staying in the same directory, call a command:
 ```shell
 $ grana run
 ```

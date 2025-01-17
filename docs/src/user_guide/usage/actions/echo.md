@@ -17,7 +17,7 @@ This action shows the given message, and that's it.\
 May be useful for debugging your workflows.
 
 ## Parameters
-:::{list-table} 
+:::{list-table}
 :widths: 1 1 4
 :header-rows: 1
 *   - Name

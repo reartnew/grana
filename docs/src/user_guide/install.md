@@ -13,5 +13,5 @@ $ pip install grana
 Grana features multiple extensions.
 To install all of them, use the following:
 ```shell
-$ pip install "grana[all]" 
+$ pip install "grana[all]"
 ```

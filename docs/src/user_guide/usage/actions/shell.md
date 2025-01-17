@@ -19,7 +19,7 @@ The action is considered successful, when the return code of the shell equals ze
 By default, a few helper functions definitions are added (see [#helpers](#helpers)).
 
 ## Parameters
-:::{list-table} 
+:::{list-table}
 :widths: 1 1 4
 :header-rows: 1
 *   - Name
@@ -49,14 +49,14 @@ By default, a few helper functions definitions are added (see [#helpers](#helper
     - **string**\
       *optional*
     - Path to the shell binary.\
-      See also: default shell executable. 
+      See also: default shell executable.
 :::
 
 ## Helpers
 
 :::{warning}
 These functions rely on writing service messages to the standard output,
-so redirecting may break their behaviour. 
+so redirecting may break their behaviour.
 :::
 
 When shell injection is enabled,
@@ -72,7 +72,7 @@ These are:
   $ yield_outcome foo bar
   ```
   ```bash
-  # Registers an outcome named "foo" with value of the data.txt file content 
+  # Registers an outcome named "foo" with value of the data.txt file content
   $ cat data.txt | yield_outcome foo
   ```
 :::

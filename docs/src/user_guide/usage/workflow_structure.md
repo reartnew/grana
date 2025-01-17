@@ -79,7 +79,7 @@ This field, when set, should be of one of the following types:
         *{sub}`optional,`*\
         *{sup}`type: boolean`*
       - Force the dependency strictness.\
-        When not set, it is determined by the Strategy. 
+        When not set, it is determined by the Strategy.
   :::
   ```yaml
   # An example of an action using mapping-type dependencies
@@ -125,7 +125,7 @@ These settings reside in this section.
 configuration:
   strategy: strict  # Set the strategy explicitly for this workflow
 context:
-  greeting: "Hello, @{ ctx.user.name }!"  # A template with a reference to another context field 
+  greeting: "Hello, @{ ctx.user.name }!"  # A template with a reference to another context field
   user:
     name: !@ env.USER  # Context expression
 actions:

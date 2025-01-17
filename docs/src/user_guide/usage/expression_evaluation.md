@@ -49,7 +49,7 @@ context:
     GRANA_TEST_VAR_2: bar
   combinedEnvMap: !@ "{ **ctx.firstEnvMap, **ctx.secondEnvMap }"
 actions:
-  
+
   # This action will succeed
   - type: shell
     environment: !@ ctx.combinedEnvMap

@@ -18,7 +18,7 @@ Failure criteria for the step are the same as for any workflow:
 some action failed, workflow source file not found, etc.
 
 ## Parameters
-:::{list-table} 
+:::{list-table}
 :widths: 1 1 4
 :header-rows: 1
 *   - Name
