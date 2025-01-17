@@ -109,8 +109,8 @@ This field, when set, should be of one of the following types:
 
 ### `context`
 
-Contains key-value definitions of context fields,
-which are either literals, expressions or complex YAML types consisting of them.
+Contains key-value definitions of context fields, which are either literals,
+[expressions](./expression_evaluation.md#yaml-expression-reference-type) or complex YAML types consisting of them.
 Root structure **must** be a mapping with string keys, yet values types are not forced.
 
 ### `configuration`
