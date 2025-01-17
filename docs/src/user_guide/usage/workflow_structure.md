@@ -20,7 +20,7 @@ A typical workflow source is a YAML document, containing a mapping with the fiel
 Any other fields or document types are rejected by default.
 
 ### `actions`
-Represents a list of mappings, each of which define an [action](../actions/index.md).
+Represents a list of mappings, each of which define an [action](./actions/index.md).
 The mapping structure is:
 :::{list-table}
 :widths: 1 4
@@ -31,7 +31,7 @@ The mapping structure is:
       *{sub}`required,`*\
       *{sup}`type: string`*
     - Defines what and how this action does.\
-      To get the list of delivered types, see [](../actions/index.md#action-types-index).\
+      To get the list of delivered types, see [](./actions/index.md#action-types-index).\
       On how to define a custom type, go to the developers guide.
 *   - `name`\
       *{sub}`optional,`*\
