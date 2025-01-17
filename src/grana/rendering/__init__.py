@@ -8,7 +8,7 @@ from classlogging import LoggerMixin
 from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
 from .tokenizing import TemplarStringLexer
-from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
+from ..actions.types import Expression, qualify_string_as_potentially_renderable
 from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
 
 __all__ = [
@@ -110,7 +110,7 @@ class Templar(LoggerMixin):
         """Deep copy of context data,
         while transforming dicts into attribute-accessor proxies
         and turning leaf string values into deferred templates."""
-        if isinstance(data, ObjectTemplate):
+        if isinstance(data, Expression):
             return c.LazyProxy(lambda: self._evaluate_context_object_expression(data.expression))
         if isinstance(data, dict):
             result_dict = c.AttrDict()
@@ -135,7 +135,7 @@ class Templar(LoggerMixin):
             result = [self.recursive_render(v) for v in data]
         elif isinstance(data, str):
             result = self.render(data)
-        elif isinstance(data, ObjectTemplate):
+        elif isinstance(data, Expression):
             evaluated_expression: t.Any = self._eval(data.expression)
             result = self.recursive_render(evaluated_expression)
         else:
