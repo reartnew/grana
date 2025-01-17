@@ -109,7 +109,14 @@ This field, when set, should be of one of the following types:
 
 ### `context`
 
+Contains key-value definitions of context fields,
+which are either literals, expressions or complex YAML types consisting of them.
+Root structure **must** be a mapping with string keys, yet values types are not forced.
+
 ### `configuration`
+
+Some parameters can be set for the workflow explicitly (e.g. strategy).
+These settings reside in this section.
 
 ## A comprehensive example
 
@@ -120,7 +127,7 @@ configuration:
 context:
   greeting: "Hello, @{ ctx.user.name }!"  # A template with a reference to another context field 
   user:
-    name: !@ env.USER
+    name: !@ env.USER  # Context expression
 actions:
 
   - name: GreetUser
