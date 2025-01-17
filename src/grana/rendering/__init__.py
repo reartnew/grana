@@ -34,11 +34,12 @@ class Templar(LoggerMixin):
         status_container: c.AttrDict = c.ActionContainingDict(action_states)
         context_container: c.AttrDict = c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
         environment_container: c.AttrDict = c.LooseDict(os.environ)
-        metadata_container: c.AttrDict = c.LooseDict(metadata or {})
+        metadata_container: c.AttrDict = c.LooseDict({"status": status_container})
+        if metadata is not None:
+            metadata_container.update(metadata)
         self._locals: dict[str, c.AttrDict] = {
             # Full names
             "outcomes": outcomes_container,
-            "status": status_container,
             "context": context_container,
             "environment": environment_container,
             "metadata": metadata_container,

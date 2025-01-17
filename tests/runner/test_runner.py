@@ -207,7 +207,7 @@ def test_status_good_substitution(run_text: RunFactoryType) -> None:
           - name: Foo
             type: shell
             command: |
-              [ "@{status.Foo}" = "PENDING" ] || exit 1
+              [ "@{meta.status.Foo}" = "PENDING" ] || exit 1
         """
     )
 
