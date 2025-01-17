@@ -559,7 +559,7 @@ def test_implicit_naming(run_text: RunFactoryType) -> None:
     )
     assert output == [
         "[shell]    | Foo",
-        "[shell-1]  | Bar",
+        "[shell-2]  | Bar",
         "✓ SUCCESS: shell",
         "✓ SUCCESS: shell-2",
     ]
