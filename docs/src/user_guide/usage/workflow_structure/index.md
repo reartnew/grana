@@ -110,3 +110,38 @@ This field, when set, should be of one of the following types:
 ### `context`
 
 ### `configuration`
+
+## A comprehensive example
+
+```yaml
+---
+configuration:
+  strategy: strict  # Set the strategy explicitly for this workflow
+context:
+  greeting: "Hello, @{ ctx.user.name }!"  # A template with a reference to another context field 
+  user:
+    name: !@ env.USER
+actions:
+
+  - name: GreetUser
+    description: Say hi to the user
+    type: echo
+    message: "@{ ctx.greeting }"
+
+  - name: ReportCurrentWorkDir
+    description: Print out the working directory
+    type: shell
+    command: |
+      pwd
+    expects:
+      - name: GreetUser
+        strict: no
+
+  - name: CheckEnvironment
+    description: Validate that use has the AWS_DEFAULT_REGION variable set
+    type: shell
+    severity: low
+    command: |
+      [ "$AWS_DEFAULT_REGION" != "" ] || exit 1
+    expects: GreetUser
+```
