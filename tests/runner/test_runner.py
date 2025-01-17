@@ -107,7 +107,7 @@ def test_unrecognized_workflow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     [
         grana.FreeStrategy,
         grana.SequentialStrategy,
-        grana.LooseStrategy,
+        grana.ExplicitStrategy,
         grana.StrictStrategy,
         grana.StrictSequentialStrategy,
     ],
@@ -627,7 +627,7 @@ def test_colored_output(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatc
     ]
 
 
-def test_explicit_strategy(
+def test_set_strategy(
     run_text: RunFactoryType,
     monkeypatch: pytest.MonkeyPatch,
     display_collector: list[str],
@@ -640,7 +640,7 @@ def test_explicit_strategy(
             """
             ---
             configuration:
-              strategy: loose
+              strategy: explicit
             actions:
               - name: Foo
                 type: shell

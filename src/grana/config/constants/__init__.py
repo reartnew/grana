@@ -76,9 +76,9 @@ def _get_strategy_class_from_cli_arg() -> t.Optional[StrategyClassType]:
 
 
 def _get_default_strategy_class() -> StrategyClassType:
-    from ...strategy import LooseStrategy
+    from ...strategy import ExplicitStrategy
 
-    return LooseStrategy
+    return ExplicitStrategy
 
 
 def _isatty() -> bool:

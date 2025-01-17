@@ -128,7 +128,7 @@ def test_cli_run_display(run_cmd: RunnerType) -> None:
     ]
 
 
-@pytest.mark.parametrize("strategy", ["free", "sequential", "loose", "strict", "strict-sequential"])
+@pytest.mark.parametrize("strategy", ["free", "sequential", "explicit", "strict", "strict-sequential"])
 def test_cli_run_explicit_strategy(run_cmd: RunnerType, strategy: str) -> None:
     """Run with overridden strategy"""
     assert run_cmd(

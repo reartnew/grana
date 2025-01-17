@@ -37,7 +37,7 @@ class Env(EnvironmentNamespace):
         May point a file containing a Display class definition, which will replace the default implementation.
     GRANA_STRATEGY_NAME:
         Specifies the execution strategy.
-        Default is 'loose'.
+        Default is 'explicit'.
     GRANA_FORCE_COLOR:
         When specified, this will force the colored or non-coloured output, according to the setting.
     GRANA_SHELL_INJECT_YIELD_FUNCTION:

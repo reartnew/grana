@@ -5,7 +5,7 @@ import typing as t
 
 import pytest
 
-from grana import ActionBase, LooseStrategy, StrictSequentialStrategy
+from grana import ActionBase, ExplicitStrategy, StrictSequentialStrategy
 from grana.actions.base import ActionStatus
 from grana.strategy import BaseStrategy
 from grana.workflow import Workflow
@@ -15,7 +15,7 @@ from grana.workflow import Workflow
 async def test_chain_success(strict_successful_workflow: Workflow) -> None:
     """Chain successful execution"""
     result: list[ActionBase] = []
-    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_successful_workflow)
+    strategy: t.AsyncIterable[ActionBase] = ExplicitStrategy(strict_successful_workflow)
     async for action in strategy:  # type: ActionBase
         await action
         result.append(action)
@@ -23,7 +23,7 @@ async def test_chain_success(strict_successful_workflow: Workflow) -> None:
     assert all(action.status == ActionStatus.SUCCESS for action in result)
 
 
-@pytest.mark.parametrize("strategy_class", [LooseStrategy, StrictSequentialStrategy])
+@pytest.mark.parametrize("strategy_class", [ExplicitStrategy, StrictSequentialStrategy])
 @pytest.mark.asyncio
 async def test_chain_failure(strict_failing_workflow: Workflow, strategy_class: type[BaseStrategy]) -> None:
     """Chain failing execution"""
@@ -46,7 +46,7 @@ async def test_chain_failure(strict_failing_workflow: Workflow, strategy_class: 
 async def test_chain_skip(strict_skipping_workflow: Workflow) -> None:
     """Chain skipping execution"""
     result: list[ActionBase] = []
-    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_skipping_workflow)
+    strategy: t.AsyncIterable[ActionBase] = ExplicitStrategy(strict_skipping_workflow)
     async for action in strategy:  # type: ActionBase
         await action
         result.append(action)
@@ -58,7 +58,7 @@ async def test_chain_skip(strict_skipping_workflow: Workflow) -> None:
 
 def test_non_redefined_name() -> None:
     """Check strategy name collision"""
-    with pytest.raises(NameError, match="Strategy named 'loose' already exists"):
+    with pytest.raises(NameError, match="Strategy named 'explicit' already exists"):
         # pylint: disable=unused-variable
-        class NewLooseStrategy(LooseStrategy):
+        class NewExplicitStrategy(ExplicitStrategy):
             """Do not define new name"""

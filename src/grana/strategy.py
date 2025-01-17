@@ -20,7 +20,7 @@ __all__ = [
     "BaseStrategy",
     "FreeStrategy",
     "SequentialStrategy",
-    "LooseStrategy",
+    "ExplicitStrategy",
     "StrictStrategy",
     "StrictSequentialStrategy",
     "KNOWN_STRATEGIES",
@@ -95,10 +95,10 @@ class SequentialStrategy(FreeStrategy):
         return self._current
 
 
-class LooseStrategy(BaseStrategy):
+class ExplicitStrategy(BaseStrategy):
     """Keep tracking dependencies states"""
 
-    NAME = "loose"
+    NAME = "explicit"
 
     def __init__(self, workflow: Workflow) -> None:
         super().__init__(workflow)
@@ -162,7 +162,7 @@ class LooseStrategy(BaseStrategy):
         raise StopAsyncIteration
 
 
-class StrictStrategy(LooseStrategy):
+class StrictStrategy(ExplicitStrategy):
     """Respect all dependencies, but force them strict"""
 
     STRICT = True

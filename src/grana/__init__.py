@@ -13,7 +13,7 @@ from .runner import Runner
 from .strategy import (
     FreeStrategy,
     SequentialStrategy,
-    LooseStrategy,
+    ExplicitStrategy,
     StrictStrategy,
     StrictSequentialStrategy,
 )
