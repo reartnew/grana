@@ -13,6 +13,31 @@ but one can require a dependency, which is a reference to another action.
    :backlinks: none
 :::
 
+## Status
+
+Any action has a defined *status*, which is one of the following:
+
+:::{list-table}
+:widths: 1 4
+:header-rows: 1
+*   - Status
+    - Meaning
+*   - *PENDING*
+    - The action is scheduled, but has not started yet.
+*   - *RUNNING*
+    - The action is being executed.
+*   - *SUCCESS*
+    - The action has finished without errors.
+*   - *WARNING*
+    - The action has failed, but has low severity.
+*   - *FAILURE*
+    - The action has failed.
+*   - *SKIPPED*
+    - The action has either called a `skip` method or had a failed/skipped strict dependency.
+*   - *OMITTED*
+    - The action is not scheduled (e.g. was disabled during the plan interaction phase).
+:::
+
 ## Outcomes
 
 During the execution, an action can report named values, which are called *Outcomes*

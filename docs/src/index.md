@@ -17,5 +17,6 @@ whose purpose is launching pipelines easily in any environment from the local ma
 
 ```{toctree}
 :caption: Contents
+:maxdepth: 2
 user_guide/index
 ```

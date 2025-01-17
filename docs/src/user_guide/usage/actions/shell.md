@@ -78,7 +78,7 @@ These are:
 :::
 
 :::{function} skip()
-  Terminate the shell immediately and set the corresponding action status to `SKIPPED`.
+  Terminate the shell immediately and set the corresponding action [status](./index.md#status) to `SKIPPED`.
   Ignores all given arguments.
   Example:
   ```bash
