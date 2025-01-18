@@ -166,7 +166,7 @@ def test_cli_run_unhandled_exception(run_cmd: RunnerType) -> None:
 
 def test_cli_run_help(run_cmd: RunnerType) -> None:
     """CLI help"""
-    assert "  Run pipeline immediately." in run_cmd(opts=["--help"])
+    assert "  Run the pipeline." in run_cmd(opts=["--help"])
 
 
 def test_cli_multiple_positional_args(run_cmd: RunnerType) -> None:

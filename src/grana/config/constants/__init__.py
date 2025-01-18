@@ -111,7 +111,7 @@ class C:
         lambda: False,
     )
     ACTIONS_SOURCE_FILE: Optional[Path] = Optional(
-        lambda: maybe_path(get_cli_arg("workflow")),
+        lambda: maybe_path(get_cli_arg("workflow_file")),
         lambda: maybe_path(Env.GRANA_WORKFLOW_FILE),
     )
     WORKFLOW_LOADER_CLASS: Optional[LoaderClassType] = Optional(

@@ -26,6 +26,7 @@ author = "Artem Novikov"
 extensions = [
     "myst_parser",
     "sphinx_copybutton",
+    "sphinx_click",
 ]
 
 templates_path = ["_templates"]
