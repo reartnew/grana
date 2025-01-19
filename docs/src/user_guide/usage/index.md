@@ -8,4 +8,5 @@ actions/index
 expression_evaluation
 strategy
 cli
+configuration_parameters
 ```
