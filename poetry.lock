@@ -1568,13 +1568,13 @@ testing-docutils = ["pygments", "pytest (>=8,<9)", "pytest-param-files (>=0.6.0,
 
 [[package]]
 name = "named-env"
-version = "2.4.0"
+version = "2.4.1"
 description = "Class-based environment variables typed specification"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "named_env-2.4.0-py3-none-any.whl", hash = "sha256:0bd43e7acd2e5ef228bcec218afbd63f0dbf37d48285ecb4fc7fe1b4225436f8"},
-    {file = "named_env-2.4.0.tar.gz", hash = "sha256:6a0792da248c215c9278d709559dc72510b8efe2feaf6ddf0f3aff78561b6251"},
+    {file = "named_env-2.4.1-py3-none-any.whl", hash = "sha256:0540a6a1361a7646b1b2b63cd0ec02a387b0d78e5338800d6e57619cd4218400"},
+    {file = "named_env-2.4.1.tar.gz", hash = "sha256:72b2cff18bb2c465fcd63bbf786b5d854900980f35b139259a36199d85756154"},
 ]
 
 [package.extras]
@@ -3459,4 +3459,4 @@ tests = ["bandit", "black", "coverage", "mypy", "pylint", "pytest", "pytest-asyn
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9, <3.14"
-content-hash = "f017730a36bc2e94849e2d15f38a4985e9bc20ce838c74cd71bb48d23462405f"
+content-hash = "d52caa3fb9bee0d6e6ae27abf38239812b2e12f000dc4f5223c0ed1bb7685370"

@@ -80,7 +80,7 @@ def actions_definitions_directory(monkeypatch: pytest.MonkeyPatch) -> None:
     actions_class_definitions_base_path: Path = Path(__file__).parent / "extension" / "modules" / "actions"
     monkeypatch.setenv(
         name="GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY",
-        value=",".join(str(actions_class_definitions_base_path / sub_dir) for sub_dir in ("first", "second")),
+        value=":".join(str(actions_class_definitions_base_path / sub_dir) for sub_dir in ("first", "second")),
     )
 
 
