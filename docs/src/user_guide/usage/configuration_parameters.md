@@ -90,6 +90,17 @@ Configuration parameters
     - `GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY` (colon-separated paths)
 :::
 
+## EXTERNAL_PYTHON_MODULES_PATHS
+:::{list-table}
+:widths: 1 2
+*   - **Description**
+    - Directories to be added to `sys.path` while loading external modules
+*   - **Type**
+    - List of directories
+*   - **Environment variable**
+    - `GRANA_EXTERNAL_MODULES_PATHS` (colon-separated paths)
+:::
+
 ## DISPLAY_CLASS
 :::{list-table}
 :widths: 1 2

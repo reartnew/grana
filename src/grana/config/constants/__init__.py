@@ -124,6 +124,9 @@ class C:
     ACTION_CLASSES_DIRECTORIES: Mandatory[list[str]] = Mandatory(
         lambda: Env.GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY,
     )
+    EXTERNAL_PYTHON_MODULES_PATHS: Mandatory[list[Path]] = Mandatory(
+        lambda: Env.GRANA_EXTERNAL_MODULES_PATHS,
+    )
     DISPLAY_CLASS: Mandatory[DisplayClassType] = Mandatory(
         lambda: _maybe_display_class_by_name(get_cli_arg("display")),
         lambda: maybe_class_from_module(
