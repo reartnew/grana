@@ -21,3 +21,40 @@ Developing custom actions
       async def run(self):
           """Here goes your logic"""
   ```
+
+## About action arguments
+
+Each action class has an `args` field, which is:
+- Annotated with a python dataclass (typically a subclass of `grana.ArgsBase`).
+- Populated for the instance by the workflow, based on the loaded information.
+
+Subclasses of `grana.ArgsBase` are automatically dataclasses.\
+A fork of [dacite](https://github.com/konradhalas/dacite) is used to transform raw data into a dataclass instance.
+
+## Action methods
+
+:::{tip}
+Grana leverages python `asyncio` functionality to implement tasks concurrency,
+so be sure you module does not use long-running synchronous calls. 
+:::
+
+:::{function} run
+:async: True
+Main entry for any action. Return value is ignored.
+:::
+
+:::{function} say(message: str)
+Sends a text to the display.
+:::
+
+:::{function} yield_outcome(key: str, value: Any)
+Registers an outcome with the given *value* under the specified *key*.
+:::
+
+:::{function} skip
+Terminates execution and sets the status to `SKIPPED`. 
+:::
+
+:::{function} fail(message: str = "")
+Terminates execution with an optional message and sets the status to `FAILURE`.
+:::
