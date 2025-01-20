@@ -5,7 +5,7 @@ from grana import ActionBase, ArgsBase
 
 
 class UnionArgs(ArgsBase):
-    message: t.Union[str, t.List[str]]
+    message: t.Union[str, list[str]]
 
 
 class Action(ActionBase):

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import collections
 import contextlib
-import importlib.metadata as im
 import typing as t
 from enum import Enum
 from pathlib import Path
@@ -12,11 +11,10 @@ from pathlib import Path
 import dacite
 from classlogging import LoggerMixin
 from dacite.types import is_subclass
-from packaging.requirements import Requirement
 
 from ..actions.base import ActionBase, ArgsBase, ActionDependency, ActionSeverity
-from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
-from ..exceptions import LoadError, PackageRequirementsError
+from ..actions.types import Expression, qualify_string_as_potentially_renderable
+from ..exceptions import LoadError
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
 from ..tools.concealment import represent_object_type
 from ..tools.inspect import get_class_annotations
@@ -32,7 +30,7 @@ class TemplateIndifferentConfig(dacite.Config, LoggerMixin):
 
     @classmethod
     def is_instance(cls, value: t.Any, type_: t.Type) -> bool:
-        if isinstance(value, ObjectTemplate):
+        if isinstance(value, Expression):
             cls.logger.info(f"Skipping type check for object template, where {type_!r} was expected")
             return True
         if is_subclass(type_, Enum):
@@ -48,20 +46,19 @@ class TemplateIndifferentConfig(dacite.Config, LoggerMixin):
 class AbstractBaseWorkflowLoader(LoggerMixin):
     """Loaders base class"""
 
-    STATIC_ACTION_FACTORIES: t.Dict[str, t.Type[ActionBase]] = {}
+    STATIC_ACTION_FACTORIES: dict[str, type[ActionBase]] = {}
 
     def __init__(self) -> None:
-        self._actions: t.Dict[str, ActionBase] = {}
-        self._raw_file_names_stack: t.List[str] = []
-        self._resolved_file_paths_stack: t.List[Path] = []
-        self._gathered_context: t.Dict[str, t.Any] = {}
-        self._original_args_map: t.Dict[str, t.Dict[str, t.Any]] = {}
-        self._action_type_counters: t.Dict[str, int] = collections.defaultdict(int)
-        self._package_requirements: t.List[Requirement] = []
-        self._explicit_strategy_class: t.Optional[t.Type[BaseStrategy]] = None
+        self._actions: dict[str, ActionBase] = {}
+        self._raw_file_names_stack: list[str] = []
+        self._resolved_file_paths_stack: list[Path] = []
+        self._gathered_context: dict[str, t.Any] = {}
+        self._original_args_map: dict[str, dict[str, t.Any]] = {}
+        self._action_type_counters: dict[str, int] = collections.defaultdict(int)
+        self._explicit_strategy_class: t.Optional[type[BaseStrategy]] = None
 
     @property
-    def strategy_class(self) -> t.Optional[t.Type[BaseStrategy]]:
+    def strategy_class(self) -> t.Optional[type[BaseStrategy]]:
         """Return explicitly-set strategy class, if any"""
         return self._explicit_strategy_class
 
@@ -108,7 +105,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         """Load workflow partially from text (can be called recursively)"""
         raise NotImplementedError
 
-    def _get_action_factory_by_type(self, action_type: str) -> t.Type[ActionBase]:
+    def _get_action_factory_by_type(self, action_type: str) -> type[ActionBase]:
         if action_type not in self.STATIC_ACTION_FACTORIES:
             self._throw(f"Unknown dispatched type: {action_type}")
         return self.STATIC_ACTION_FACTORIES[action_type]
@@ -129,7 +126,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         if isinstance(dep_node, str):
             return dep_node, dep_holder
         if isinstance(dep_node, dict):
-            unexpected_dep_keys: t.Set[str] = set(dep_node) - {"name", "strict", "external"}
+            unexpected_dep_keys: set[str] = set(dep_node) - {"name", "strict", "external"}
             if unexpected_dep_keys:
                 self._throw(f"Unrecognized dependency node keys: {sorted(unexpected_dep_keys)}")
             # Dependency name
@@ -159,7 +156,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         if "type" not in node:
             self._throw("'type' not specified for action")
         action_type: str = node.pop("type")
-        action_class: t.Type[ActionBase] = self._get_action_factory_by_type(action_type)
+        action_class: type[ActionBase] = self._get_action_factory_by_type(action_type)
         # Action name
         name: str
         if "name" in node:
@@ -169,19 +166,23 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
             if not name:
                 self._throw("Action node name is empty")
         else:
-            name = f"{action_type}-{self._action_type_counters[action_type]}"
+            if (action_counter := self._action_type_counters[action_type]) > 0:
+                auto_name_suffix: str = f"-{action_counter + 1}"
+            else:
+                auto_name_suffix = ""
+            name = f"{action_type}{auto_name_suffix}"
         self._action_type_counters[action_type] += 1
         # Description
         description: t.Optional[str] = node.pop("description", None)
         if description is not None and not isinstance(description, str):
             self._throw(f"Unrecognized 'description' content type: {type(description)!r} (expected optional string)")
         # Dependencies
-        deps_node: t.Union[str, t.List[t.Union[str, dict]]] = node.pop("expects", [])
+        deps_node: t.Union[str, list[t.Union[str, dict]]] = node.pop("expects", [])
         if not isinstance(deps_node, str) and not isinstance(deps_node, list):
             self._throw(f"Unrecognized 'expects' content type: {type(deps_node)!r} (expected a string or list)")
         if isinstance(deps_node, str):
             deps_node = [deps_node]
-        dependencies: t.Dict[str, ActionDependency] = dict(
+        dependencies: dict[str, ActionDependency] = dict(
             self.build_dependency_from_node(dep_node) for dep_node in deps_node
         )
         # Selectable
@@ -217,7 +218,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
     def _build_args_from_the_rest_of_the_dict_node(
         self,
         action_name: str,
-        action_class: t.Type[ActionBase],
+        action_class: type[ActionBase],
         node: dict,
     ) -> ArgsBase:
         for mro_class in action_class.__mro__:
@@ -253,50 +254,13 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         """Obtain dictionary representation of the action arguments as was initially loaded"""
         return self._original_args_map[action.name]
 
-    def check_requirements(self) -> None:
-        """Check that all loaded requirements are met"""
-        failed_constrains: t.List[t.Tuple[t.Optional[str,], Requirement]] = []
-        for package_constrain in self._package_requirements:
-            self.logger.debug(f"Checking package requirement: {package_constrain}")
-            try:
-                installed_version: str = im.version(package_constrain.name)
-            except im.PackageNotFoundError:
-                failed_constrains.append((None, package_constrain))
-            else:
-                if installed_version not in package_constrain.specifier:
-                    failed_constrains.append((installed_version, package_constrain))
-        if failed_constrains:
-            fails_info: t.List[str] = ["Following package requirements were not satisfied:"]
-            for version, constrain in failed_constrains:
-                required_version_details: str = f" of version {constrain.specifier}" if constrain.specifier else ""
-                fails_info.append(f"    Requested {constrain.name}{required_version_details}, got {version}")
-            raise PackageRequirementsError("\n".join(fails_info))
-
-    def load_configuration_from_dict(self, configuration_dict: t.Dict[str, t.Any]) -> None:
+    def load_configuration_from_dict(self, configuration_dict: dict[str, t.Any]) -> None:
         """Process configuration dictionary"""
         if not isinstance(configuration_dict, dict):
             self._throw(f"'configuration' contents should be a dict (got {type(configuration_dict)!r})")
-        allowed_cfg_keys: t.Set[str] = {"requires_packages", "strategy"}
-        if bad_cfg_keys := set(configuration_dict) - allowed_cfg_keys:
-            self._throw(
-                f"Unrecognized configuration keys: {sorted(bad_cfg_keys)}"
-                f" (expected some of: {sorted(allowed_cfg_keys)})"
-            )
-        if "requires_packages" in configuration_dict:
-            required_packages_list: t.Union[t.List[str], str] = configuration_dict["requires_packages"]
-            if isinstance(required_packages_list, str):
-                required_packages_list = [required_packages_list]
-            elif not isinstance(required_packages_list, list):
-                self._throw(
-                    f"'configuration.requires_packages' contents should be "
-                    f"a list of strings or a string (got {type(required_packages_list)!r})"
-                )
-            for package_constrain_str in required_packages_list:
-                if not isinstance(package_constrain_str, str):
-                    self._throw(f"Unexpected package constrain: {package_constrain_str!r} (expected a string)")
-                package_constrain = Requirement(package_constrain_str)
-                self.logger.debug(f"Defining package constrain: {package_constrain!r}")
-                self._package_requirements.append(package_constrain)
+        allowed_cfg_keys: set[str] = {"strategy"}
+        for unrecognized_cfg_key in sorted(set(configuration_dict) - allowed_cfg_keys):
+            self.logger.warning(f"Unrecognized configuration key: {unrecognized_cfg_key!r}")
         if "strategy" in configuration_dict:
             strategy_value: str = configuration_dict["strategy"]
             if strategy_value not in KNOWN_STRATEGIES:

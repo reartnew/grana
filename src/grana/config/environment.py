@@ -1,5 +1,6 @@
 """Separate environment-centric module"""
 
+import pathlib
 import typing as t
 
 from named_env import (
@@ -7,7 +8,7 @@ from named_env import (
     OptionalString,
     OptionalTernary,
     OptionalBoolean,
-    OptionalList,
+    OptionalPathList,
 )
 
 __all__ = [
@@ -37,17 +38,17 @@ class Env(EnvironmentNamespace):
         May point a file containing a Display class definition, which will replace the default implementation.
     GRANA_STRATEGY_NAME:
         Specifies the execution strategy.
-        Default is 'loose'.
+        Default is 'explicit'.
     GRANA_FORCE_COLOR:
         When specified, this will force the colored or non-coloured output, according to the setting.
     GRANA_SHELL_INJECT_YIELD_FUNCTION:
         When set to True, all shell-related actions will inject the yield_outcome function definition.
         Default is True.
     GRANA_EXTERNAL_MODULES_PATHS:
-        A comma-separated list of local directories, which are added to the sys.path while loading any external modules.
+        A colon-separated list of local directories, which are added to the sys.path while loading any external modules.
         Default is an empty list.
     GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY:
-        A comma-separated list of local directories, from which all `*.py` files will be considered action definitions.
+        A colon-separated list of local directories, from which all `*.py` files will be considered action definitions.
         Each loaded definition is named after the filename stem and must contain an `Action` class.
         e.g. foo-bar.py may be referenced in a YAML workflow as `type: foo-bar`.
     GRANA_STRICT_OUTCOMES_RENDERING:
@@ -68,7 +69,7 @@ class Env(EnvironmentNamespace):
     GRANA_STRATEGY_NAME: str = OptionalString("")
     GRANA_FORCE_COLOR: t.Optional[bool] = OptionalTernary(None)  # type: ignore
     GRANA_SHELL_INJECT_YIELD_FUNCTION: bool = OptionalBoolean(True)  # type: ignore
-    GRANA_EXTERNAL_MODULES_PATHS: t.List[str] = OptionalList([])
-    GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY: t.List[str] = OptionalList([])
+    GRANA_EXTERNAL_MODULES_PATHS: list[pathlib.Path] = OptionalPathList([])
+    GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY: list[pathlib.Path] = OptionalPathList([])
     GRANA_STRICT_OUTCOMES_RENDERING: bool = OptionalBoolean(True)  # type: ignore
     GRANA_DEFAULT_SHELL_EXECUTABLE: str = OptionalString("/bin/sh")

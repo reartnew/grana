@@ -1,7 +1,6 @@
 """Check action parsing"""
 
 import asyncio
-import typing as t
 
 import pytest
 
@@ -30,7 +29,7 @@ class StubAction(ActionBase):
 async def test_action_messages_handling():
     """Check messages handling"""
     action = StubAction()
-    messages: t.List[str] = []
+    messages: list[str] = []
 
     async def reader():
         async for event in action.read_messages():

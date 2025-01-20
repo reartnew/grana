@@ -12,8 +12,8 @@ __all__ = [
     "get_default_loader_class_for_source",
 ]
 
-STREAM_DEFAULT_LOADER: t.Type[AbstractBaseWorkflowLoader] = DefaultYAMLWorkflowLoader
-SUFFIX_TO_LOADER_MAP: t.Dict[str, t.Type[AbstractBaseWorkflowLoader]] = {
+STREAM_DEFAULT_LOADER: type[AbstractBaseWorkflowLoader] = DefaultYAMLWorkflowLoader
+SUFFIX_TO_LOADER_MAP: dict[str, type[AbstractBaseWorkflowLoader]] = {
     ".yml": DefaultYAMLWorkflowLoader,
     ".yaml": DefaultYAMLWorkflowLoader,
 }
@@ -21,7 +21,7 @@ SUFFIX_TO_LOADER_MAP: t.Dict[str, t.Type[AbstractBaseWorkflowLoader]] = {
 
 def get_default_loader_class_for_source(
     source: t.Union[str, Path, io.TextIOBase],
-) -> t.Type[AbstractBaseWorkflowLoader]:
+) -> type[AbstractBaseWorkflowLoader]:
     """Return loader class based on file stats"""
     if isinstance(source, io.TextIOBase):
         return STREAM_DEFAULT_LOADER

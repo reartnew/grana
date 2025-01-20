@@ -6,7 +6,7 @@ import pytest
 
 from grana.config.constants import C
 from grana.config.environment import Env
-from grana.strategy import LooseStrategy, FreeStrategy
+from grana.strategy import ExplicitStrategy, FreeStrategy
 from grana.display.default import DefaultDisplay
 
 
@@ -17,9 +17,9 @@ def test_invalid_strategy_cli_arg(invalid_strategy_cli_arg: None) -> None:
 
 
 def test_default_strategy(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Check that default strategy is loose"""
+    """Check that default strategy is `explicit`"""
     monkeypatch.setattr(Env, "GRANA_STRATEGY_NAME", "")
-    assert C.STRATEGY_CLASS is LooseStrategy
+    assert C.STRATEGY_CLASS is ExplicitStrategy
 
 
 def test_valid_strategy_env_var(monkeypatch: pytest.MonkeyPatch) -> None:

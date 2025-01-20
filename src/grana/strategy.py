@@ -20,13 +20,13 @@ __all__ = [
     "BaseStrategy",
     "FreeStrategy",
     "SequentialStrategy",
-    "LooseStrategy",
+    "ExplicitStrategy",
     "StrictStrategy",
     "StrictSequentialStrategy",
     "KNOWN_STRATEGIES",
 ]
 
-KNOWN_STRATEGIES: t.Dict[str, t.Type[BaseStrategy]] = {}
+KNOWN_STRATEGIES: dict[str, type[BaseStrategy]] = {}
 
 
 class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
@@ -65,7 +65,7 @@ class FreeStrategy(BaseStrategy):
 
     def __init__(self, workflow: Workflow) -> None:
         super().__init__(workflow)
-        self._unprocessed: t.List[ActionBase] = list(workflow.values())
+        self._unprocessed: list[ActionBase] = list(workflow.values())
 
     async def __anext__(self) -> ActionBase:
         if not self._unprocessed:
@@ -95,17 +95,17 @@ class SequentialStrategy(FreeStrategy):
         return self._current
 
 
-class LooseStrategy(BaseStrategy):
+class ExplicitStrategy(BaseStrategy):
     """Keep tracking dependencies states"""
 
-    NAME = "loose"
+    NAME = "explicit"
 
     def __init__(self, workflow: Workflow) -> None:
         super().__init__(workflow)
         # Actions that have been emitted by the strategy and not finished yet
-        self._active_actions_map: t.Dict[str, ActionBase] = {}
+        self._active_actions_map: dict[str, ActionBase] = {}
         # Just a structured mutable copy of the dependency map
-        self._action_blockers: t.Dict[str, t.Set[str]] = {name: set(workflow[name].ancestors) for name in workflow}
+        self._action_blockers: dict[str, set[str]] = {name: set(workflow[name].ancestors) for name in workflow}
 
     def _skip_action(self, action: ActionBase) -> None:
         super()._skip_action(action)
@@ -113,7 +113,7 @@ class LooseStrategy(BaseStrategy):
 
     def _get_maybe_next_action(self) -> t.Optional[ActionBase]:
         """Completely non-optimal (always scan all actions), but readable yet"""
-        done_action_names: t.Set[str] = {action.name for action in self._workflow.values() if action.done()}
+        done_action_names: set[str] = {action.name for action in self._workflow.values() if action.done()}
         # Copy into a list for further possible pop
         for maybe_next_action_name, maybe_next_action_blockers in list(self._action_blockers.items()):
             maybe_next_action_blockers -= done_action_names
@@ -162,7 +162,7 @@ class LooseStrategy(BaseStrategy):
         raise StopAsyncIteration
 
 
-class StrictStrategy(LooseStrategy):
+class StrictStrategy(ExplicitStrategy):
     """Respect all dependencies, but force them strict"""
 
     STRICT = True

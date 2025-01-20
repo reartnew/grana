@@ -1,8 +1,0 @@
----
-configuration:
-  requires_packages: grana>=3.0.0a1
-actions:
-
-  - name: Foo
-    type: shell
-    command: echo foo

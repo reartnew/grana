@@ -6,7 +6,6 @@ import io
 import random
 import string
 import textwrap
-import typing as t
 from pathlib import Path
 
 import pytest
@@ -108,15 +107,15 @@ def test_unrecognized_workflow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     [
         grana.FreeStrategy,
         grana.SequentialStrategy,
-        grana.LooseStrategy,
+        grana.ExplicitStrategy,
         grana.StrictStrategy,
         grana.StrictSequentialStrategy,
     ],
 )
 def test_strategy_runner_call(
     runner_good_context: None,
-    strategy_class: t.Type[BaseStrategy],
-    display_collector: t.List[str],
+    strategy_class: type[BaseStrategy],
+    display_collector: list[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Check all strategies"""
@@ -208,7 +207,7 @@ def test_status_good_substitution(run_text: RunFactoryType) -> None:
           - name: Foo
             type: shell
             command: |
-              [ "@{status.Foo}" = "PENDING" ] || exit 1
+              [ "@{meta.status.Foo}" = "PENDING" ] || exit 1
         """
     )
 
@@ -248,7 +247,7 @@ async def test_docker_good_context(
     check_docker: None,
     ctx_from_text: CtxFactoryType,
     tmp_path: Path,
-    display_collector: t.List[str],
+    display_collector: list[str],
 ) -> None:
     """Check docker shell action step"""
     tmp_file_to_bind: Path = tmp_path / "bind_file.txt"
@@ -359,7 +358,7 @@ def test_empty_echo_context(run_text: RunFactoryType) -> None:
 
 def test_misplaced_disable_context(
     run_text: RunFactoryType,
-    display_collector: t.List[str],
+    display_collector: list[str],
 ) -> None:
     """Test context with misplaced action disable call"""
 
@@ -549,14 +548,20 @@ def test_implicit_naming(run_text: RunFactoryType) -> None:
     output = run_text(
         """
         ---
+        configuration:
+          strategy: sequential
         actions:
           - type: shell
             command: echo Foo
+          - type: shell
+            command: echo Bar
         """
     )
     assert output == [
-        "[shell-0]  | Foo",
-        "✓ SUCCESS: shell-0",
+        "[shell]    | Foo",
+        "[shell-2]  | Bar",
+        "✓ SUCCESS: shell",
+        "✓ SUCCESS: shell-2",
     ]
 
 
@@ -572,15 +577,15 @@ def test_low_severity(run_text: RunFactoryType) -> None:
         """
     )
     assert output == [
-        "[shell-0]  | Foo",
-        "          !| Exit code: 1",
-        "✓ WARNING: shell-0",
+        "[shell]  | Foo",
+        "        !| Exit code: 1",
+        "✓ WARNING: shell",
     ]
 
 
 def test_render_wrong_type(
     run_text: RunFactoryType,
-    display_collector: t.List[str],
+    display_collector: list[str],
 ) -> None:
     """Check late render type mismatch"""
 
@@ -598,29 +603,11 @@ def test_render_wrong_type(
     # Can't check exactly due to different representations of the Optional in different python versions
     assert any(
         k.startswith(
-            "[shell-0] !| Action 'shell-0' rendering failed: Unrecognized 'environment' "
-            "content type: typing.Dict[str, NoneType]"
+            "[shell] !| Action 'shell' rendering failed: Unrecognized 'environment' "
+            "content type: dict[str, NoneType]"
         )
         for k in display_collector
     )
-
-
-def test_unsatisfied_package_requirements(run_text: RunFactoryType) -> None:
-    """Check requirements failures"""
-    with pytest.raises(exceptions.PackageRequirementsError):
-        run_text(
-            """
-            ---
-            configuration:
-              requires_packages:
-                - wtf_is_this_package
-                - pytest<1.0.0
-            actions:
-              - name: Foo
-                type: echo
-                message: foo
-            """
-        )
 
 
 def test_colored_output(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -635,15 +622,15 @@ def test_colored_output(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatc
         """
     )
     assert output == [
-        "\x1b[90m[shell-0]  | \x1b[0mFoo",
-        "\x1b[32m✓ SUCCESS\x1b[0m: \x1b[32mshell-0\x1b[0m",
+        "\x1b[90m[shell]  | \x1b[0mFoo",
+        "\x1b[32m✓ SUCCESS\x1b[0m: \x1b[32mshell\x1b[0m",
     ]
 
 
-def test_explicit_strategy(
+def test_set_strategy(
     run_text: RunFactoryType,
     monkeypatch: pytest.MonkeyPatch,
-    display_collector: t.List[str],
+    display_collector: list[str],
 ) -> None:
     """Check explicit strategy from workflow"""
 
@@ -653,7 +640,7 @@ def test_explicit_strategy(
             """
             ---
             configuration:
-              strategy: loose
+              strategy: explicit
             actions:
               - name: Foo
                 type: shell
@@ -698,7 +685,7 @@ def test_different_shells_globally(run_text: RunFactoryType, monkeypatch: pytest
 
 
 def test_simple_subflow(
-    display_collector: t.List[str],
+    display_collector: list[str],
     actions_definitions_directory: None,
     tmp_path: Path,
 ) -> None:

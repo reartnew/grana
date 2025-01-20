@@ -1,7 +1,5 @@
 """All intercepted errors"""
 
-import typing as t
-
 __all__ = [
     "ExecutionFailed",
     "ActionRenderError",
@@ -49,9 +47,9 @@ class LoadError(BaseError):
 
     CODE: int = 102
 
-    def __init__(self, message: str, stack: t.List[str]) -> None:
+    def __init__(self, message: str, stack: list[str]) -> None:
         self.message: str = message
-        self.stack: t.List[str] = stack
+        self.stack: list[str] = stack
         text: str = message
         if stack:
             text += f"\n  Sources stack: {' -> '.join(stack)}"

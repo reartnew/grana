@@ -32,7 +32,7 @@ class PrologueDisplay(BaseDisplay):
     """Default display base"""
 
     NAME: str
-    STATUS_TO_MARK_SYMBOL_MAP: t.Dict[ActionStatus, str] = {
+    STATUS_TO_MARK_SYMBOL_MAP: dict[ActionStatus, str] = {
         ActionStatus.SKIPPED: "◯",
         ActionStatus.PENDING: "◯",
         ActionStatus.FAILURE: "✗",
@@ -41,7 +41,7 @@ class PrologueDisplay(BaseDisplay):
         ActionStatus.SUCCESS: "✓",
         ActionStatus.OMITTED: "◯",
     }
-    STATUS_TO_COLOR_WRAPPER_MAP: t.Dict[ActionStatus, ColorWrapperType] = {
+    STATUS_TO_COLOR_WRAPPER_MAP: dict[ActionStatus, ColorWrapperType] = {
         ActionStatus.SKIPPED: Color.gray,
         ActionStatus.PENDING: Color.gray,
         ActionStatus.FAILURE: Color.red,
@@ -63,7 +63,7 @@ class PrologueDisplay(BaseDisplay):
         if not self._status_topology:
             self._status_topology.put((action.name, action) for action in children)
             return
-        children_list: t.List[NamedMessageSource] = list(children)
+        children_list: list[NamedMessageSource] = list(children)
         corresponding_action_name = locate_parent_name_by_prefix(
             children=(action.name for action in children_list),
             candidates=self._status_topology,
@@ -104,8 +104,8 @@ class PrologueDisplay(BaseDisplay):
             self.display(line)
 
     def on_plan_interaction(self, workflow: Workflow) -> None:
-        displayed_action_names_with_descriptions: t.List[t.Tuple[str, str]] = []
-        default_selected_action_names: t.List[str] = []
+        displayed_action_names_with_descriptions: list[t.Tuple[str, str]] = []
+        default_selected_action_names: list[str] = []
         for action in workflow.iterate_actions():
             if action.selectable:
                 action_name_with_description: str = action.name
@@ -115,7 +115,7 @@ class PrologueDisplay(BaseDisplay):
                 default_selected_action_names.append(action.name)
         if not displayed_action_names_with_descriptions:
             raise InteractionError("No selectable actions found")
-        selected_action_names: t.List[str] = self._run_dialog(
+        selected_action_names: list[str] = self._run_dialog(
             choices=displayed_action_names_with_descriptions,
             default=default_selected_action_names,
         )
@@ -125,10 +125,10 @@ class PrologueDisplay(BaseDisplay):
                 action.disable()
 
     @classmethod
-    def _run_dialog(cls, choices: t.List[t.Tuple[str, str]], default: t.List[str]) -> t.List[str]:  # pragma: no cover
+    def _run_dialog(cls, choices: list[t.Tuple[str, str]], default: list[str]) -> list[str]:  # pragma: no cover
         if not sys.stdin.isatty():
             raise InteractionError
-        answers: t.Dict[str, t.List[str]] = inquirer.prompt(
+        answers: dict[str, list[str]] = inquirer.prompt(
             questions=[
                 inquirer.Checkbox(
                     name="actions",
@@ -140,7 +140,7 @@ class PrologueDisplay(BaseDisplay):
             ],
             raise_keyboard_interrupt=True,
         )
-        selected_action_names: t.List[str] = answers["actions"]
+        selected_action_names: list[str] = answers["actions"]
         return selected_action_names
 
 
@@ -197,7 +197,7 @@ class HeaderDisplay(PrologueDisplay):
 
 
 DefaultDisplay = PrefixDisplay
-KNOWN_DISPLAYS: t.Dict[str, t.Type[BaseDisplay]] = {
+KNOWN_DISPLAYS: dict[str, type[BaseDisplay]] = {
     HeaderDisplay.NAME: HeaderDisplay,
     PrefixDisplay.NAME: PrefixDisplay,
 }

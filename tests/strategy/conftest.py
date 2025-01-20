@@ -1,8 +1,6 @@
-"""Loose strategy helpers"""
+"""Explicit strategy helpers"""
 
 # pylint: disable=redefined-outer-name
-
-import typing as t
 
 import pytest
 
@@ -10,8 +8,8 @@ from grana.actions.base import ActionBase, ActionDependency
 from grana.workflow import Workflow
 
 
-def _make_chained_workflow(action_class: t.Type[ActionBase]) -> Workflow:
-    step_names: t.List[str] = [
+def _make_chained_workflow(action_class: type[ActionBase]) -> Workflow:
+    step_names: list[str] = [
         "foo",
         "bar",
         "baz",

@@ -79,11 +79,11 @@ class DockerShellArgs(ArgsBase):
 
     command: str
     image: str
-    environment: t.Optional[t.Dict[str, str]] = None
+    environment: t.Optional[dict[str, str]] = None
     cwd: t.Optional[str] = None
     pull: bool = False
     executable: str = "/bin/sh"
-    bind: t.Optional[t.List[t.Union[FileDockerBind, ContentDockerBind]]] = None
+    bind: t.Optional[list[t.Union[FileDockerBind, ContentDockerBind]]] = None
     network: Network = field(default_factory=Network)  # pylint: disable=invalid-field-call
     privileged: bool = False
     auth: t.Optional[Auth] = None
@@ -108,7 +108,7 @@ class DockerShellAction(EmissionScannerActionBase):
             entry_file_content: str = self.args.command
             if C.SHELL_INJECT_YIELD_FUNCTION:
                 entry_file_content = f"{self._SHELL_SERVICE_FUNCTIONS_DEFINITIONS}\n{entry_file_content}"
-            bind_configs: t.List[t.Union[FileDockerBind, ContentDockerBind]] = [
+            bind_configs: list[t.Union[FileDockerBind, ContentDockerBind]] = [
                 ContentDockerBind(
                     contents=entry_file_content,
                     dest=container_entry_file_path,
@@ -117,7 +117,7 @@ class DockerShellAction(EmissionScannerActionBase):
             ]
             if self.args.bind:
                 bind_configs += self.args.bind
-            container_binds: t.List[str] = []
+            container_binds: list[str] = []
             for bind_config in bind_configs:
                 if isinstance(bind_config, FileDockerBind):
                     local_file_full_name: str = bind_config.src
@@ -150,10 +150,10 @@ class DockerShellAction(EmissionScannerActionBase):
                 await container.delete(force=True)
 
     @functools.lru_cache(maxsize=1)
-    def _make_auth(self) -> t.Optional[t.Dict[str, str]]:
+    def _make_auth(self) -> t.Optional[dict[str, str]]:
         if self.args.auth is None:
             return None
-        auth_dict: t.Dict[str, str] = {
+        auth_dict: dict[str, str] = {
             "username": self.args.auth.username,
             "password": self.args.auth.password,
         }
@@ -175,7 +175,7 @@ class DockerShellAction(EmissionScannerActionBase):
                     auth=self._make_auth(),
                 )
             async with self._make_container(client) as container:
-                tasks: t.List[asyncio.Task] = [
+                tasks: list[asyncio.Task] = [
                     asyncio.create_task(self._read_stdout(container)),
                     asyncio.create_task(self._read_stderr(container)),
                 ]

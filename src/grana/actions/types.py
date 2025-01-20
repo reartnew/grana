@@ -5,7 +5,7 @@ import dataclasses
 import enum
 import typing as t
 
-OutcomeStorageType = t.Dict[str, str]
+OutcomeStorageType = dict[str, str]
 
 __all__ = [
     "OutcomeStorageType",
@@ -13,7 +13,7 @@ __all__ = [
     "RenamedMessageSource",
     "Stderr",
     "Import",
-    "ObjectTemplate",
+    "Expression",
     "qualify_string_as_potentially_renderable",
     "ActionStatus",
 ]
@@ -85,7 +85,7 @@ class Import:
 
 
 @dataclasses.dataclass
-class ObjectTemplate:
+class Expression:
     """Complex object expression to be rendered later"""
 
     expression: str

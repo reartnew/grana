@@ -32,7 +32,7 @@ class Color:
 
     @classmethod
     def yellow(cls, message: str) -> str:
-        """Make a string green"""
+        """Make a string yellow"""
         return cls._add_formatting(message, 33)
 
     @classmethod

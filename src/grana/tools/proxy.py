@@ -14,7 +14,7 @@ class DeferredCall:
 
     method: t.Callable
     args: t.Tuple = tuple()
-    kwargs: t.Dict[str, t.Any] = dataclasses.field(default_factory=dict)
+    kwargs: dict[str, t.Any] = dataclasses.field(default_factory=dict)
 
     def __call__(self, *args, **kwargs) -> None:
         self.args = args
@@ -26,7 +26,7 @@ class DeferredCallsProxy:
 
     def __init__(self, obj: t.Any) -> None:
         self.__obj: t.Any = obj
-        self.__deferred_calls: t.Optional[t.List[DeferredCall]] = []
+        self.__deferred_calls: t.Optional[list[DeferredCall]] = []
 
     def uncork(self) -> None:
         """Make all deferred calls happen in the sequential manner"""

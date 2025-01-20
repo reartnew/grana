@@ -28,7 +28,7 @@ __all__ = [
     "LOG_LEVELS",
 ]
 
-LOG_LEVELS: t.Dict[str, str] = {
+LOG_LEVELS: dict[str, str] = {
     "0": LogLevel.ERROR,
     "1": LogLevel.WARNING,
     "2": LogLevel.INFO,
@@ -76,9 +76,9 @@ def _get_strategy_class_from_cli_arg() -> t.Optional[StrategyClassType]:
 
 
 def _get_default_strategy_class() -> StrategyClassType:
-    from ...strategy import LooseStrategy
+    from ...strategy import ExplicitStrategy
 
-    return LooseStrategy
+    return ExplicitStrategy
 
 
 def _isatty() -> bool:
@@ -111,7 +111,7 @@ class C:
         lambda: False,
     )
     ACTIONS_SOURCE_FILE: Optional[Path] = Optional(
-        lambda: maybe_path(get_cli_arg("workflow")),
+        lambda: maybe_path(get_cli_arg("workflow_file")),
         lambda: maybe_path(Env.GRANA_WORKFLOW_FILE),
     )
     WORKFLOW_LOADER_CLASS: Optional[LoaderClassType] = Optional(
@@ -121,8 +121,11 @@ class C:
             submodule_name="workflow.loader",
         )
     )
-    ACTION_CLASSES_DIRECTORIES: Mandatory[t.List[str]] = Mandatory(
+    ACTION_CLASSES_DIRECTORIES: Mandatory[list[str]] = Mandatory(
         lambda: Env.GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY,
+    )
+    EXTERNAL_PYTHON_MODULES_PATHS: Mandatory[list[Path]] = Mandatory(
+        lambda: Env.GRANA_EXTERNAL_MODULES_PATHS,
     )
     DISPLAY_CLASS: Mandatory[DisplayClassType] = Mandatory(
         lambda: _maybe_display_class_by_name(get_cli_arg("display")),

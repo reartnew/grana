@@ -36,8 +36,8 @@ def test_tree_representation() -> None:
 class LocateParentTestData(t.TypedDict):
     """Arguments for testing locate_parent_name_by_prefix"""
 
-    children: t.List[str]
-    candidates: t.List[str]
+    children: list[str]
+    candidates: list[str]
     result: str
 
 
@@ -57,6 +57,6 @@ class LocateParentTestDataSuite(DataSuite):
 
 
 @LocateParentTestDataSuite.parametrize
-def test_locate_parent_name_by_prefix(children: t.List[str], candidates: t.List[str], result: str) -> None:
+def test_locate_parent_name_by_prefix(children: list[str], candidates: list[str], result: str) -> None:
     """Test locate_parent_name_by_prefix call"""
     assert locate_parent_name_by_prefix(children=children, candidates=candidates) == result
