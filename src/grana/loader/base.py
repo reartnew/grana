@@ -13,7 +13,7 @@ from classlogging import LoggerMixin
 from dacite.types import is_subclass
 
 from ..actions.base import ActionBase, ArgsBase, ActionDependency, ActionSeverity
-from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
+from ..actions.types import Expression, qualify_string_as_potentially_renderable
 from ..exceptions import LoadError
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
 from ..tools.concealment import represent_object_type
@@ -30,7 +30,7 @@ class TemplateIndifferentConfig(dacite.Config, LoggerMixin):
 
     @classmethod
     def is_instance(cls, value: t.Any, type_: t.Type) -> bool:
-        if isinstance(value, ObjectTemplate):
+        if isinstance(value, Expression):
             cls.logger.info(f"Skipping type check for object template, where {type_!r} was expected")
             return True
         if is_subclass(type_, Enum):
@@ -166,7 +166,11 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
             if not name:
                 self._throw("Action node name is empty")
         else:
-            name = f"{action_type}-{self._action_type_counters[action_type]}"
+            if (action_counter := self._action_type_counters[action_type]) > 0:
+                auto_name_suffix: str = f"-{action_counter + 1}"
+            else:
+                auto_name_suffix = ""
+            name = f"{action_type}{auto_name_suffix}"
         self._action_type_counters[action_type] += 1
         # Description
         description: t.Optional[str] = node.pop("description", None)

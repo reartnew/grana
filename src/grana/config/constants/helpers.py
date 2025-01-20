@@ -1,7 +1,6 @@
 """Lazy-loaded constants helpers"""
 
 import hashlib
-import os
 import sys
 import types
 import typing as t
@@ -31,9 +30,9 @@ EXTERNALS_MODULES_PACKAGE: str = "grana.external"
 
 
 @contextmanager
-def add_sys_paths(*paths: str) -> t.Iterator[None]:
+def add_sys_paths(*paths: Path) -> t.Iterator[None]:
     """Temporarily add paths to sys.path"""
-    normalized_paths: list[str] = [os.path.expanduser(os.path.abspath(path)) for path in paths]
+    normalized_paths: list[str] = [str(path.absolute().expanduser()) for path in paths]
     for path in normalized_paths:
         sys.path.insert(0, path)
     try:

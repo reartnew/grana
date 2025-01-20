@@ -110,8 +110,8 @@ def test_cli_env_vars() -> None:
 def test_cli_run(run_cmd: RunnerType) -> None:
     """Default run"""
     assert run_cmd(text=GOOD_WORKFLOW_TEXT) == [
-        "[echo-0]  | foo",
-        "✓ SUCCESS: echo-0",
+        "[echo]  | foo",
+        "✓ SUCCESS: echo",
     ]
 
 
@@ -121,22 +121,22 @@ def test_cli_run_display(run_cmd: RunnerType) -> None:
         text=GOOD_WORKFLOW_TEXT,
         global_opts=["--display", "headers"],
     ) == [
-        " ┌─[echo-0]",
+        " ┌─[echo]",
         " │ foo",
         " ╵",
-        " ✓ SUCCESS: echo-0",
+        " ✓ SUCCESS: echo",
     ]
 
 
-@pytest.mark.parametrize("strategy", ["free", "sequential", "loose", "strict", "strict-sequential"])
+@pytest.mark.parametrize("strategy", ["free", "sequential", "explicit", "strict", "strict-sequential"])
 def test_cli_run_explicit_strategy(run_cmd: RunnerType, strategy: str) -> None:
     """Run with overridden strategy"""
     assert run_cmd(
         text=GOOD_WORKFLOW_TEXT,
         opts=["--strategy", strategy],
     ) == [
-        "[echo-0]  | foo",
-        "✓ SUCCESS: echo-0",
+        "[echo]  | foo",
+        "✓ SUCCESS: echo",
     ]
 
 
@@ -166,7 +166,7 @@ def test_cli_run_unhandled_exception(run_cmd: RunnerType) -> None:
 
 def test_cli_run_help(run_cmd: RunnerType) -> None:
     """CLI help"""
-    assert "  Run pipeline immediately." in run_cmd(opts=["--help"])
+    assert "  Run the pipeline." in run_cmd(opts=["--help"])
 
 
 def test_cli_multiple_positional_args(run_cmd: RunnerType) -> None:

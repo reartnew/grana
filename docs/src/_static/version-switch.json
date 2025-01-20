@@ -1,0 +1,12 @@
+[
+    {
+        "version": "latest",
+        "url": "https://grana.readthedocs.io/en/latest/"
+    },
+    {
+        "name": "1.3.0",
+        "version": "v1.3.0",
+        "url": "https://grana.readthedocs.io/en/v1.3.0/",
+        "preferred": true
+    }
+]

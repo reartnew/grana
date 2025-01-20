@@ -107,7 +107,7 @@ def test_unrecognized_workflow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     [
         grana.FreeStrategy,
         grana.SequentialStrategy,
-        grana.LooseStrategy,
+        grana.ExplicitStrategy,
         grana.StrictStrategy,
         grana.StrictSequentialStrategy,
     ],
@@ -207,7 +207,7 @@ def test_status_good_substitution(run_text: RunFactoryType) -> None:
           - name: Foo
             type: shell
             command: |
-              [ "@{status.Foo}" = "PENDING" ] || exit 1
+              [ "@{meta.status.Foo}" = "PENDING" ] || exit 1
         """
     )
 
@@ -548,14 +548,20 @@ def test_implicit_naming(run_text: RunFactoryType) -> None:
     output = run_text(
         """
         ---
+        configuration:
+          strategy: sequential
         actions:
           - type: shell
             command: echo Foo
+          - type: shell
+            command: echo Bar
         """
     )
     assert output == [
-        "[shell-0]  | Foo",
-        "✓ SUCCESS: shell-0",
+        "[shell]    | Foo",
+        "[shell-2]  | Bar",
+        "✓ SUCCESS: shell",
+        "✓ SUCCESS: shell-2",
     ]
 
 
@@ -571,9 +577,9 @@ def test_low_severity(run_text: RunFactoryType) -> None:
         """
     )
     assert output == [
-        "[shell-0]  | Foo",
-        "          !| Exit code: 1",
-        "✓ WARNING: shell-0",
+        "[shell]  | Foo",
+        "        !| Exit code: 1",
+        "✓ WARNING: shell",
     ]
 
 
@@ -597,7 +603,7 @@ def test_render_wrong_type(
     # Can't check exactly due to different representations of the Optional in different python versions
     assert any(
         k.startswith(
-            "[shell-0] !| Action 'shell-0' rendering failed: Unrecognized 'environment' "
+            "[shell] !| Action 'shell' rendering failed: Unrecognized 'environment' "
             "content type: dict[str, NoneType]"
         )
         for k in display_collector
@@ -616,12 +622,12 @@ def test_colored_output(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatc
         """
     )
     assert output == [
-        "\x1b[90m[shell-0]  | \x1b[0mFoo",
-        "\x1b[32m✓ SUCCESS\x1b[0m: \x1b[32mshell-0\x1b[0m",
+        "\x1b[90m[shell]  | \x1b[0mFoo",
+        "\x1b[32m✓ SUCCESS\x1b[0m: \x1b[32mshell\x1b[0m",
     ]
 
 
-def test_explicit_strategy(
+def test_set_strategy(
     run_text: RunFactoryType,
     monkeypatch: pytest.MonkeyPatch,
     display_collector: list[str],
@@ -634,7 +640,7 @@ def test_explicit_strategy(
             """
             ---
             configuration:
-              strategy: loose
+              strategy: explicit
             actions:
               - name: Foo
                 type: shell

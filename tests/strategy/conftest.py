@@ -1,4 +1,4 @@
-"""Loose strategy helpers"""
+"""Explicit strategy helpers"""
 
 # pylint: disable=redefined-outer-name
 

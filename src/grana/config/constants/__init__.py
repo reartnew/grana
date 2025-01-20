@@ -76,9 +76,9 @@ def _get_strategy_class_from_cli_arg() -> t.Optional[StrategyClassType]:
 
 
 def _get_default_strategy_class() -> StrategyClassType:
-    from ...strategy import LooseStrategy
+    from ...strategy import ExplicitStrategy
 
-    return LooseStrategy
+    return ExplicitStrategy
 
 
 def _isatty() -> bool:
@@ -111,7 +111,7 @@ class C:
         lambda: False,
     )
     ACTIONS_SOURCE_FILE: Optional[Path] = Optional(
-        lambda: maybe_path(get_cli_arg("workflow")),
+        lambda: maybe_path(get_cli_arg("workflow_file")),
         lambda: maybe_path(Env.GRANA_WORKFLOW_FILE),
     )
     WORKFLOW_LOADER_CLASS: Optional[LoaderClassType] = Optional(

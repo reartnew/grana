@@ -23,11 +23,8 @@ from .version import __version__
 logger = DeferredCallsProxy(obj=classlogging.get_module_logger())
 
 
-# pylint: disable=invalid-name
-class _WorkflowPositionalArgument(click.Argument):
+class WorkflowPositionalArgument(click.Argument):
     """Optional positional argument for the workflow source"""
-
-    NAME: str = "WORKFLOW"
 
     # pylint: disable=unused-argument
     def __init__(self, param_decls: t.Sequence[str], required: t.Optional[bool] = None, **attrs: t.Any) -> None:
@@ -37,7 +34,7 @@ class _WorkflowPositionalArgument(click.Argument):
         return self.make_metavar(), (
             "Workflow source file. When not given, will look for one of grana.yml/grana.yaml "
             "files in the context directory. Use the '-' value to read yaml configuration from the standard input. "
-            "Also configurable via the GRANA_WORKFLOW_FILE environment variable."
+            "Also configurable via the `GRANA_WORKFLOW_FILE` environment variable."
         )
 
     def process_value(self, ctx: click.Context, value: t.Any) -> t.Optional[str]:
@@ -49,25 +46,25 @@ class _WorkflowPositionalArgument(click.Argument):
 
     def make_metavar(self) -> str:
         """Fixed representation"""
-        return f"[{self.NAME}]"
+        return "[WORKFLOW_FILE]"
 
 
 @click.group
 @click.option(
     "-l",
     "--log-level",
-    help="Logging level. Defaults to ERROR. Also configurable via the GRANA_LOG_LEVEL environment variable.",
+    help="Logging level. Defaults to `ERROR`. Also configurable via the `GRANA_LOG_LEVEL` environment variable.",
     type=click.Choice(list(LOG_LEVELS)),
 )
 @click.option(
     "-d",
     "--display",
-    help="Display name. Defaults to prefixes. Also configurable via the GRANA_DISPLAY_NAME environment variable.",
+    help="Display name. Defaults to `prefixes`. Also configurable via the `GRANA_DISPLAY_NAME` environment variable.",
     type=click.Choice(list(KNOWN_DISPLAYS)),
 )
 @cliargs_receiver
 def main() -> None:
-    """Declarative task runner"""
+    """Open-source command-line declarative automation tool."""
 
 
 def load_dotenv() -> None:  # pragma: no cover
@@ -132,36 +129,38 @@ def wrap_cli_command(func):
 @click.option(
     "-s",
     "--strategy",
-    help="Execution strategy. Defaults to loose. Also configurable via the GRANA_STRATEGY_NAME environment variable.",
+    help="Execution strategy. Defaults to `explicit`. "
+    "Also configurable via the `GRANA_STRATEGY_NAME` environment variable.",
     type=click.Choice(list(KNOWN_STRATEGIES)),
 )
 @click.option("-i", "--interactive", help="Run in dialog mode.", is_flag=True, default=False)
-@click.argument("workflow", cls=_WorkflowPositionalArgument)
+@click.argument("workflow_file", cls=WorkflowPositionalArgument, help="azaza")
 def run() -> None:
-    """Run pipeline immediately."""
+    """Run the pipeline."""
     Runner().run_sync()
 
 
 @wrap_cli_command
-@click.argument("workflow", cls=_WorkflowPositionalArgument)
+@click.argument("workflow_file", cls=WorkflowPositionalArgument)
 def validate() -> None:
-    """Check workflow validity."""
+    """Check workflow source validity.
+    Return code is zero, when validation passes."""
     action_num: int = len(Runner().workflow)
     logger.info(f"Located actions number: {action_num}")
 
 
 @wrap_cli_command
 def version() -> None:
-    """Show package version."""
+    """Display package version."""
     print(__version__)
 
 
 @main.group
 def info() -> None:
-    """Tool information."""
+    """Miscellaneous tool information."""
 
 
 @info.command
 def env_vars() -> None:
-    """Show environment variables that are taken into account."""
+    """Shows environment variables names that are taken into account."""
     print(Env.__doc__)

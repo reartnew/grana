@@ -28,13 +28,13 @@ def test_strict_outcome_missing_key_rendering(strict_templar: Templar) -> None:
 
 def test_status_rendering(loose_templar: Templar) -> None:
     """Test status rendering"""
-    assert loose_templar.render("@{status.Foo}") == "SUCCESS"
+    assert loose_templar.render("@{metadata.status.Foo}") == "SUCCESS"
 
 
 def test_status_missing_action_rendering(loose_templar: Templar) -> None:
     """Test status missing action rendering"""
     with pytest.raises(ActionRenderError, match="Action not found"):
-        loose_templar.render("@{status['Unknown action']}")
+        loose_templar.render("@{meta.status['Unknown action']}")
 
 
 def test_environment_rendering(loose_templar: Templar) -> None:
@@ -84,13 +84,13 @@ def test_restricted_exec(loose_templar: Templar) -> None:
 def test_restricted_setattr(loose_templar: Templar) -> None:
     """Test setattr rendering"""
     with pytest.raises(ActionRenderError, match=re.escape("RestrictedBuiltinError('setattr')")):
-        loose_templar.render("@{setattr(status, 'Foo', 'SUCCESS')}")
+        loose_templar.render("@{setattr(meta.status, 'Foo', 'SUCCESS')}")
 
 
 def test_complex_rendering(loose_templar: Templar) -> None:
     """Test complex expression rendering"""
     assert (
-        loose_templar.render('@{ f"{context.intval ** 2} percents of actions finished" }: @{dict(status)}')
+        loose_templar.render('@{ f"{context.intval ** 2} percents of actions finished" }: @{dict(meta.status)}')
         == "100 percents of actions finished: {'Foo': 'SUCCESS'}"
     )
 

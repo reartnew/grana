@@ -16,7 +16,7 @@ from ..actions.bundled import (
     SubflowAction,
     DockerShellAction,
 )
-from ..actions.types import ObjectTemplate, Import
+from ..actions.types import Expression, Import
 from ..config.constants import C
 from ..config.constants.helpers import maybe_class_from_module
 from ..exceptions import YAMLStructureError
@@ -41,7 +41,7 @@ class YAMLLoader(yaml.SafeLoader):
         cls.add_constructor(tag, construct)
 
 
-YAMLLoader.add_string_constructor("!@", ObjectTemplate)
+YAMLLoader.add_string_constructor("!@", Expression)
 YAMLLoader.add_string_constructor("!import", Import)
 
 
