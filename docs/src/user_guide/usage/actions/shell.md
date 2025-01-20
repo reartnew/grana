@@ -64,6 +64,7 @@ some predefined functions are available in the shell script.
 These are:
 
 :::{function} yield_outcome(name[, value])
+:no-index:
   Report an outcome with the given name.
   If only the name is supplied, then the function reads the input for the value.
   Examples:
@@ -78,6 +79,7 @@ These are:
 :::
 
 :::{function} skip()
+:no-index:
   Terminate the shell immediately and set the corresponding action [status](./index.md#status) to `SKIPPED`.
   Ignores all given arguments.
   Example:

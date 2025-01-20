@@ -19,4 +19,5 @@ whose purpose is launching pipelines easily in any environment from the local ma
 :caption: Contents
 :maxdepth: 2
 user_guide/index
+developers_guide/index
 ```

@@ -13,7 +13,6 @@ from importlib.util import (
 from pathlib import Path
 from types import ModuleType
 
-from ..environment import Env
 from ...exceptions import SourceError
 
 __all__ = [
@@ -44,6 +43,9 @@ def add_sys_paths(*paths: Path) -> t.Iterator[None]:
 
 def load_external_module(source: Path, submodule_name: t.Optional[str] = None) -> ModuleType:
     """Load an external module"""
+    # pylint: disable=import-outside-toplevel
+    from ..constants import C
+
     if not source.is_file():
         raise SourceError(f"Missing source module: {source}")
     if submodule_name is None:
@@ -56,7 +58,7 @@ def load_external_module(source: Path, submodule_name: t.Optional[str] = None) -
     if module_spec is None:
         raise SourceError(f"Can't read module spec from source: {source}")
     module: ModuleType = module_from_spec(module_spec)
-    with add_sys_paths(*Env.GRANA_EXTERNAL_MODULES_PATHS):
+    with add_sys_paths(*C.EXTERNAL_PYTHON_MODULES_PATHS):
         module_spec.loader.exec_module(module)  # type: ignore
     sys.modules[module_name] = module
     return module
