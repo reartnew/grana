@@ -20,11 +20,10 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.9, <3.14"
+python = "^3.9"
 named-env = "^2.4.1"
 classlogging = "^1.2.1"
 python-dotenv = "^1.0.1"
-async-shell = "^1.1.0"
 pyyaml = "^6.0.2"
 click = "^8.1.8"
 dacite-cjunct = "1.8.1a0"
