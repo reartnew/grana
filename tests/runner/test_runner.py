@@ -14,7 +14,6 @@ import grana
 from grana import exceptions
 from grana.actions.base import ActionStatus
 from grana.config.constants import C
-from grana.config.environment import Env
 from grana.strategy import BaseStrategy
 from .types import RunFactoryType, CtxFactoryType
 
@@ -119,7 +118,7 @@ def test_strategy_runner_call(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Check all strategies"""
-    monkeypatch.setattr(Env, "GRANA_STRATEGY_NAME", strategy_class.NAME)
+    monkeypatch.setenv("GRANA_STRATEGY_NAME", strategy_class.NAME)
     grana.Runner().run_sync()
     assert set(display_collector) == {
         "[Foo]  | foo",
@@ -634,7 +633,7 @@ def test_set_strategy(
 ) -> None:
     """Check explicit strategy from workflow"""
 
-    monkeypatch.setattr(Env, "GRANA_STRATEGY_NAME", "strict")
+    monkeypatch.setenv("GRANA_STRATEGY_NAME", "strict")
     with pytest.raises(exceptions.ExecutionFailed):
         run_text(
             """
@@ -672,7 +671,7 @@ def test_different_shells_locally(run_text: RunFactoryType, executable: str) -> 
 @pytest.mark.parametrize("executable", ["/bin/sh", "/bin/bash"])
 def test_different_shells_globally(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatch, executable: str) -> None:
     """Check globally set executable for shells"""
-    monkeypatch.setattr(Env, "GRANA_DEFAULT_SHELL_EXECUTABLE", executable)
+    monkeypatch.setenv("GRANA_DEFAULT_SHELL_EXECUTABLE", executable)
     assert f"[Foo]  | {executable}" in run_text(
         """
         ---

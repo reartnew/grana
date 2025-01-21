@@ -93,14 +93,14 @@ class C:
 
     LOG_LEVEL: Mandatory[str] = Mandatory(
         lambda: LOG_LEVELS[get_cli_arg("log_level")] if get_cli_arg("log_level") is not None else None,
-        lambda: Env.GRANA_LOG_LEVEL or None,
+        lambda: os.environ.get("GRANA_LOG_LEVEL"),
         lambda: LogLevel.ERROR,
     )
     LOG_FILE: Optional[Path] = Optional(
-        lambda: maybe_path(Env.GRANA_LOG_FILE),
+        lambda: maybe_path(os.environ.get("GRANA_LOG_FILE")),
     )
     ENV_FILE: Mandatory[Path] = Mandatory(
-        lambda: maybe_path(Env.GRANA_ENV_FILE),
+        lambda: maybe_path(os.environ.get("GRANA_ENV_FILE")),
         lambda: Path().resolve() / ".env",
     )
     CONTEXT_DIRECTORY: Mandatory[Path] = Mandatory(
@@ -112,11 +112,11 @@ class C:
     )
     ACTIONS_SOURCE_FILE: Optional[Path] = Optional(
         lambda: maybe_path(get_cli_arg("workflow_file")),
-        lambda: maybe_path(Env.GRANA_WORKFLOW_FILE),
+        lambda: maybe_path(os.environ.get("GRANA_WORKFLOW_FILE")),
     )
     WORKFLOW_LOADER_CLASS: Optional[LoaderClassType] = Optional(
         lambda: maybe_class_from_module(
-            path_str=Env.GRANA_WORKFLOW_LOADER_SOURCE_FILE,
+            path_str=os.environ.get("GRANA_WORKFLOW_LOADER_SOURCE_FILE"),
             class_name="WorkflowLoader",
             submodule_name="workflow.loader",
         )
@@ -130,16 +130,16 @@ class C:
     DISPLAY_CLASS: Mandatory[DisplayClassType] = Mandatory(
         lambda: _maybe_display_class_by_name(get_cli_arg("display")),
         lambda: maybe_class_from_module(
-            path_str=Env.GRANA_DISPLAY_SOURCE_FILE,
+            path_str=os.environ.get("GRANA_DISPLAY_SOURCE_FILE"),
             class_name="Display",
             submodule_name="display",
         ),
-        lambda: _maybe_display_class_by_name(Env.GRANA_DISPLAY_NAME),
+        lambda: _maybe_display_class_by_name(os.environ.get("GRANA_DISPLAY_NAME")),
         _get_default_display_class,
     )
     STRATEGY_CLASS: Mandatory[StrategyClassType] = Mandatory(
         _get_strategy_class_from_cli_arg,
-        lambda: _maybe_strategy(Env.GRANA_STRATEGY_NAME),
+        lambda: _maybe_strategy(os.environ.get("GRANA_STRATEGY_NAME")),
         _get_default_strategy_class,
     )
     USE_COLOR: Mandatory[bool] = Mandatory(
@@ -153,5 +153,5 @@ class C:
         lambda: Env.GRANA_STRICT_OUTCOMES_RENDERING,
     )
     DEFAULT_SHELL_EXECUTABLE: Mandatory[str] = Mandatory(
-        lambda: Env.GRANA_DEFAULT_SHELL_EXECUTABLE,
+        lambda: os.environ.get("GRANA_DEFAULT_SHELL_EXECUTABLE", "/bin/sh"),
     )

@@ -8,7 +8,6 @@ import pytest
 
 from grana import exceptions, Runner
 from grana.config.constants import C
-from grana.config.environment import Env
 from grana.display.base import BaseDisplay
 from grana.display.default import PrologueDisplay, HeaderDisplay
 
@@ -41,14 +40,14 @@ def test_bad_display() -> None:
 @pytest.mark.parametrize("display_name", ["headers", "prefixes"])
 def test_prologue_displays_init(display_name: str, monkeypatch: pytest.MonkeyPatch) -> None:
     """Check bundled displays"""
-    monkeypatch.setattr(Env, "GRANA_DISPLAY_NAME", display_name)
+    monkeypatch.setenv("GRANA_DISPLAY_NAME", display_name)
     display_class = t.cast(PrologueDisplay, C.DISPLAY_CLASS)
     assert display_class.NAME == display_name
 
 
 def test_invalid_display_init(monkeypatch: pytest.MonkeyPatch) -> None:
     """Check display name validation"""
-    monkeypatch.setattr(Env, "GRANA_DISPLAY_NAME", "unknown")
+    monkeypatch.setenv("GRANA_DISPLAY_NAME", "unknown")
     with pytest.raises(ValueError, match="Display name should be one of"):
         assert C.DISPLAY_CLASS
 

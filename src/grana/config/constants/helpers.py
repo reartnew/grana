@@ -92,12 +92,16 @@ class Mandatory(Optional, t.Generic[VT]):
         return result
 
 
-def maybe_path(path_str: str) -> t.Optional[Path]:
+def maybe_path(path_str: t.Optional[str]) -> t.Optional[Path]:
     """Transform a string into an optional path"""
     return Path(path_str) if path_str else None
 
 
-def maybe_class_from_module(path_str: str, class_name: str, submodule_name: t.Optional[str] = None) -> t.Optional[type]:
+def maybe_class_from_module(
+    path_str: t.Optional[str],
+    class_name: str,
+    submodule_name: t.Optional[str] = None,
+) -> t.Optional[type]:
     """Get a class from an external module, if given"""
     if (source_path := maybe_path(path_str)) is None:
         return None

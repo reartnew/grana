@@ -5,7 +5,6 @@ import typing as t
 
 from named_env import (
     EnvironmentNamespace,
-    OptionalString,
     OptionalTernary,
     OptionalBoolean,
     OptionalPathList,
@@ -59,17 +58,8 @@ class Env(EnvironmentNamespace):
         Default is /bin/sh.
     """
 
-    GRANA_LOG_LEVEL: str = OptionalString("")
-    GRANA_LOG_FILE: str = OptionalString("")
-    GRANA_ENV_FILE: str = OptionalString("")
-    GRANA_WORKFLOW_FILE: str = OptionalString("")
-    GRANA_WORKFLOW_LOADER_SOURCE_FILE: str = OptionalString("")
-    GRANA_DISPLAY_NAME: str = OptionalString("")
-    GRANA_DISPLAY_SOURCE_FILE: str = OptionalString("")
-    GRANA_STRATEGY_NAME: str = OptionalString("")
     GRANA_FORCE_COLOR: t.Optional[bool] = OptionalTernary(None)  # type: ignore
     GRANA_SHELL_INJECT_YIELD_FUNCTION: bool = OptionalBoolean(True)  # type: ignore
     GRANA_EXTERNAL_MODULES_PATHS: list[pathlib.Path] = OptionalPathList([])
     GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY: list[pathlib.Path] = OptionalPathList([])
     GRANA_STRICT_OUTCOMES_RENDERING: bool = OptionalBoolean(True)  # type: ignore
-    GRANA_DEFAULT_SHELL_EXECUTABLE: str = OptionalString("/bin/sh")
