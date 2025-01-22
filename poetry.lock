@@ -219,23 +219,6 @@ files = [
 typing-extensions = {version = ">=4.0.0", markers = "python_version < \"3.11\""}
 
 [[package]]
-name = "async-shell"
-version = "1.1.0"
-description = "Asyncio subprocess shell command wrapper"
-optional = false
-python-versions = "<4.0,>=3.9"
-files = [
-    {file = "async_shell-1.1.0-py3-none-any.whl", hash = "sha256:e2745911f6be83e1bc321e9687f5220ea854193439da6026e5bc9d960ed76421"},
-    {file = "async_shell-1.1.0.tar.gz", hash = "sha256:8a167648f1fd0099b63aa2a282ffeaf27b008792e56f2a92d9efcd9b822b8311"},
-]
-
-[package.dependencies]
-classlogging = ">=1.2.0,<2.0.0"
-
-[package.extras]
-tests = ["pylint (>=3.3.3,<4.0.0)", "pytest (>=8.3.4,<9.0.0)", "pytest-asyncio (>=0.25.1,<0.26.0)", "pytest-bandit (>=0.6.1,<0.7.0)", "pytest-black (>=0.6.0,<0.7.0)", "pytest-mypy (>=0.10.3,<0.11.0)", "pytest-pylint (>=0.21.0,<0.22.0)"]
-
-[[package]]
 name = "async-timeout"
 version = "5.0.1"
 description = "Timeout context manager for asyncio programs"
@@ -1565,20 +1548,6 @@ linkify = ["linkify-it-py (>=2.0,<3.0)"]
 rtd = ["ipython", "sphinx (>=7)", "sphinx-autodoc2 (>=0.5.0,<0.6.0)", "sphinx-book-theme (>=1.1,<2.0)", "sphinx-copybutton", "sphinx-design", "sphinx-pyscript", "sphinx-tippy (>=0.4.3)", "sphinx-togglebutton", "sphinxext-opengraph (>=0.9.0,<0.10.0)", "sphinxext-rediraffe (>=0.2.7,<0.3.0)"]
 testing = ["beautifulsoup4", "coverage[toml]", "defusedxml", "pytest (>=8,<9)", "pytest-cov", "pytest-param-files (>=0.6.0,<0.7.0)", "pytest-regressions", "sphinx-pytest"]
 testing-docutils = ["pygments", "pytest (>=8,<9)", "pytest-param-files (>=0.6.0,<0.7.0)"]
-
-[[package]]
-name = "named-env"
-version = "2.4.1"
-description = "Class-based environment variables typed specification"
-optional = false
-python-versions = "<4.0,>=3.9"
-files = [
-    {file = "named_env-2.4.1-py3-none-any.whl", hash = "sha256:0540a6a1361a7646b1b2b63cd0ec02a387b0d78e5338800d6e57619cd4218400"},
-    {file = "named_env-2.4.1.tar.gz", hash = "sha256:72b2cff18bb2c465fcd63bbf786b5d854900980f35b139259a36199d85756154"},
-]
-
-[package.extras]
-tests = ["pylint (>=3.3.3,<4.0.0)", "pytest (>=8.3.4,<9.0.0)", "pytest-bandit (>=0.6.1,<0.7.0)", "pytest-black (>=0.6.0,<0.7.0)", "pytest-mypy (>=0.10.1,<0.11.0)", "pytest-pylint (>=0.21.0,<0.22.0)"]
 
 [[package]]
 name = "nbclient"
@@ -3458,5 +3427,5 @@ tests = ["bandit", "black", "coverage", "mypy", "pylint", "pytest", "pytest-asyn
 
 [metadata]
 lock-version = "2.0"
-python-versions = "^3.9, <3.14"
-content-hash = "d52caa3fb9bee0d6e6ae27abf38239812b2e12f000dc4f5223c0ed1bb7685370"
+python-versions = "^3.9"
+content-hash = "f767994d586bcf0c3444f666e45405c7ff4b2fcb891bbcaacf2a6e1a0c25b4fa"

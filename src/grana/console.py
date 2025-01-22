@@ -12,7 +12,7 @@ from dotenv.main import DotEnv
 
 from .config.constants import C, LOG_LEVELS
 from .config.constants.cli import cliargs_receiver
-from .config.environment import Env
+from .config.constants.environment import ENV_DOC
 from .display.default import KNOWN_DISPLAYS
 from .exceptions import BaseError, ExecutionFailed
 from .runner import Runner
@@ -163,4 +163,4 @@ def info() -> None:
 @info.command
 def env_vars() -> None:
     """Shows environment variables names that are taken into account."""
-    print(Env.__doc__)
+    print(ENV_DOC)

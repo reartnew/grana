@@ -6,7 +6,7 @@ import os
 import typing as t
 from asyncio.streams import StreamReader
 from asyncio.subprocess import create_subprocess_shell, Process  # noqa
-from subprocess import PIPE
+from subprocess import PIPE  # nosec
 
 from ..base import ArgsBase, EmissionScannerActionBase
 from ..types import Stderr

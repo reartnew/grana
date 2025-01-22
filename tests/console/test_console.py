@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from dotenv.main import DotEnv
 
 from grana import console, version
-from grana.config.environment import Env
+from grana.config.constants.environment import ENV_DOC
 
 OptsType = t.Optional[list[str]]
 
@@ -103,8 +103,7 @@ def test_cli_validate(validate_cmd: RunnerType) -> None:
 
 def test_cli_env_vars() -> None:
     """Check env vars command"""
-    doc: str = t.cast(str, Env.__doc__)
-    assert _invoke(console.main, ["info", "env-vars"]) == doc.rstrip().splitlines()
+    assert _invoke(console.main, ["info", "env-vars"]) == ENV_DOC.rstrip().splitlines()
 
 
 def test_cli_run(run_cmd: RunnerType) -> None:

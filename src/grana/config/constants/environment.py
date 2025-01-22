@@ -1,16 +1,38 @@
 """Separate environment-centric module"""
 
-from named_env import (
-    EnvironmentNamespace,
-)
+import pathlib
+import typing as t
 
 __all__ = [
-    "Env",
+    "ENV_DOC",
+    "to_ternary",
+    "to_bool",
+    "to_path_list",
 ]
 
 
-class Env(EnvironmentNamespace):
-    """
+def to_ternary(value: str) -> t.Optional[bool]:
+    """Converts a string value to an optional boolean"""
+    if value == "Y":
+        return True
+    if value == "N":
+        return False
+    if value == "":
+        return None
+    raise ValueError(f"{value!r} is not a valid for a ternary variable. Expected one of: 'Y', 'N', ''")
+
+
+def to_bool(value: str) -> bool:
+    """Converts a string value to a boolean"""
+    return to_ternary(value) is True
+
+
+def to_path_list(value: str) -> list[pathlib.Path]:
+    """Converts a string value to a list of paths according to the same logic as for UNIX `path`"""
+    return [pathlib.Path(item.strip()) for item in value.split(":") if item]
+
+
+ENV_DOC: str = """
     GRANA_LOG_LEVEL:
         Specifies the log level.
         Default is ERROR.

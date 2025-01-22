@@ -12,15 +12,8 @@ import pytest_asyncio
 from _pytest.fixtures import SubRequest
 
 import grana
-from grana.config.environment import Env
 from grana.display.default import DefaultDisplay
 from .types import CtxFactoryType, RunFactoryType
-
-
-@pytest.fixture(scope="session", autouse=True)
-def disable_env_cache() -> None:
-    """Do not cache environment variables values for varying tests"""
-    Env.cache_values = False
 
 
 @pytest.fixture
