@@ -16,7 +16,6 @@ from .helpers import (
     maybe_path,
     maybe_class_from_module,
 )
-from ..environment import Env
 from ...types import (
     LoaderClassType,
     StrategyClassType,
@@ -81,6 +80,24 @@ def _get_default_strategy_class() -> StrategyClassType:
     return ExplicitStrategy
 
 
+def _to_ternary(value: str) -> t.Optional[bool]:
+    if value == "Y":
+        return True
+    if value == "N":
+        return False
+    if value == "":
+        return None
+    raise ValueError(f"{value!r} is not a valid for a ternary variable. Expected one of: 'Y', 'N', ''")
+
+
+def _to_bool(value: str) -> bool:
+    return _to_ternary(value) is True
+
+
+def _to_path_list(value: str) -> list[Path]:
+    return [Path(item.strip()) for item in value.split(":") if item]
+
+
 def _isatty() -> bool:
     try:
         return os.isatty(sys.stdout.fileno())
@@ -122,10 +139,10 @@ class C:
         )
     )
     ACTION_CLASSES_DIRECTORIES: Mandatory[list[str]] = Mandatory(
-        lambda: Env.GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY,
+        lambda: _to_path_list(os.environ.get("GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY", "")),
     )
     EXTERNAL_PYTHON_MODULES_PATHS: Mandatory[list[Path]] = Mandatory(
-        lambda: Env.GRANA_EXTERNAL_MODULES_PATHS,
+        lambda: _to_path_list(os.environ.get("GRANA_EXTERNAL_MODULES_PATHS", "")),
     )
     DISPLAY_CLASS: Mandatory[DisplayClassType] = Mandatory(
         lambda: _maybe_display_class_by_name(get_cli_arg("display")),
@@ -143,14 +160,14 @@ class C:
         _get_default_strategy_class,
     )
     USE_COLOR: Mandatory[bool] = Mandatory(
-        lambda: Env.GRANA_FORCE_COLOR,
+        lambda: _to_ternary(os.environ.get("GRANA_FORCE_COLOR", "")),
         _isatty,
     )
     SHELL_INJECT_YIELD_FUNCTION: Mandatory[bool] = Mandatory(
-        lambda: Env.GRANA_SHELL_INJECT_YIELD_FUNCTION,
+        lambda: _to_bool(os.environ.get("GRANA_SHELL_INJECT_YIELD_FUNCTION", "Y")),
     )
     STRICT_OUTCOMES_RENDERING: Mandatory[bool] = Mandatory(
-        lambda: Env.GRANA_STRICT_OUTCOMES_RENDERING,
+        lambda: _to_bool(os.environ.get("GRANA_STRICT_OUTCOMES_RENDERING", "Y")),
     )
     DEFAULT_SHELL_EXECUTABLE: Mandatory[str] = Mandatory(
         lambda: os.environ.get("GRANA_DEFAULT_SHELL_EXECUTABLE", "/bin/sh"),

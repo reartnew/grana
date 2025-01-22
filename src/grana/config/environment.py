@@ -1,13 +1,7 @@
 """Separate environment-centric module"""
 
-import pathlib
-import typing as t
-
 from named_env import (
     EnvironmentNamespace,
-    OptionalTernary,
-    OptionalBoolean,
-    OptionalPathList,
 )
 
 __all__ = [
@@ -57,9 +51,3 @@ class Env(EnvironmentNamespace):
         Specifies which shell executable should be used by the shell action by default.
         Default is /bin/sh.
     """
-
-    GRANA_FORCE_COLOR: t.Optional[bool] = OptionalTernary(None)  # type: ignore
-    GRANA_SHELL_INJECT_YIELD_FUNCTION: bool = OptionalBoolean(True)  # type: ignore
-    GRANA_EXTERNAL_MODULES_PATHS: list[pathlib.Path] = OptionalPathList([])
-    GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY: list[pathlib.Path] = OptionalPathList([])
-    GRANA_STRICT_OUTCOMES_RENDERING: bool = OptionalBoolean(True)  # type: ignore
