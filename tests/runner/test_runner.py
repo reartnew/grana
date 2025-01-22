@@ -752,3 +752,19 @@ actions:
         "✗ FAILURE: └──SubQux",
         "✓ SUCCESS: Bar",
     ]
+
+
+def test_improper_shell_extension(run_text: RunFactoryType) -> None:
+    """Check globally set executable for shells"""
+    assert (
+        run_text(
+            """
+                ---
+                actions:
+                  - type: improper-shell
+                """
+        )
+        == [
+            "✓ SUCCESS: improper-shell",
+        ]
+    )

@@ -50,13 +50,13 @@ class ShellAction(EmissionScannerActionBase):
 
     async def _read_stdout(self, process: Process) -> None:
         if process.stdout is None:
-            self.fail("Process standard output is not available")
+            raise ValueError("Process standard output is not available")
         async for line in self._read_stream(process.stdout):
             self.say(line)
 
     async def _read_stderr(self, process: Process) -> None:
         if process.stderr is None:
-            self.fail("Process standard output is not available")
+            raise ValueError("Process standard output is not available")
         async for line in self._read_stream(process.stderr):
             self.say(Stderr(line))
 

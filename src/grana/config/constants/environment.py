@@ -19,12 +19,16 @@ def to_ternary(value: str) -> t.Optional[bool]:
         return False
     if value == "":
         return None
-    raise ValueError(f"{value!r} is not a valid for a ternary variable. Expected one of: 'Y', 'N', ''")
+    raise ValueError(f"{value!r} is not a valid value for a ternary variable. Expected one of: 'Y', 'N', ''.")
 
 
 def to_bool(value: str) -> bool:
     """Converts a string value to a boolean"""
-    return to_ternary(value) is True
+    if value == "Y":
+        return True
+    if value == "N":
+        return False
+    raise ValueError(f"{value!r} is not a valid value for a boolean variable. Expected one of: 'Y', 'N'.")
 
 
 def to_path_list(value: str) -> list[pathlib.Path]:
