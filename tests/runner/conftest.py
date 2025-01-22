@@ -12,6 +12,7 @@ import pytest_asyncio
 from _pytest.fixtures import SubRequest
 
 import grana
+from grana.display import dialog
 from grana.display.default import DefaultDisplay
 from .types import CtxFactoryType, RunFactoryType
 
@@ -26,15 +27,14 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> list[str]:
         results.append(message)
 
     # pylint: disable=unused-argument
-    def _run_dialog(
-        cls,
+    def run_dialog(
         choices: list[str],
         default: list[str],
     ) -> list[str]:
         return default[:1]
 
     monkeypatch.setattr(DefaultDisplay, "display", display)
-    monkeypatch.setattr(DefaultDisplay, "_run_dialog", _run_dialog)
+    monkeypatch.setattr(dialog, "run_dialog", run_dialog)
     return results
 
 

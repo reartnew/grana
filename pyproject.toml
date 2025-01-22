@@ -26,9 +26,10 @@ python-dotenv = "^1.0.1"
 pyyaml = "^6.0.2"
 click = "^8.1.8"
 dacite-cjunct = "1.8.1a0"
-inquirer = "^3.4.0"
-aiodocker = { version = "^0.24.0", optional = true }
 lazy-object-proxy = "^1.10.0"
+# Optional dependencies
+inquirer = { version = "^3.4.0", optional = true }
+aiodocker = { version = "^0.24.0", optional = true }
 # Tests dependencies
 pytest = { version = "^8.3.2", optional = true }
 pylint = { version = "^3.2.6", optional = true }
@@ -47,7 +48,11 @@ pytest-data-suites = { version = "^1.0.5", optional = true }
 
 [tool.poetry.extras]
 docker = ["aiodocker"]
-all = ["aiodocker"]
+dialog = ["inquirer"]
+all = [
+    "aiodocker",
+    "inquirer",
+]
 tests = [
     "pytest",
     "pylint",
@@ -81,8 +86,8 @@ sphinx-design = { version = "^0.6.1", python = ">=3.10" }
 sphinx-togglebutton = { version = "^0.3.2", python = ">=3.10" }
 sphinx-favicon = { version = "^1.0.1", python = ">=3.10" }
 nbsphinx = { version = "^0.9.6", python = ">=3.10" }
-linkify-it-py = {version = "^2.0.3", python = ">=3.10"}
-sphinx-click = {version = "^6.0.0", python = ">=3.10"}
+linkify-it-py = { version = "^2.0.3", python = ">=3.10" }
+sphinx-click = { version = "^6.0.0", python = ">=3.10" }
 
 [tool.poetry.scripts]
 grana = "grana.console:main"

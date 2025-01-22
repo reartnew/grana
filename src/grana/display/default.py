@@ -1,10 +1,8 @@
 """Runner output processor default"""
 
-import sys
 import typing as t
 
-import inquirer  # type: ignore
-
+from . import dialog
 from .base import BaseDisplay
 from .color import Color
 from .utils import Tree, locate_parent_name_by_prefix
@@ -115,7 +113,7 @@ class PrologueDisplay(BaseDisplay):
                 default_selected_action_names.append(action.name)
         if not displayed_action_names_with_descriptions:
             raise InteractionError("No selectable actions found")
-        selected_action_names: list[str] = self._run_dialog(
+        selected_action_names: list[str] = dialog.run_dialog(
             choices=displayed_action_names_with_descriptions,
             default=default_selected_action_names,
         )
@@ -123,25 +121,6 @@ class PrologueDisplay(BaseDisplay):
         for action in workflow.iterate_actions():
             if action.name in default_selected_action_names and action.name not in selected_action_names:
                 action.disable()
-
-    @classmethod
-    def _run_dialog(cls, choices: list[t.Tuple[str, str]], default: list[str]) -> list[str]:  # pragma: no cover
-        if not sys.stdin.isatty():
-            raise InteractionError
-        answers: dict[str, list[str]] = inquirer.prompt(
-            questions=[
-                inquirer.Checkbox(
-                    name="actions",
-                    message="Select actions (SPACE to check, RETURN to proceed)",
-                    choices=choices,
-                    default=default,
-                    carousel=True,
-                )
-            ],
-            raise_keyboard_interrupt=True,
-        )
-        selected_action_names: list[str] = answers["actions"]
-        return selected_action_names
 
 
 class PrefixDisplay(PrologueDisplay):
