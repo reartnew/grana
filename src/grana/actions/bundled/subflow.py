@@ -82,7 +82,7 @@ class SubflowAction(ActionBase):
                         cls.logger.debug(f"Adding context: {sub_path}")
                         receiver[source_key] = source_value
                     elif isinstance(source_value, Mapping) and isinstance(receiver[source_key], MutableMapping):
-                        cls.logger.trace(f"Merging context: {sub_path}")
+                        cls.logger.debug(f"Merging context: {sub_path}")
                         receiver[source_key] = cls._deep_update_context(receiver[source_key], source_value, sub_path)
                     else:
                         cls.logger.debug(f"Rewriting context: {sub_path}")

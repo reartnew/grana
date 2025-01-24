@@ -104,7 +104,7 @@ class DockerShellAction(EmissionScannerActionBase):
         with tempfile.TemporaryDirectory() as tmp_directory:
             local_tmp_dir_path: Path = Path(tmp_directory)
             local_tmp_dir_path.chmod(0o777)
-            self.logger.trace(f"Local temp dir is {local_tmp_dir_path}")
+            self.logger.debug(f"Local temp dir is {local_tmp_dir_path}")
             entry_file_content: str = self.args.command
             if C.SHELL_INJECT_YIELD_FUNCTION:
                 entry_file_content = f"{self._SHELL_SERVICE_FUNCTIONS_DEFINITIONS}\n{entry_file_content}"
@@ -127,7 +127,7 @@ class DockerShellAction(EmissionScannerActionBase):
                     bind_contents_local_file.chmod(0o777)
                     local_file_full_name = str(bind_contents_local_file)
                 container_binds.append(f"{local_file_full_name}:{bind_config.dest}:{bind_config.mode.value}")
-            self.logger.trace(f"Container volumes: {container_binds}")
+            self.logger.debug(f"Container volumes: {container_binds}")
             container: DockerContainer = await client.containers.run(
                 name=container_name,
                 config={

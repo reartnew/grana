@@ -92,7 +92,7 @@ class Templar(LoggerMixin):
 
     def _eval(self, expression: str) -> t.Any:
         """Safely evaluate an expression."""
-        self.logger.trace(f"Processing expression: {expression!r}")
+        self.logger.debug(f"Processing expression: {expression!r}")
         try:
             # pylint: disable=eval-used
             return eval(expression, self._globals, self._locals)  # nosec

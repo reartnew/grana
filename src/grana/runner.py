@@ -171,10 +171,10 @@ class Runner(classlogging.LoggerMixin):
             # Finalize all actions that have been done already
             for maybe_finished_action, corresponding_runner_task in list(action_runners.items()):
                 if maybe_finished_action.done():
-                    self.logger.trace(f"Finalizing done action {maybe_finished_action.name!r} runner")
+                    self.logger.debug(f"Finalizing done action {maybe_finished_action.name!r} runner")
                     await corresponding_runner_task
                     action_runners.pop(maybe_finished_action)
-            self.logger.trace(f"Allocating action runner for {action.name!r}")
+            self.logger.debug(f"Allocating action runner for {action.name!r}")
             action_runners[action] = asyncio.create_task(self._run_action(action=action))
 
         # Finalize running actions
@@ -200,9 +200,9 @@ class Runner(classlogging.LoggerMixin):
             action._internal_fail(e)  # pylint: disable=protected-access
             self._execution_failed = True
             return
-        self.logger.trace(f"Calling `{DisplayEventName.ON_ACTION_START}` for {action.name!r}")
+        self.logger.debug(f"Calling `{DisplayEventName.ON_ACTION_START}` for {action.name!r}")
         await self._send_display_event(DisplayEventName.ON_ACTION_START, source=action)
-        self.logger.trace(f"Allocating action dispatcher for {action.name!r}")
+        self.logger.debug(f"Allocating action dispatcher for {action.name!r}")
         action_messages_reader_task: asyncio.Task = asyncio.create_task(
             self._dispatch_action_messages_to_display(action=action)
         )
@@ -224,7 +224,7 @@ class Runner(classlogging.LoggerMixin):
         finally:
             self._outcomes[action.name].update(action.get_outcomes())
             await action_messages_reader_task
-            self.logger.trace(f"Calling `{DisplayEventName.ON_ACTION_FINISH.value}` for {action.name!r}")
+            self.logger.debug(f"Calling `{DisplayEventName.ON_ACTION_FINISH.value}` for {action.name!r}")
             await self._send_display_event(DisplayEventName.ON_ACTION_FINISH, source=action)
 
     def run_sync(self):
