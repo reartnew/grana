@@ -1,12 +1,12 @@
 """Command-line interface entry"""
 
 import functools
+import logging
 import os
 import sys
 import typing as t
 from pathlib import Path
 
-import classlogging
 import click
 from dotenv.main import DotEnv
 
@@ -15,12 +15,13 @@ from .config.constants.cli import cliargs_receiver
 from .config.constants.environment import ENV_DOC
 from .display.default import KNOWN_DISPLAYS
 from .exceptions import BaseError, ExecutionFailed
+from .logging import configure_logging
 from .runner import Runner
 from .strategy import KNOWN_STRATEGIES
 from .tools.proxy import DeferredCallsProxy
 from .version import __version__
 
-logger = DeferredCallsProxy(obj=classlogging.get_module_logger())
+logger = DeferredCallsProxy(obj=logging.getLogger(__name__))
 
 
 class WorkflowPositionalArgument(click.Argument):
@@ -101,11 +102,10 @@ def wrap_cli_command(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         load_dotenv()
-        classlogging.configure_logging(
+        configure_logging(
+            main_file=C.LOG_FILE,
             level=C.LOG_LEVEL,
             colorize=C.USE_COLOR and not C.LOG_FILE,
-            main_file=C.LOG_FILE,
-            stream=None if C.LOG_FILE else classlogging.LogStream.STDERR,
         )
         logger.uncork()
         try:

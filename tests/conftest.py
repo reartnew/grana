@@ -3,8 +3,9 @@
 import sys
 from pathlib import Path
 
-import classlogging
 import pytest
+
+from grana import logging
 
 
 def pytest_sessionstart():
@@ -17,4 +18,4 @@ def pytest_sessionstart():
 @pytest.fixture(autouse=True, scope="session")
 def configure_logging() -> None:
     """Establish logging configuration"""
-    classlogging.configure_logging(level=classlogging.LogLevel.DEBUG)
+    logging.configure_logging(level="DEBUG", colorize=True)

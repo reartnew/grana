@@ -8,10 +8,9 @@ from __future__ import annotations
 import asyncio
 import typing as t
 
-import classlogging
-
 from .actions.base import ActionBase, ActionSkip
 from .actions.types import ActionStatus
+from .logging import WithLogger
 from .workflow import Workflow
 
 ST = t.TypeVar("ST", bound="BaseStrategy")
@@ -29,7 +28,7 @@ __all__ = [
 KNOWN_STRATEGIES: dict[str, type[BaseStrategy]] = {}
 
 
-class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
+class BaseStrategy(WithLogger, t.AsyncIterable[ActionBase]):
     """Strategy abstract base"""
 
     NAME: str = ""

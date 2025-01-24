@@ -7,8 +7,6 @@ import typing as t
 from io import UnsupportedOperation
 from pathlib import Path
 
-from classlogging import LogLevel
-
 from . import environment
 from .cli import get_cli_arg
 from .helpers import (
@@ -29,16 +27,14 @@ __all__ = [
 ]
 
 LOG_LEVELS: dict[str, str] = {
-    "0": LogLevel.ERROR,
-    "1": LogLevel.WARNING,
-    "2": LogLevel.INFO,
-    "3": LogLevel.DEBUG,
-    "4": LogLevel.TRACE,
-    LogLevel.ERROR: LogLevel.ERROR,
-    LogLevel.WARNING: LogLevel.WARNING,
-    LogLevel.INFO: LogLevel.INFO,
-    LogLevel.DEBUG: LogLevel.DEBUG,
-    LogLevel.TRACE: LogLevel.TRACE,
+    "0": "ERROR",
+    "1": "WARNING",
+    "2": "INFO",
+    "3": "DEBUG",
+    "ERROR": "ERROR",
+    "WARNING": "WARNING",
+    "INFO": "INFO",
+    "DEBUG": "DEBUG",
 }
 
 
@@ -94,7 +90,7 @@ class C:
     LOG_LEVEL: Mandatory[str] = Mandatory(
         lambda: LOG_LEVELS[get_cli_arg("log_level")] if get_cli_arg("log_level") is not None else None,
         lambda: os.environ.get("GRANA_LOG_LEVEL"),
-        lambda: LogLevel.ERROR,
+        lambda: "ERROR",
     )
     LOG_FILE: Optional[Path] = Optional(
         lambda: maybe_path(os.environ.get("GRANA_LOG_FILE")),

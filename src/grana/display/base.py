@@ -2,10 +2,9 @@
 
 import typing as t
 
-import classlogging
-
 from ..actions.types import NamedMessageSource
 from ..exceptions import InteractionError
+from ..logging import WithLogger
 from ..workflow import Workflow
 
 __all__ = [
@@ -13,7 +12,7 @@ __all__ = [
 ]
 
 
-class BaseDisplay(classlogging.LoggerMixin):
+class BaseDisplay(WithLogger):
     """Base class for possible customizations"""
 
     def display(self, message: str) -> None:

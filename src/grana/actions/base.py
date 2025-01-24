@@ -11,12 +11,11 @@ import textwrap
 import typing as t
 from dataclasses import dataclass, fields
 
-import classlogging
-
 from .constants import ACTION_RESERVED_FIELD_NAMES
 from .types import Stderr, OutcomeStorageType, ActionStatus
 from ..display.types import DisplayEvent, DisplayEventName
 from ..exceptions import ActionRunError
+from ..logging import WithLogger
 
 __all__ = [
     "ActionDependency",
@@ -64,7 +63,7 @@ class ArgsBase(metaclass=ArgsMeta):
     Should be subclassed and then added to the `args` annotation of any action class."""
 
 
-class ActionBase(classlogging.LoggerMixin):
+class ActionBase(WithLogger):
     """Base class for all actions"""
 
     args: ArgsBase
@@ -141,8 +140,7 @@ class ActionBase(classlogging.LoggerMixin):
 
     async def _run_with_log_context(self) -> None:
         self.logger.info(f"Running action: {self.name!r}")
-        with self.logger.context(name=self.name):
-            return await self.run()
+        return await self.run()
 
     async def _await(self) -> None:
         fut = self.get_future()

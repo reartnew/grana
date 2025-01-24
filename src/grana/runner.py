@@ -6,12 +6,12 @@ thus placed to a separate module.
 import asyncio
 import functools
 import io
+import logging
 import sys
 import typing as t
 from enum import Enum
 from pathlib import Path
 
-import classlogging
 import dacite
 
 from . import types
@@ -30,11 +30,12 @@ __all__ = [
 ]
 
 IOType = io.TextIOBase
-logger = classlogging.get_module_logger()
 
 
-class Runner(classlogging.LoggerMixin):
+class Runner:
     """Main entry object"""
+
+    logger = logging.getLogger(f"{__name__}.Runner")
 
     def __init__(
         self,

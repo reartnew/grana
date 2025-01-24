@@ -601,20 +601,6 @@ files = [
 ]
 
 [[package]]
-name = "classlogging"
-version = "1.2.1"
-description = "Class-based logging facility"
-optional = false
-python-versions = "<4.0,>=3.9"
-files = [
-    {file = "classlogging-1.2.1-py3-none-any.whl", hash = "sha256:41d49f4018a12ffed17b26c6a90cb88770a2952a17ac7b750ab313c05f5c6134"},
-    {file = "classlogging-1.2.1.tar.gz", hash = "sha256:6ff1dcb79d0c3614ffba72e9434fdbc8fe644773641839cee0791a3a634744f5"},
-]
-
-[package.extras]
-tests = ["pylint (>=3.2.6,<4.0.0)", "pytest (>=8.3.4,<9.0.0)", "pytest-bandit (>=0.6.1,<0.7.0)", "pytest-black (>=0.6.0,<0.7.0)", "pytest-mypy (>=0.10.3,<0.11.0)", "pytest-pylint (>=0.21.0,<0.22.0)"]
-
-[[package]]
 name = "click"
 version = "8.1.8"
 description = "Composable command line interface toolkit"
@@ -3429,4 +3415,4 @@ tests = ["bandit", "black", "coverage", "mypy", "pylint", "pytest", "pytest-asyn
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "2ecce163ce731c8d5830dc8dbf6ab4fcbf16dfc1bc92c3a8ee1365b888a29401"
+content-hash = "dba492b3425e37d8355c84a48547fca9775ef8a5d6b0f6b0955d677a4c355b05"

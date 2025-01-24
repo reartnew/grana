@@ -3,20 +3,19 @@
 import os
 import typing as t
 
-from classlogging import LoggerMixin
-
 from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
 from .tokenizing import TemplarStringLexer
 from ..actions.types import Expression, qualify_string_as_potentially_renderable
 from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
+from ..logging import WithLogger
 
 __all__ = [
     "Templar",
 ]
 
 
-class Templar(LoggerMixin):
+class Templar(WithLogger):
     """Expression renderer"""
 
     DISABLED_GLOBALS: list[str] = ["exec", "eval", "compile", "setattr", "delattr"]

@@ -3,7 +3,6 @@
 
 import typing as t
 
-import classlogging
 import pytest
 from click.testing import CliRunner
 from dotenv.main import DotEnv
@@ -55,7 +54,6 @@ def builder(monkeypatch: pytest.MonkeyPatch) -> BuilderType:
     """Setup test command fed from stdin"""
 
     monkeypatch.setattr(DotEnv, "set_as_environment_variables", _noop)
-    monkeypatch.setattr(classlogging, "configure_logging", _noop)
 
     def build(*subcommand: str):
         def execute(text: t.Optional[str] = None, opts: OptsType = None, global_opts: OptsType = None) -> list[str]:

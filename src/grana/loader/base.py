@@ -9,12 +9,12 @@ from enum import Enum
 from pathlib import Path
 
 import dacite
-from classlogging import LoggerMixin
 from dacite.types import is_subclass
 
 from ..actions.base import ActionBase, ArgsBase, ActionDependency, ActionSeverity
 from ..actions.types import Expression, qualify_string_as_potentially_renderable
 from ..exceptions import LoadError
+from ..logging import WithLogger
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
 from ..tools.concealment import represent_object_type
 from ..tools.inspect import get_class_annotations
@@ -25,7 +25,7 @@ __all__ = [
 ]
 
 
-class TemplateIndifferentConfig(dacite.Config, LoggerMixin):
+class TemplateIndifferentConfig(dacite.Config, WithLogger):
     """Configuration for initial workflow loading"""
 
     @classmethod
@@ -43,7 +43,7 @@ class TemplateIndifferentConfig(dacite.Config, LoggerMixin):
         return super().is_instance(value, type_)
 
 
-class AbstractBaseWorkflowLoader(LoggerMixin):
+class AbstractBaseWorkflowLoader(WithLogger):
     """Loaders base class"""
 
     STATIC_ACTION_FACTORIES: dict[str, type[ActionBase]] = {}

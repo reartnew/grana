@@ -6,17 +6,16 @@ import collections
 import pathlib
 import typing as t
 
-from classlogging import LoggerMixin
-
 from .actions.base import ActionBase, ActionDependency
 from .exceptions import IntegrityError
+from .logging import WithLogger
 
 __all__ = [
     "Workflow",
 ]
 
 
-class Workflow(dict[str, ActionBase], LoggerMixin):
+class Workflow(dict[str, ActionBase], WithLogger):
     """Action relations map"""
 
     def __init__(
