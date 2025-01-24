@@ -15,7 +15,7 @@ from .constants import ACTION_RESERVED_FIELD_NAMES
 from .types import Stderr, OutcomeStorageType, ActionStatus
 from ..display.types import DisplayEvent, DisplayEventName
 from ..exceptions import ActionRunError
-from ..logging import WithLogger
+from ..logging import WithLogger, context
 
 __all__ = [
     "ActionDependency",
@@ -140,7 +140,8 @@ class ActionBase(WithLogger):
 
     async def _run_with_log_context(self) -> None:
         self.logger.info(f"Running action: {self.name!r}")
-        return await self.run()
+        with context(action=self.name):
+            return await self.run()
 
     async def _await(self) -> None:
         fut = self.get_future()
