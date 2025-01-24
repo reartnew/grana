@@ -264,13 +264,13 @@ dev = ["freezegun (>=1.0,<2.0)", "pytest (>=6.0)", "pytest-cov"]
 
 [[package]]
 name = "bandit"
-version = "1.8.0"
+version = "1.8.2"
 description = "Security oriented static analyser for python code."
 optional = true
 python-versions = ">=3.9"
 files = [
-    {file = "bandit-1.8.0-py3-none-any.whl", hash = "sha256:b1a61d829c0968aed625381e426aa378904b996529d048f8d908fa28f6b13e38"},
-    {file = "bandit-1.8.0.tar.gz", hash = "sha256:b5bfe55a095abd9fe20099178a7c6c060f844bfd4fe4c76d28e35e4c52b9d31e"},
+    {file = "bandit-1.8.2-py3-none-any.whl", hash = "sha256:df6146ad73dd30e8cbda4e29689ddda48364e36ff655dbfc86998401fcf1721f"},
+    {file = "bandit-1.8.2.tar.gz", hash = "sha256:e00ad5a6bc676c0954669fe13818024d66b70e42cf5adb971480cf3b671e835f"},
 ]
 
 [package.dependencies]
@@ -1924,13 +1924,13 @@ dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "pygments
 
 [[package]]
 name = "pytest-asyncio"
-version = "0.25.1"
+version = "0.25.2"
 description = "Pytest support for asyncio"
 optional = true
 python-versions = ">=3.9"
 files = [
-    {file = "pytest_asyncio-0.25.1-py3-none-any.whl", hash = "sha256:c84878849ec63ff2ca509423616e071ef9cd8cc93c053aa33b5b8fb70a990671"},
-    {file = "pytest_asyncio-0.25.1.tar.gz", hash = "sha256:79be8a72384b0c917677e00daa711e07db15259f4d23203c59012bcd989d4aee"},
+    {file = "pytest_asyncio-0.25.2-py3-none-any.whl", hash = "sha256:0d0bb693f7b99da304a0634afc0a4b19e49d5e0de2d670f38dc4bfa5727c5075"},
+    {file = "pytest_asyncio-0.25.2.tar.gz", hash = "sha256:3f8ef9a98f45948ea91a0ed3dc4268b5326c0e7bce73892acc654df4262ad45f"},
 ]
 
 [package.dependencies]
@@ -3415,4 +3415,4 @@ tests = ["bandit", "black", "coverage", "mypy", "pylint", "pytest", "pytest-asyn
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "dba492b3425e37d8355c84a48547fca9775ef8a5d6b0f6b0955d677a4c355b05"
+content-hash = "614d5cfc9bf417c0efd71e4d3a60ea3305bb6104e617607193ba7f33a5433213"
