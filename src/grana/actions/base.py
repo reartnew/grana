@@ -9,22 +9,44 @@ import enum
 import re
 import textwrap
 import typing as t
+import pathlib
 from dataclasses import dataclass, fields
 
+import dacite
+
+from ..tools.concealment import represent_object_type
+from ..tools.inspect import get_class_annotations
 from .constants import ACTION_RESERVED_FIELD_NAMES
 from .types import Stderr, OutcomeStorageType, ActionStatus
 from ..display.types import DisplayEvent, DisplayEventName
-from ..exceptions import ActionRunError
+from ..exceptions import ActionRunError, ActionRenderError
 from ..logging import WithLogger, context
 
 __all__ = [
     "ActionDependency",
     "ActionSeverity",
     "ActionBase",
+    "ActionExecution",
     "ActionSkip",
     "ArgsBase",
     "EmissionScannerActionBase",
 ]
+
+
+class AbstractExecutionCommunicator:
+    """aaa"""
+
+    def send_say(self, message: str) -> None:
+        """Pass a message to the execution"""
+        raise NotImplementedError
+
+    def send_yield_outcome(self, key: str, value: t.Any) -> None:
+        """Pass an outcome to the execution"""
+        raise NotImplementedError
+
+    def send_display_event(self, event: DisplayEvent) -> None:
+        """Pass a display event to the execution"""
+        raise NotImplementedError
 
 
 class ActionSkip(BaseException):
@@ -68,23 +90,60 @@ class ActionBase(WithLogger):
 
     args: ArgsBase
 
+    def __init__(self) -> None:
+        self._communicator: t.Optional[AbstractExecutionCommunicator] = None
+
+    def yield_outcome(self, key: str, value: t.Any) -> None:
+        """Report outcome key"""
+        if self._communicator is None:
+            self.logger.warning("Communicator is not set, so `yield_outcome` does not take effect")
+            return
+        self.logger.debug(f"Yielding a key: {key!r}")
+        self._communicator.send_yield_outcome(key, value)
+
+    def say(self, message: str) -> None:
+        """Send a message to the display"""
+        if self._communicator is None:
+            self.logger.warning("Communicator is not set, so `say` does not take effect")
+            return
+        self._communicator.send_say(message)
+
+    def skip(self) -> t.NoReturn:
+        """Set status to SKIPPED and stop execution"""
+        raise ActionSkip
+
+    def fail(self, message: str = "") -> t.NoReturn:
+        """Set corresponding error message and raise an exception"""
+        raise ActionRunError(message)
+
+    async def run(self) -> None:
+        """Main entry to be implemented in subclasses"""
+        raise NotImplementedError
+
+
+class ActionExecution(WithLogger):
+    """An action that is executed within a workflow"""
+
     def __init__(
         self,
         *,
+        action_class: type[ActionBase],
         name: str,
-        args: ArgsBase = ArgsBase(),
+        raw_args: dict,
         ancestors: t.Optional[dict[str, ActionDependency]] = None,
         description: t.Optional[str] = None,
         selectable: bool = True,
         severity: ActionSeverity = ActionSeverity.NORMAL,
     ) -> None:
+        self.action_class = action_class
         self.name: str = name
-        self.args: ArgsBase = args
+        self.raw_args: dict = raw_args
         self.description: t.Optional[str] = description
         self.ancestors: dict[str, ActionDependency] = ancestors or {}
         self.selectable: bool = selectable
+        self.templar_factory = None
 
-        self._yielded_keys: OutcomeStorageType = {}
+        self.outcomes: OutcomeStorageType = {}
         self._status: ActionStatus = ActionStatus.PENDING
         self._enabled: bool = True
         # Do not create asyncio-related objects on constructing object to decouple from the event loop
@@ -92,6 +151,9 @@ class ActionBase(WithLogger):
         self._maybe_message_queue: t.Optional[asyncio.Queue[DisplayEvent]] = None
         self._running_task: t.Optional[asyncio.Task] = None
         self._severity: ActionSeverity = severity
+
+    def set_templar_factory(self, factory):
+        self.templar_factory = factory
 
     @property
     def enabled(self) -> bool:
@@ -107,15 +169,6 @@ class ActionBase(WithLogger):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self._status.value})"
-
-    def yield_outcome(self, key: str, value: t.Any) -> None:
-        """Report outcome key"""
-        self.logger.debug(f"Yielded a key: {key!r}")
-        self._yielded_keys[key] = value
-
-    def get_outcomes(self) -> OutcomeStorageType:
-        """Report all registered outcomes"""
-        return self._yielded_keys
 
     def get_future(self) -> asyncio.Future:
         """Return a Future object indicating the end of the action"""
@@ -134,14 +187,62 @@ class ActionBase(WithLogger):
         """Public getter"""
         return self._status
 
-    async def run(self) -> None:
-        """Main entry to be implemented in subclasses"""
-        raise NotImplementedError
-
     async def _run_with_log_context(self) -> None:
         self.logger.info(f"Running action: {self.name!r}")
+        execution = self
+
+        class Communicator(AbstractExecutionCommunicator):
+
+            def send_display_event(self, event: DisplayEvent) -> None:
+                execution._event_queue.put_nowait(event)
+
+            def send_say(self, message: str) -> None:
+                self.send_display_event(
+                    DisplayEvent(
+                        DisplayEventName.ON_ACTION_MESSAGE,
+                        source=execution,
+                        message=message,
+                    )
+                )
+
+            def send_yield_outcome(self, key: str, value: t.Any) -> None:
+                execution.outcomes[key] = value
+
+        action_instance: ActionBase = self.action_class()
+        action_instance._communicator = Communicator()
         with context(action=self.name):
-            return await self.run()
+            # Inject args
+            action_instance.args = self.render_action_args()
+            return await action_instance.run()
+
+    def render_action_args(self) -> ArgsBase:
+        """Prepare action to execution by rendering its template fields"""
+        templar = self.templar_factory()
+
+        for mro_class in self.action_class.__mro__:
+            if args_class := get_class_annotations(mro_class).get("args"):
+                break
+        else:
+            raise TypeError(f"Couldn't find an `args` annotation for class {self.action_class.__name__}")
+        rendered_args_dict: dict = templar.recursive_render(self.raw_args)
+        try:
+            parsed_args: ArgsBase = t.cast(
+                ArgsBase,
+                dacite.from_dict(
+                    data_class=args_class,
+                    data=rendered_args_dict,
+                    config=dacite.Config(
+                        strict=True,
+                        cast=[enum.Enum, pathlib.Path],
+                    ),
+                ),
+            )
+        except dacite.WrongTypeError as e:
+            raise ActionRenderError(
+                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
+                f" (expected {e.field_type!r})"
+            ) from None
+        return parsed_args
 
     async def _await(self) -> None:
         fut = self.get_future()
@@ -166,15 +267,6 @@ class ActionBase(WithLogger):
         if not fut.done():
             fut.set_result(None)
 
-    def say(self, message: str) -> None:
-        """Send a message to the display"""
-        self._event_queue.put_nowait(DisplayEvent(DisplayEventName.ON_ACTION_MESSAGE, source=self, message=message))
-
-    def skip(self) -> t.NoReturn:
-        """Set status to SKIPPED and stop execution"""
-        self._internal_skip()
-        raise ActionSkip
-
     def _internal_skip(self) -> None:
         self._status = ActionStatus.SKIPPED
         self.get_future().set_result(None)
@@ -184,12 +276,6 @@ class ActionBase(WithLogger):
         self._status = ActionStatus.OMITTED
         self.get_future().set_result(None)
         self.logger.info(f"Action {self.name!r} omitted")
-
-    def fail(self, message: str = "") -> t.NoReturn:
-        """Set corresponding error message and raise an exception"""
-        exception = ActionRunError(message)
-        self._internal_fail(exception)
-        raise exception
 
     def _internal_fail(self, exception: Exception) -> None:
         if not self.get_future().done():
@@ -268,8 +354,8 @@ class EmissionScannerActionBase(ActionBase):
         """
     ).lstrip()
 
-    def __init__(self, *a, **kw) -> None:
-        super().__init__(*a, **kw)
+    def __init__(self) -> None:
+        super().__init__()
         self._outcomes_base64_chunks: dict[str, list[str]] = collections.defaultdict(list)
 
     @classmethod

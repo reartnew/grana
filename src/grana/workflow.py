@@ -6,7 +6,7 @@ import collections
 import pathlib
 import typing as t
 
-from .actions.base import ActionBase, ActionDependency
+from .actions.base import ActionExecution, ActionDependency
 from .exceptions import IntegrityError
 from .logging import WithLogger
 
@@ -15,19 +15,19 @@ __all__ = [
 ]
 
 
-class Workflow(dict[str, ActionBase], WithLogger):
+class Workflow(dict[str, ActionExecution], WithLogger):
     """Action relations map"""
 
     def __init__(
         self,
-        actions_map: dict[str, ActionBase],
+        actions_map: dict[str, ActionExecution],
         context: t.Optional[dict[str, t.Any]] = None,
         source_file: t.Optional[pathlib.Path] = None,
     ) -> None:
         super().__init__(actions_map)
         self.source_file: t.Optional[pathlib.Path] = source_file
         self._entrypoints: set[str] = set()
-        self._tiers_sequence: list[list[ActionBase]] = []
+        self._tiers_sequence: list[list[ActionExecution]] = []
         self._descendants_map: dict[str, dict[str, ActionDependency]] = collections.defaultdict(dict)
         self.context: dict[str, t.Any] = context or {}
         # Check dependencies integrity
@@ -46,7 +46,7 @@ class Workflow(dict[str, ActionBase], WithLogger):
 
     def _establish_descendants(self) -> None:
         missing_non_external_deps: set[str] = set()
-        for action in self.values():  # type: ActionBase
+        for action in self.values():  # type: ActionExecution
             for dependency_action_name, dependency in list(action.ancestors.items()):
                 if dependency_action_name not in self:
                     if dependency.external:
@@ -79,7 +79,7 @@ class Workflow(dict[str, ActionBase], WithLogger):
         while True:
             next_tier_candidate_actions_names: set[str] = set()
             for tier_action_name in current_tier_actions_names:
-                tier_action: ActionBase = self[tier_action_name]
+                tier_action: ActionExecution = self[tier_action_name]
                 if tier_action.name in action_name_to_tier_mapping:
                     continue
                 action_name_to_tier_mapping[tier_action.name] = step_tier
@@ -99,12 +99,12 @@ class Workflow(dict[str, ActionBase], WithLogger):
             action_tier: int = action_name_to_tier_mapping[action_name]
             self._tiers_sequence[action_tier].append(action)
 
-    def _iter_actions_by_tier(self) -> t.Generator[t.Tuple[int, ActionBase], None, None]:
+    def _iter_actions_by_tier(self) -> t.Generator[t.Tuple[int, ActionExecution], None, None]:
         """Yield actions tier by tier"""
         for tier_num, tier_actions in enumerate(self._tiers_sequence):
             for action in tier_actions:
                 yield tier_num, action
 
-    def iterate_actions(self) -> t.Iterator[ActionBase]:
+    def iterate_actions(self) -> t.Iterator[ActionExecution]:
         """Iterate actions sorted natively"""
         return (action for _, action in self._iter_actions_by_tier())

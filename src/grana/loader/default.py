@@ -9,7 +9,7 @@ from pathlib import Path
 import yaml
 
 from .base import AbstractBaseWorkflowLoader
-from ..actions.base import ActionBase
+from ..actions.base import ActionExecution, ActionBase
 from ..actions.bundled import (
     EchoAction,
     ShellAction,
@@ -130,7 +130,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 self._throw(f"'actions' contents should be a list (got {type(actions)!r})")
             for child_node in actions:
                 if isinstance(child_node, dict):
-                    action: ActionBase = self.build_action_from_dict_data(child_node)
+                    action: ActionExecution = self.build_action_from_dict_data(child_node)
                     self._register_action(action)
                 elif isinstance(child_node, Import):
                     self._parse_import(

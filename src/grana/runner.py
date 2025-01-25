@@ -15,7 +15,7 @@ from pathlib import Path
 import dacite
 
 from . import types
-from .actions.base import ActionBase, ArgsBase
+from .actions.base import ActionExecution, ArgsBase
 from .actions.types import ActionStatus
 from .config.constants import C
 from .display.types import DisplayEvent, DisplayEventName
@@ -23,6 +23,7 @@ from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionR
 from .loader.helpers import get_default_loader_class_for_source
 from .rendering import Templar
 from .tools.concealment import represent_object_type
+from .tools.inspect import get_class_annotations
 from .workflow import Workflow
 
 __all__ = [
@@ -164,11 +165,11 @@ class Runner:
         if self._started:
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
-        action_runners: dict[ActionBase, asyncio.Task] = {}
+        action_runners: dict[ActionExecution, asyncio.Task] = {}
         # Prefill outcomes map
         for action_name in self.workflow:
             self._outcomes[action_name] = {}
-        async for action in self.strategy:  # type: ActionBase
+        async for action in self.strategy:  # type: ActionExecution
             # Finalize all actions that have been done already
             for maybe_finished_action, corresponding_runner_task in list(action_runners.items()):
                 if maybe_finished_action.done():
@@ -182,25 +183,26 @@ class Runner:
         for task in action_runners.values():
             await task
 
-    async def _dispatch_action_messages_to_display(self, action: ActionBase) -> None:
+    async def _dispatch_action_messages_to_display(self, action: ActionExecution) -> None:
         async for event in action.read_messages():
             self._events_flow.put_nowait(event)
 
-    async def _run_action(self, action: ActionBase) -> None:
+    async def _run_action(self, action: ActionExecution) -> None:
+        action.set_templar_factory(self._get_templar)
         if not action.enabled:
             action._internal_omit()  # pylint: disable=protected-access
             return None
         message: str
-        try:
-            self._render_action(action)
-        except Exception as e:
-            details: str = str(e) if isinstance(e, ActionRenderError) else repr(e)
-            message = f"Action {action.name!r} rendering failed: {details}"
-            await self._send_display_event(DisplayEventName.ON_ACTION_ERROR, source=action, message=message)
-            self.logger.warning(message, exc_info=not isinstance(e, ActionRenderError))
-            action._internal_fail(e)  # pylint: disable=protected-access
-            self._execution_failed = True
-            return
+        # try:
+        #     self._render_action(action)
+        # except Exception as e:
+        #     details: str = str(e) if isinstance(e, ActionRenderError) else repr(e)
+        #     message = f"Action {action.name!r} rendering failed: {details}"
+        #     await self._send_display_event(DisplayEventName.ON_ACTION_ERROR, source=action, message=message)
+        #     self.logger.warning(message, exc_info=not isinstance(e, ActionRenderError))
+        #     action._internal_fail(e)  # pylint: disable=protected-access
+        #     self._execution_failed = True
+        #     return
         self.logger.debug(f"Calling `{DisplayEventName.ON_ACTION_START}` for {action.name!r}")
         await self._send_display_event(DisplayEventName.ON_ACTION_START, source=action)
         self.logger.debug(f"Allocating action dispatcher for {action.name!r}")
@@ -223,7 +225,7 @@ class Runner:
                 self._execution_failed = True
             self.logger.debug("Action failure traceback", exc_info=True)
         finally:
-            self._outcomes[action.name].update(action.get_outcomes())
+            self._outcomes[action.name].update(action.outcomes)
             await action_messages_reader_task
             self.logger.debug(f"Calling `{DisplayEventName.ON_ACTION_FINISH.value}` for {action.name!r}")
             await self._send_display_event(DisplayEventName.ON_ACTION_FINISH, source=action)
@@ -232,7 +234,15 @@ class Runner:
         """Wrap async run into an event loop"""
         asyncio.run(self.run_async())
 
-    def _render_action(self, action: ActionBase) -> None:
+    def _get_templar(self) -> Templar:
+        return Templar(
+            outcomes_map=self._outcomes,
+            action_states={name: self.workflow[name].status.value for name in self.workflow},
+            context_map=self.workflow.context,
+            metadata=self.workflow.get_metadata(),
+        )
+
+    def _render_action(self, action: ActionExecution) -> None:
         """Prepare action to execution by rendering its template fields"""
         templar: Templar = Templar(
             outcomes_map=self._outcomes,
@@ -241,14 +251,22 @@ class Runner:
             metadata=self.workflow.get_metadata(),
         )
 
+        for mro_class in action.action_class.__mro__:
+            if args_class := get_class_annotations(mro_class).get("args"):
+                break
+        else:
+            raise TypeError(f"Couldn't find an `args` annotation for class {action.action_class.__name__}")
         rendered_args_dict: dict = templar.recursive_render(self.loader.get_original_args_dict_for_action(action))
         try:
-            parsed_args: ArgsBase = dacite.from_dict(
-                data_class=type(action.args),
-                data=rendered_args_dict,
-                config=dacite.Config(
-                    strict=True,
-                    cast=[Enum, Path],
+            parsed_args: ArgsBase = t.cast(
+                ArgsBase,
+                dacite.from_dict(
+                    data_class=args_class,
+                    data=rendered_args_dict,
+                    config=dacite.Config(
+                        strict=True,
+                        cast=[Enum, Path],
+                    ),
                 ),
             )
         except dacite.WrongTypeError as e:

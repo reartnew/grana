@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 import typing as t
 
-from .actions.base import ActionBase, ActionSkip
+from .actions.base import ActionExecution, ActionSkip
 from .actions.types import ActionStatus
 from .logging import WithLogger
 from .workflow import Workflow
@@ -28,7 +28,7 @@ __all__ = [
 KNOWN_STRATEGIES: dict[str, type[BaseStrategy]] = {}
 
 
-class BaseStrategy(WithLogger, t.AsyncIterable[ActionBase]):
+class BaseStrategy(WithLogger, t.AsyncIterable[ActionExecution]):
     """Strategy abstract base"""
 
     NAME: str = ""
@@ -40,7 +40,7 @@ class BaseStrategy(WithLogger, t.AsyncIterable[ActionBase]):
     def __aiter__(self: ST) -> ST:
         return self
 
-    async def __anext__(self) -> ActionBase:
+    async def __anext__(self) -> ActionExecution:
         raise NotImplementedError
 
     def __init_subclass__(cls, **kwargs):
@@ -50,7 +50,7 @@ class BaseStrategy(WithLogger, t.AsyncIterable[ActionBase]):
                 f"Please specify another name for the {cls.__module__}.{cls.__name__}."
             )
 
-    def _skip_action(self, action: ActionBase) -> None:
+    def _skip_action(self, action: ActionExecution) -> None:
         try:
             action.skip()
         except ActionSkip:
@@ -64,9 +64,9 @@ class FreeStrategy(BaseStrategy):
 
     def __init__(self, workflow: Workflow) -> None:
         super().__init__(workflow)
-        self._unprocessed: list[ActionBase] = list(workflow.values())
+        self._unprocessed: list[ActionExecution] = list(workflow.values())
 
-    async def __anext__(self) -> ActionBase:
+    async def __anext__(self) -> ActionExecution:
         if not self._unprocessed:
             raise StopAsyncIteration
         return self._unprocessed.pop(0)
@@ -79,9 +79,9 @@ class SequentialStrategy(FreeStrategy):
 
     def __init__(self, workflow: Workflow) -> None:
         super().__init__(workflow)
-        self._current: t.Optional[ActionBase] = None
+        self._current: t.Optional[ActionExecution] = None
 
-    async def __anext__(self) -> ActionBase:
+    async def __anext__(self) -> ActionExecution:
         if self._current is not None:
             try:
                 await self._current
@@ -102,15 +102,15 @@ class ExplicitStrategy(BaseStrategy):
     def __init__(self, workflow: Workflow) -> None:
         super().__init__(workflow)
         # Actions that have been emitted by the strategy and not finished yet
-        self._active_actions_map: dict[str, ActionBase] = {}
+        self._active_actions_map: dict[str, ActionExecution] = {}
         # Just a structured mutable copy of the dependency map
         self._action_blockers: dict[str, set[str]] = {name: set(workflow[name].ancestors) for name in workflow}
 
-    def _skip_action(self, action: ActionBase) -> None:
+    def _skip_action(self, action: ActionExecution) -> None:
         super()._skip_action(action)
         self._active_actions_map.pop(action.name, None)
 
-    def _get_maybe_next_action(self) -> t.Optional[ActionBase]:
+    def _get_maybe_next_action(self) -> t.Optional[ActionExecution]:
         """Completely non-optimal (always scan all actions), but readable yet"""
         done_action_names: set[str] = {action.name for action in self._workflow.values() if action.done()}
         # Copy into a list for further possible pop
@@ -119,18 +119,18 @@ class ExplicitStrategy(BaseStrategy):
             if not maybe_next_action_blockers:
                 self.logger.debug(f"Action {maybe_next_action_name!r} is ready for scheduling")
                 self._action_blockers.pop(maybe_next_action_name)
-                next_action: ActionBase = self._workflow[maybe_next_action_name]
+                next_action: ActionExecution = self._workflow[maybe_next_action_name]
                 self._active_actions_map[next_action.name] = next_action
                 return next_action
         return None
 
-    async def __anext__(self) -> ActionBase:
+    async def __anext__(self) -> ActionExecution:
         while True:
             # Get an action and check whether to emit or to skip it
-            next_action: ActionBase = await self._next_action()
+            next_action: ActionExecution = await self._next_action()
             self.logger.debug(f"The next action is: {next_action}")
             for ancestor_name, ancestor_dependency in next_action.ancestors.items():
-                ancestor: ActionBase = self._workflow[ancestor_name]
+                ancestor: ActionExecution = self._workflow[ancestor_name]
                 if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED, ActionStatus.WARNING) and (
                     ancestor_dependency.strict or self.STRICT
                 ):
@@ -140,7 +140,7 @@ class ExplicitStrategy(BaseStrategy):
             else:
                 return next_action
 
-    async def _next_action(self) -> ActionBase:
+    async def _next_action(self) -> ActionExecution:
         # Do we have anything pending already?
         if maybe_next_action := self._get_maybe_next_action():
             return maybe_next_action
@@ -151,7 +151,7 @@ class ExplicitStrategy(BaseStrategy):
                 [action.get_future() for action in active_actions],
                 return_when=asyncio.FIRST_COMPLETED,
             )
-            for action in active_actions:  # type: ActionBase
+            for action in active_actions:  # type: ActionExecution
                 if action.done():
                     self.logger.debug(f"Action {action.name!r} execution finished")
                     del self._active_actions_map[action.name]

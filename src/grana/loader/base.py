@@ -11,7 +11,7 @@ from pathlib import Path
 import dacite
 from dacite.types import is_subclass
 
-from ..actions.base import ActionBase, ArgsBase, ActionDependency, ActionSeverity
+from ..actions.base import ActionExecution, ActionBase, ArgsBase, ActionDependency, ActionSeverity
 from ..actions.types import Expression, qualify_string_as_potentially_renderable
 from ..exceptions import LoadError
 from ..logging import WithLogger
@@ -49,7 +49,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
     STATIC_ACTION_FACTORIES: dict[str, type[ActionBase]] = {}
 
     def __init__(self) -> None:
-        self._actions: dict[str, ActionBase] = {}
+        self._actions: dict[str, ActionExecution] = {}
         self._raw_file_names_stack: list[str] = []
         self._resolved_file_paths_stack: list[Path] = []
         self._gathered_context: dict[str, t.Any] = {}
@@ -62,7 +62,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Return explicitly-set strategy class, if any"""
         return self._explicit_strategy_class
 
-    def _register_action(self, action: ActionBase) -> None:
+    def _register_action(self, action: ActionExecution) -> None:
         if action.name in self._actions:
             self._throw(f"Action declared twice: {action.name!r}")
         self._actions[action.name] = action
@@ -150,7 +150,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
             return dep_name, dep_holder
         self._throw(f"Unrecognized dependency node structure: {type(dep_node)!r} (expected a string or a dict)")
 
-    def build_action_from_dict_data(self, node: dict) -> ActionBase:
+    def build_action_from_dict_data(self, node: dict) -> ActionExecution:
         """Process a dictionary representing an action"""
         # Action type
         if "type" not in node:
@@ -198,15 +198,10 @@ class AbstractBaseWorkflowLoader(WithLogger):
         except ValueError:
             valid_severities: str = ", ".join(sorted(s.value for s in ActionSeverity))
             self._throw(f"Invalid severity: {severity_str!r} (expected one of: {valid_severities})")
-        # Make action instance
-        args_instance: ArgsBase = self._build_args_from_the_rest_of_the_dict_node(
-            action_name=name,
-            action_class=action_class,
-            node=node,
-        )
-        action_instance: ActionBase = action_class(
+        action_instance: ActionExecution = ActionExecution(
             name=name,
-            args=args_instance,
+            action_class=action_class,
+            raw_args=node,
             description=description,
             ancestors=dependencies,
             selectable=selectable,
@@ -218,7 +213,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
     def _build_args_from_the_rest_of_the_dict_node(
         self,
         action_name: str,
-        action_class: type[ActionBase],
+        action_class: type[ActionExecution],
         node: dict,
     ) -> ArgsBase:
         for mro_class in action_class.__mro__:
@@ -250,7 +245,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
                 f" (expected {e.field_type!r})"
             )
 
-    def get_original_args_dict_for_action(self, action: ActionBase) -> dict:
+    def get_original_args_dict_for_action(self, action: ActionExecution) -> dict:
         """Obtain dictionary representation of the action arguments as was initially loaded"""
         return self._original_args_map[action.name]
 

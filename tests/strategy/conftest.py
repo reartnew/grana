@@ -4,11 +4,11 @@
 
 import pytest
 
-from grana.actions.base import ActionBase, ActionDependency
+from grana.actions.base import ActionExecution, ActionDependency
 from grana.workflow import Workflow
 
 
-def _make_chained_workflow(action_class: type[ActionBase]) -> Workflow:
+def _make_chained_workflow(action_class: type[ActionExecution]) -> Workflow:
     step_names: list[str] = [
         "foo",
         "bar",
@@ -32,7 +32,7 @@ def _make_chained_workflow(action_class: type[ActionBase]) -> Workflow:
 def strict_successful_workflow() -> Workflow:
     """Minimalistic strict chained workflow"""
 
-    class SuccessAction(ActionBase):
+    class SuccessAction(ActionExecution):
         """Does nothing"""
 
         async def run(self) -> None:
@@ -45,7 +45,7 @@ def strict_successful_workflow() -> Workflow:
 def strict_failing_workflow() -> Workflow:
     """Minimalistic strict chained workflow with failures"""
 
-    class FailingAction(ActionBase):
+    class FailingAction(ActionExecution):
         """Raises RuntimeError"""
 
         async def run(self) -> None:
@@ -58,7 +58,7 @@ def strict_failing_workflow() -> Workflow:
 def strict_skipping_workflow() -> Workflow:
     """Minimalistic strict chained workflow with explicit skipping"""
 
-    class SkippingAction(ActionBase):
+    class SkippingAction(ActionExecution):
         """Raises RuntimeError"""
 
         async def run(self) -> None:
