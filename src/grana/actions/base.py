@@ -153,7 +153,7 @@ class ActionExecution(WithLogger):
 
         self.outcomes: OutcomeStorageType = {}
         self.status: ActionStatus = ActionStatus.PENDING
-        self._enabled: bool = True
+        self.enabled: bool = True
         # Do not create asyncio-related objects on constructing object to decouple from the event loop
         self.future: asyncio.Future = asyncio.get_event_loop().create_future()
         self.event_queue: asyncio.Queue[DisplayEvent] = asyncio.Queue()
@@ -196,17 +196,12 @@ class ActionExecution(WithLogger):
         """aaa"""
         self.templar_factory = factory
 
-    @property
-    def enabled(self) -> bool:
-        """Check whether the action has not been disabled"""
-        return self._enabled
-
     def disable(self) -> None:
         """Marking the action as not planned for launch"""
         self.logger.info(f"Disabling {self}")
         if self.status != ActionStatus.PENDING:
             raise RuntimeError(f"Action {self.name} can't be disabled due to its status: {self.status!r}")
-        self._enabled = False
+        self.enabled = False
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self.status.value})"
