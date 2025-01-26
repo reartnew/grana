@@ -157,7 +157,6 @@ class ActionExecution(WithLogger):
         # Do not create asyncio-related objects on constructing object to decouple from the event loop
         self.future: asyncio.Future = asyncio.get_event_loop().create_future()
         self.event_queue: asyncio.Queue[DisplayEvent] = asyncio.Queue()
-        self._running_task: t.Optional[asyncio.Task] = None
         self.severity: ActionSeverity = severity
         self._check_action_class_args()
 
@@ -275,23 +274,20 @@ class ActionExecution(WithLogger):
 
     async def execute(self) -> None:
         """Wraps a call for the underlying action `run` method"""
-        if self.future.done():
-            return self.future.result()
-        # Allocate asyncio task
-        if self._running_task is None:
-            self._running_task = asyncio.create_task(self._run_with_log_context())
-            self.status = ActionStatus.RUNNING
+        self.status = ActionStatus.RUNNING
         try:
-            if (running_task_result := await self._running_task) is not None:
-                self.logger.warning(f"Action {self.name!r} return type is {type(running_task_result)} (not NoneType)")
+            run_result = await self._run_with_log_context()  # type: ignore[func-returns-value]
         except ActionSkip:
             self.skip_execution()
         except Exception as e:
-            self.fail_execution(e)
+            self.status = ActionStatus.FAILURE if self.severity == ActionSeverity.NORMAL else ActionStatus.WARNING
+            self.logger.info(f"Action {self.name!r} failed: {repr(e)}")
+            self.future.set_exception(e)
             raise
         else:
+            if run_result is not None:
+                self.logger.warning(f"Action {self.name!r} return type is {type(run_result)} (not NoneType)")
             self.status = ActionStatus.SUCCESS
-        if not self.future.done():
             self.future.set_result(None)
 
     def skip_execution(self) -> None:
@@ -305,13 +301,6 @@ class ActionExecution(WithLogger):
         self.status = ActionStatus.OMITTED
         self.future.set_result(None)
         self.logger.info(f"Action {self.name!r} omitted")
-
-    def fail_execution(self, exception: Exception) -> None:
-        """aaa"""
-        if not self.future.done():
-            self.status = ActionStatus.FAILURE if self.severity == ActionSeverity.NORMAL else ActionStatus.WARNING
-            self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
-            self.future.set_exception(exception)
 
     async def read_messages(self) -> t.AsyncGenerator[DisplayEvent, None]:
         """Obtain all said messages sequentially"""

@@ -185,7 +185,7 @@ class Runner:
     async def _run_action(self, action: ActionExecution) -> None:
         action.set_templar_factory(self._get_templar)
         if not action.enabled:
-            action.omit_execution()  # pylint: disable=protected-access
+            action.omit_execution()
             return None
         self.logger.debug(f"Calling `{DisplayEventName.ON_ACTION_START}` for {action.name!r}")
         await self._send_display_event(DisplayEventName.ON_ACTION_START, source=action)
