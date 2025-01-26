@@ -81,7 +81,7 @@ class SequentialStrategy(FreeStrategy):
     async def __anext__(self) -> ActionExecution:
         if self._current is not None:
             try:
-                await self._current
+                await self._current.future
             except Exception:
                 if self.STRICT:
                     while True:

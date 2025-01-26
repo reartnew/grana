@@ -18,7 +18,7 @@ async def test_chain_success(strict_successful_workflow: Workflow) -> None:
     result: list[ActionExecution] = []
     strategy: t.AsyncIterable[ActionExecution] = ExplicitStrategy(strict_successful_workflow)
     async for action in strategy:  # type: ActionExecution
-        await action
+        await action.execute()
         result.append(action)
     assert len(result) == 6  # Should emit all actions
     assert all(action.status == ActionStatus.SUCCESS for action in result)
@@ -32,7 +32,7 @@ async def test_chain_failure(strict_failing_workflow: Workflow, strategy_class: 
     strategy: t.AsyncIterable[ActionExecution] = strategy_class(strict_failing_workflow)
     async for action in strategy:  # type: ActionExecution
         with pytest.raises(RuntimeError):
-            await action
+            await action.execute()
         result.append(action)
     assert len(result) == 1  # Should not emit more than one action
     assert result[0].status == ActionStatus.FAILURE
@@ -49,7 +49,7 @@ async def test_chain_skip(strict_skipping_workflow: Workflow) -> None:
     result: list[ActionExecution] = []
     strategy: t.AsyncIterable[ActionExecution] = ExplicitStrategy(strict_skipping_workflow)
     async for action in strategy:  # type: ActionExecution
-        await action
+        await action.execute()
         result.append(action)
     assert len(result) == 1  # Should not emit more than one action
     assert result[0].status == ActionStatus.SKIPPED

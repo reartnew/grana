@@ -158,7 +158,7 @@ class ActionExecution(WithLogger):
         self.future: asyncio.Future = asyncio.get_event_loop().create_future()
         self.event_queue: asyncio.Queue[DisplayEvent] = asyncio.Queue()
         self._running_task: t.Optional[asyncio.Task] = None
-        self._severity: ActionSeverity = severity
+        self.severity: ActionSeverity = severity
         self._check_action_class_args()
 
     def _check_action_class_args(self):
@@ -273,7 +273,8 @@ class ActionExecution(WithLogger):
             ) from None
         return parsed_args
 
-    async def _await(self) -> None:
+    async def execute(self) -> None:
+        """Wraps a call for the underlying action `run` method"""
         if self.future.done():
             return self.future.result()
         # Allocate asyncio task
@@ -308,7 +309,7 @@ class ActionExecution(WithLogger):
     def fail_execution(self, exception: Exception) -> None:
         """aaa"""
         if not self.future.done():
-            self.status = ActionStatus.FAILURE if self._severity == ActionSeverity.NORMAL else ActionStatus.WARNING
+            self.status = ActionStatus.FAILURE if self.severity == ActionSeverity.NORMAL else ActionStatus.WARNING
             self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
             self.future.set_exception(exception)
 
@@ -333,9 +334,6 @@ class ActionExecution(WithLogger):
                     except asyncio.QueueEmpty:
                         break
                 return
-
-    def __await__(self) -> t.Generator[t.Any, None, None]:
-        return self._await().__await__()  # pylint: disable=no-member
 
     def done(self) -> bool:
         """Indicate whether the action is over"""

@@ -194,7 +194,7 @@ class Runner:
             self._dispatch_action_messages_to_display(action=action)
         )
         try:
-            await action
+            await action.execute()
         except Exception as e:
             message: str
             if isinstance(e, ActionRunError):
