@@ -2,7 +2,7 @@
 
 # pylint: disable=redefined-outer-name
 
-import pytest
+import pytest_asyncio
 
 from grana.actions.base import (
     ActionExecution,
@@ -34,8 +34,8 @@ def _make_chained_workflow(action_class: type[ActionBase]) -> Workflow:
     )
 
 
-@pytest.fixture
-def strict_successful_workflow() -> Workflow:
+@pytest_asyncio.fixture
+async def strict_successful_workflow() -> Workflow:
     """Minimalistic strict chained workflow"""
 
     class SuccessAction(ActionBase):
@@ -47,8 +47,8 @@ def strict_successful_workflow() -> Workflow:
     return _make_chained_workflow(action_class=SuccessAction)
 
 
-@pytest.fixture
-def strict_failing_workflow() -> Workflow:
+@pytest_asyncio.fixture
+async def strict_failing_workflow() -> Workflow:
     """Minimalistic strict chained workflow with failures"""
 
     class FailingAction(ActionBase):
@@ -60,8 +60,8 @@ def strict_failing_workflow() -> Workflow:
     return _make_chained_workflow(action_class=FailingAction)
 
 
-@pytest.fixture
-def strict_skipping_workflow() -> Workflow:
+@pytest_asyncio.fixture
+async def strict_skipping_workflow() -> Workflow:
     """Minimalistic strict chained workflow with explicit skipping"""
 
     class SkippingAction(ActionBase):

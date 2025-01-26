@@ -145,7 +145,7 @@ class ExplicitStrategy(BaseStrategy):
         # since python 3.11's implementation requires too many methods from an awaitable object.
         while active_actions := list(self._active_actions_map.values()):
             await asyncio.wait(
-                [action.get_future() for action in active_actions],
+                [action.future for action in active_actions],
                 return_when=asyncio.FIRST_COMPLETED,
             )
             for action in active_actions:  # type: ActionExecution

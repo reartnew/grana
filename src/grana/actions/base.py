@@ -155,7 +155,7 @@ class ActionExecution(WithLogger):
         self.status: ActionStatus = ActionStatus.PENDING
         self._enabled: bool = True
         # Do not create asyncio-related objects on constructing object to decouple from the event loop
-        self._maybe_finish_flag: t.Optional[asyncio.Future] = None
+        self.future: asyncio.Future = asyncio.get_event_loop().create_future()
         self.event_queue: asyncio.Queue[DisplayEvent] = asyncio.Queue()
         self._running_task: t.Optional[asyncio.Task] = None
         self._severity: ActionSeverity = severity
@@ -210,12 +210,6 @@ class ActionExecution(WithLogger):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self.status.value})"
-
-    def get_future(self) -> asyncio.Future:
-        """Return a Future object indicating the end of the action"""
-        if self._maybe_finish_flag is None:
-            self._maybe_finish_flag = asyncio.get_event_loop().create_future()
-        return self._maybe_finish_flag
 
     async def _run_with_log_context(self) -> None:
         self.logger.info(f"Running action: {self.name!r}")
@@ -285,9 +279,8 @@ class ActionExecution(WithLogger):
         return parsed_args
 
     async def _await(self) -> None:
-        fut = self.get_future()
-        if fut.done():
-            return fut.result()
+        if self.future.done():
+            return self.future.result()
         # Allocate asyncio task
         if self._running_task is None:
             self._running_task = asyncio.create_task(self._run_with_log_context())
@@ -302,27 +295,27 @@ class ActionExecution(WithLogger):
             raise
         else:
             self.status = ActionStatus.SUCCESS
-        if not fut.done():
-            fut.set_result(None)
+        if not self.future.done():
+            self.future.set_result(None)
 
     def skip_execution(self) -> None:
         """aaa"""
         self.status = ActionStatus.SKIPPED
-        self.get_future().set_result(None)
+        self.future.set_result(None)
         self.logger.info(f"Action {self.name!r} skipped")
 
     def omit_execution(self) -> None:
         """aaa"""
         self.status = ActionStatus.OMITTED
-        self.get_future().set_result(None)
+        self.future.set_result(None)
         self.logger.info(f"Action {self.name!r} omitted")
 
     def fail_execution(self, exception: Exception) -> None:
         """aaa"""
-        if not self.get_future().done():
+        if not self.future.done():
             self.status = ActionStatus.FAILURE if self._severity == ActionSeverity.NORMAL else ActionStatus.WARNING
             self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
-            self.get_future().set_exception(exception)
+            self.future.set_exception(exception)
 
     async def read_messages(self) -> t.AsyncGenerator[DisplayEvent, None]:
         """Obtain all said messages sequentially"""
@@ -330,7 +323,7 @@ class ActionExecution(WithLogger):
             # Wait for either an event or action finish
             queue_getter = asyncio.create_task(self.event_queue.get())
             await asyncio.wait(
-                [self.get_future(), queue_getter],
+                [self.future, queue_getter],
                 return_when=asyncio.FIRST_COMPLETED,
             )
             if queue_getter.done():
@@ -351,7 +344,7 @@ class ActionExecution(WithLogger):
 
     def done(self) -> bool:
         """Indicate whether the action is over"""
-        return self.get_future().done() or self.status in (ActionStatus.SKIPPED, ActionStatus.OMITTED)
+        return self.future.done() or self.status in (ActionStatus.SKIPPED, ActionStatus.OMITTED)
 
 
 # pylint: disable=abstract-method
