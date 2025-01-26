@@ -5,14 +5,9 @@ from __future__ import annotations
 import collections
 import contextlib
 import typing as t
-from enum import Enum
 from pathlib import Path
 
-import dacite
-from dacite.types import is_subclass
-
 from ..actions.base import ActionExecution, ActionBase, ActionDependency, ActionSeverity
-from ..actions.types import Expression, qualify_string_as_potentially_renderable
 from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
@@ -21,24 +16,6 @@ from ..workflow import Workflow
 __all__ = [
     "AbstractBaseWorkflowLoader",
 ]
-
-
-class TemplateIndifferentConfig(dacite.Config, WithLogger):
-    """Configuration for initial workflow loading"""
-
-    @classmethod
-    def is_instance(cls, value: t.Any, type_: t.Type) -> bool:
-        if isinstance(value, Expression):
-            cls.logger.info(f"Skipping type check for object template, where {type_!r} was expected")
-            return True
-        if is_subclass(type_, Enum):
-            if isinstance(value, str) and qualify_string_as_potentially_renderable(value):
-                cls.logger.info(f"Skipping type check for a renderable string, where {type_!r} was expected")
-            else:
-                # This is not subject to rendering: check enum right away
-                type_(value)
-            return True
-        return super().is_instance(value, type_)
 
 
 class AbstractBaseWorkflowLoader(WithLogger):

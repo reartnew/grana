@@ -97,17 +97,11 @@ class ActionBase(WithLogger):
 
     def yield_outcome(self, key: str, value: t.Any) -> None:
         """Report outcome key"""
-        if self._communicator is None:
-            self.logger.warning("Communicator is not set, so `yield_outcome` does not take effect")
-            return
         self.logger.debug(f"Yielding a key: {key!r}")
         self._communicator.send_yield_outcome(key, value)
 
     def say(self, message: str) -> None:
         """Send a message to the display"""
-        if self._communicator is None:
-            self.logger.warning("Communicator is not set, so `say` does not take effect")
-            return
         self._communicator.send_say(message)
 
     def skip(self) -> t.NoReturn:
@@ -179,22 +173,10 @@ class ActionExecution(WithLogger):
             raise ActionArgumentsLoadError(f"Missing key for action {self.name!r}: {e.field_path!r}") from e
         except dacite.UnexpectedDataError as e:
             raise ActionArgumentsLoadError(f"Unrecognized keys for action {self.name!r}: {sorted(e.keys)}") from e
-        except dacite.WrongTypeError as e:
-            raise ActionArgumentsLoadError(
-                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
-                f" (expected {e.field_type!r})"
-            ) from e
 
     def set_templar_factory(self, factory):
         """aaa"""
         self.templar_factory = factory
-
-    def disable(self) -> None:
-        """Marking the action as not planned for launch"""
-        self.logger.info(f"Disabling {self}")
-        if self.status != ActionStatus.PENDING:
-            raise RuntimeError(f"Action {self.name} can't be disabled due to its status: {self.status!r}")
-        self.enabled = False
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self.status.value})"
@@ -330,10 +312,6 @@ class ActionExecution(WithLogger):
                     except asyncio.QueueEmpty:
                         break
                 return
-
-    def done(self) -> bool:
-        """Indicate whether the action is over"""
-        return self.future.done()
 
 
 # pylint: disable=abstract-method

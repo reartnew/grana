@@ -120,7 +120,8 @@ class PrologueDisplay(BaseDisplay):
         self.logger.warning(f"Interactively selected actions: {selected_action_names}")
         for action in workflow.iterate_actions():
             if action.name in default_selected_action_names and action.name not in selected_action_names:
-                action.disable()
+                self.logger.info(f"Disabling action: {action.name}")
+                action.enabled = False
 
 
 class PrefixDisplay(PrologueDisplay):
