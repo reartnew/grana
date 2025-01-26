@@ -1,7 +1,7 @@
 """Command-line interface entry"""
 
 import functools
-import logging
+from logging import getLogger
 import os
 import sys
 import typing as t
@@ -21,7 +21,7 @@ from .strategy import KNOWN_STRATEGIES
 from .tools.proxy import DeferredCallsProxy
 from .version import __version__
 
-logger = DeferredCallsProxy(obj=logging.getLogger(__name__))
+logger = DeferredCallsProxy(obj=getLogger(__name__))
 
 
 class WorkflowPositionalArgument(click.Argument):

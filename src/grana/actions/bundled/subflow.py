@@ -33,6 +33,8 @@ class SubflowAction(ActionBase):
         from ...runner import Runner  # pylint: disable=import-outside-toplevel,cyclic-import
 
         action: SubflowAction = self
+        if self._communicator is None:
+            raise RuntimeError()
 
         def _resend_event_via_action(event: DisplayEvent) -> None:
             # These events shall not pass to the parent runner

@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 import typing as t
 
-from .actions.base import ActionExecution, ActionSkip
+from .actions.base import ActionExecution
 from .actions.types import ActionStatus
 from .logging import WithLogger
 from .workflow import Workflow
@@ -51,7 +51,7 @@ class BaseStrategy(WithLogger, t.AsyncIterable[ActionExecution]):
             )
 
     def _skip_action(self, action: ActionExecution) -> None:
-        action._internal_skip()
+        action.skip_execution()
 
 
 class FreeStrategy(BaseStrategy):

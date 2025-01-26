@@ -1,7 +1,0 @@
-# exception: LoadError
-# match: Unrecognized 'file' content type: dict
----
-actions:
-  - name: foo
-    type: shell
-    file: {}

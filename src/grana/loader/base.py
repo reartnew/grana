@@ -11,7 +11,7 @@ from pathlib import Path
 import dacite
 from dacite.types import is_subclass
 
-from ..actions.base import ActionExecution, ActionBase, ArgsBase, ActionDependency, ActionSeverity
+from ..actions.base import ActionExecution, ActionBase, ActionDependency, ActionSeverity
 from ..actions.types import Expression, qualify_string_as_potentially_renderable
 from ..exceptions import LoadError
 from ..logging import WithLogger
@@ -210,7 +210,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
                 config=TemplateIndifferentConfig(
                     check_types=False,
                     strict=True,
-                    strict_unions_match=True,
+                    strict_unions_match=False,
                 ),
             )
         except ValueError as e:
@@ -236,7 +236,6 @@ class AbstractBaseWorkflowLoader(WithLogger):
         )
         self._original_args_map[name] = node
         return action_instance
-
 
     def get_original_args_dict_for_action(self, action: ActionExecution) -> dict:
         """Obtain dictionary representation of the action arguments as was initially loaded"""

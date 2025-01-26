@@ -36,7 +36,7 @@ class ActionStatus(enum.Enum):
     __str__ = __repr__
 
 
-class NamedMessageSource(t.Protocol):
+class NamedMessageSource(t.Protocol, t.Hashable):
     """Anything that can be a message source (e.g. an action instance)"""
 
     @property

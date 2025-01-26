@@ -33,20 +33,21 @@ __all__ = [
 ]
 
 
-class AbstractExecutionCommunicator:
+# pylint: disable=unused-argument
+class AbstractExecutionCommunicator(WithLogger):
     """aaa"""
 
     def send_say(self, message: str) -> None:
         """Pass a message to the execution"""
-        raise NotImplementedError
+        self.logger.warning("`say` did not take effect")
 
     def send_yield_outcome(self, key: str, value: t.Any) -> None:
         """Pass an outcome to the execution"""
-        raise NotImplementedError
+        self.logger.warning("`yield_outcome` did not take effect")
 
     def send_display_event(self, event: DisplayEvent) -> None:
         """Pass a display event to the execution"""
-        raise NotImplementedError
+        self.logger.warning("`send_display_event` did not take effect")
 
     @classmethod
     def compose_source(cls, origin: NamedMessageSource) -> NamedMessageSource:
@@ -96,7 +97,7 @@ class ActionBase(WithLogger):
     args: ArgsBase
 
     def __init__(self) -> None:
-        self._communicator: t.Optional[AbstractExecutionCommunicator] = None
+        self._communicator: AbstractExecutionCommunicator = AbstractExecutionCommunicator()
 
     def yield_outcome(self, key: str, value: t.Any) -> None:
         """Report outcome key"""
@@ -160,6 +161,7 @@ class ActionExecution(WithLogger):
         self._severity: ActionSeverity = severity
 
     def set_templar_factory(self, factory):
+        """aaa"""
         self.templar_factory = factory
 
     @property
@@ -184,7 +186,8 @@ class ActionExecution(WithLogger):
         return self._maybe_finish_flag
 
     @property
-    def _event_queue(self) -> asyncio.Queue[DisplayEvent]:
+    def event_queue(self) -> asyncio.Queue[DisplayEvent]:
+        """aaa"""
         if self._maybe_message_queue is None:
             self._maybe_message_queue = asyncio.Queue()
         return self._maybe_message_queue
@@ -199,14 +202,19 @@ class ActionExecution(WithLogger):
         execution = self
 
         class Communicator(AbstractExecutionCommunicator):
+            """aaa"""
 
             def send_display_event(self, event: DisplayEvent) -> None:
-                execution._event_queue.put_nowait(event)
+                execution.event_queue.put_nowait(event)
 
             @classmethod
             @functools.lru_cache()
-            def compose_source(cls, origin: NamedMessageSource) -> NamedMessageSource:
+            def _mk_src(cls, origin: NamedMessageSource) -> NamedMessageSource:
                 return RenamedMessageSource(name=f"{execution.name}/{origin.name}", origin=origin)
+
+            @classmethod
+            def compose_source(cls, origin: NamedMessageSource) -> NamedMessageSource:
+                return cls._mk_src(origin)
 
             def send_say(self, message: str) -> None:
                 self.send_display_event(
@@ -221,7 +229,7 @@ class ActionExecution(WithLogger):
                 execution.outcomes[key] = value
 
         action_instance: ActionBase = self.action_class()
-        action_instance._communicator = Communicator()
+        action_instance._communicator = Communicator()  # pylint: disable=protected-access
         with context(action=self.name):
             # Inject args
             action_instance.args = self.render_action_args()
@@ -229,6 +237,9 @@ class ActionExecution(WithLogger):
 
     def render_action_args(self) -> ArgsBase:
         """Prepare action to execution by rendering its template fields"""
+        if self.templar_factory is None:
+            return ArgsBase()
+
         templar = self.templar_factory()
 
         rendered_args_dict: dict = templar.recursive_render(self.raw_args)
@@ -265,26 +276,29 @@ class ActionExecution(WithLogger):
             if (running_task_result := await self._running_task) is not None:
                 self.logger.warning(f"Action {self.name!r} return type is {type(running_task_result)} (not NoneType)")
         except ActionSkip:
-            self._internal_skip()
+            self.skip_execution()
         except Exception as e:
-            self._internal_fail(e)
+            self.fail_execution(e)
             raise
         else:
             self._status = ActionStatus.SUCCESS
         if not fut.done():
             fut.set_result(None)
 
-    def _internal_skip(self) -> None:
+    def skip_execution(self) -> None:
+        """aaa"""
         self._status = ActionStatus.SKIPPED
         self.get_future().set_result(None)
         self.logger.info(f"Action {self.name!r} skipped")
 
-    def _internal_omit(self) -> None:
+    def omit_execution(self) -> None:
+        """aaa"""
         self._status = ActionStatus.OMITTED
         self.get_future().set_result(None)
         self.logger.info(f"Action {self.name!r} omitted")
 
-    def _internal_fail(self, exception: Exception) -> None:
+    def fail_execution(self, exception: Exception) -> None:
+        """aaa"""
         if not self.get_future().done():
             self._status = ActionStatus.FAILURE if self._severity == ActionSeverity.NORMAL else ActionStatus.WARNING
             self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
@@ -294,7 +308,7 @@ class ActionExecution(WithLogger):
         """Obtain all said messages sequentially"""
         while True:
             # Wait for either an event or action finish
-            queue_getter = asyncio.create_task(self._event_queue.get())
+            queue_getter = asyncio.create_task(self.event_queue.get())
             await asyncio.wait(
                 [self.get_future(), queue_getter],
                 return_when=asyncio.FIRST_COMPLETED,
@@ -307,7 +321,7 @@ class ActionExecution(WithLogger):
                 queue_getter.cancel()
                 while True:
                     try:
-                        yield self._event_queue.get_nowait()
+                        yield self.event_queue.get_nowait()
                     except asyncio.QueueEmpty:
                         break
                 return

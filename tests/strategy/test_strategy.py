@@ -5,7 +5,7 @@ import typing as t
 
 import pytest
 
-from grana import ActionBase, ExplicitStrategy, StrictSequentialStrategy
+from grana import ExplicitStrategy, StrictSequentialStrategy
 from grana.actions.base import ActionExecution
 from grana.actions.types import ActionStatus
 from grana.strategy import BaseStrategy

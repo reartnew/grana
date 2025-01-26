@@ -9,21 +9,16 @@ import io
 import logging
 import sys
 import typing as t
-from enum import Enum
 from pathlib import Path
 
-import dacite
-
 from . import types
-from .actions.base import ActionExecution, ArgsBase
+from .actions.base import ActionExecution
 from .actions.types import ActionStatus
 from .config.constants import C
 from .display.types import DisplayEvent, DisplayEventName
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.helpers import get_default_loader_class_for_source
 from .rendering import Templar
-from .tools.concealment import represent_object_type
-from .tools.inspect import get_class_annotations
 from .workflow import Workflow
 
 __all__ = [
@@ -190,19 +185,8 @@ class Runner:
     async def _run_action(self, action: ActionExecution) -> None:
         action.set_templar_factory(self._get_templar)
         if not action.enabled:
-            action._internal_omit()  # pylint: disable=protected-access
+            action.omit_execution()  # pylint: disable=protected-access
             return None
-        message: str
-        # try:
-        #     self._render_action(action)
-        # except Exception as e:
-        #     details: str = str(e) if isinstance(e, ActionRenderError) else repr(e)
-        #     message = f"Action {action.name!r} rendering failed: {details}"
-        #     await self._send_display_event(DisplayEventName.ON_ACTION_ERROR, source=action, message=message)
-        #     self.logger.warning(message, exc_info=not isinstance(e, ActionRenderError))
-        #     action._internal_fail(e)  # pylint: disable=protected-access
-        #     self._execution_failed = True
-        #     return
         self.logger.debug(f"Calling `{DisplayEventName.ON_ACTION_START}` for {action.name!r}")
         await self._send_display_event(DisplayEventName.ON_ACTION_START, source=action)
         self.logger.debug(f"Allocating action dispatcher for {action.name!r}")
@@ -248,37 +232,3 @@ class Runner:
             context_map=self.workflow.context,
             metadata=self.workflow.get_metadata(),
         )
-
-    def _render_action(self, action: ActionExecution) -> None:
-        """Prepare action to execution by rendering its template fields"""
-        templar: Templar = Templar(
-            outcomes_map=self._outcomes,
-            action_states={name: self.workflow[name].status.value for name in self.workflow},
-            context_map=self.workflow.context,
-            metadata=self.workflow.get_metadata(),
-        )
-
-        for mro_class in action.action_class.__mro__:
-            if args_class := get_class_annotations(mro_class).get("args"):
-                break
-        else:
-            raise TypeError(f"Couldn't find an `args` annotation for class {action.action_class.__name__}")
-        rendered_args_dict: dict = templar.recursive_render(self.loader.get_original_args_dict_for_action(action))
-        try:
-            parsed_args: ArgsBase = t.cast(
-                ArgsBase,
-                dacite.from_dict(
-                    data_class=args_class,
-                    data=rendered_args_dict,
-                    config=dacite.Config(
-                        strict=True,
-                        cast=[Enum, Path],
-                    ),
-                ),
-            )
-        except dacite.WrongTypeError as e:
-            raise ActionRenderError(
-                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
-                f" (expected {e.field_type!r})"
-            ) from None
-        action.args = parsed_args

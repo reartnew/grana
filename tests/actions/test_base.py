@@ -2,8 +2,6 @@
 
 import asyncio
 
-import pytest
-
 from grana import ActionBase
 
 
@@ -16,13 +14,11 @@ class StubAction(ActionBase):
         "Baz",
     ]
 
-    def __init__(self) -> None:
-        super().__init__()
-
     async def run(self):
         for message in self.MESSAGES:
             self.say(message)
             await asyncio.sleep(0.01)
+
 
 #
 # @pytest.mark.asyncio
