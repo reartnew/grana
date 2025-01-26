@@ -152,7 +152,7 @@ class ActionExecution(WithLogger):
         self.templar_factory = None
 
         self.outcomes: OutcomeStorageType = {}
-        self._status: ActionStatus = ActionStatus.PENDING
+        self.status: ActionStatus = ActionStatus.PENDING
         self._enabled: bool = True
         # Do not create asyncio-related objects on constructing object to decouple from the event loop
         self._maybe_finish_flag: t.Optional[asyncio.Future] = None
@@ -204,23 +204,18 @@ class ActionExecution(WithLogger):
     def disable(self) -> None:
         """Marking the action as not planned for launch"""
         self.logger.info(f"Disabling {self}")
-        if self._status != ActionStatus.PENDING:
-            raise RuntimeError(f"Action {self.name} can't be disabled due to its status: {self._status!r}")
+        if self.status != ActionStatus.PENDING:
+            raise RuntimeError(f"Action {self.name} can't be disabled due to its status: {self.status!r}")
         self._enabled = False
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(name={self.name!r}, status={self._status.value})"
+        return f"{self.__class__.__name__}(name={self.name!r}, status={self.status.value})"
 
     def get_future(self) -> asyncio.Future:
         """Return a Future object indicating the end of the action"""
         if self._maybe_finish_flag is None:
             self._maybe_finish_flag = asyncio.get_event_loop().create_future()
         return self._maybe_finish_flag
-
-    @property
-    def status(self) -> ActionStatus:
-        """Public getter"""
-        return self._status
 
     async def _run_with_log_context(self) -> None:
         self.logger.info(f"Running action: {self.name!r}")
@@ -296,7 +291,7 @@ class ActionExecution(WithLogger):
         # Allocate asyncio task
         if self._running_task is None:
             self._running_task = asyncio.create_task(self._run_with_log_context())
-            self._status = ActionStatus.RUNNING
+            self.status = ActionStatus.RUNNING
         try:
             if (running_task_result := await self._running_task) is not None:
                 self.logger.warning(f"Action {self.name!r} return type is {type(running_task_result)} (not NoneType)")
@@ -306,26 +301,26 @@ class ActionExecution(WithLogger):
             self.fail_execution(e)
             raise
         else:
-            self._status = ActionStatus.SUCCESS
+            self.status = ActionStatus.SUCCESS
         if not fut.done():
             fut.set_result(None)
 
     def skip_execution(self) -> None:
         """aaa"""
-        self._status = ActionStatus.SKIPPED
+        self.status = ActionStatus.SKIPPED
         self.get_future().set_result(None)
         self.logger.info(f"Action {self.name!r} skipped")
 
     def omit_execution(self) -> None:
         """aaa"""
-        self._status = ActionStatus.OMITTED
+        self.status = ActionStatus.OMITTED
         self.get_future().set_result(None)
         self.logger.info(f"Action {self.name!r} omitted")
 
     def fail_execution(self, exception: Exception) -> None:
         """aaa"""
         if not self.get_future().done():
-            self._status = ActionStatus.FAILURE if self._severity == ActionSeverity.NORMAL else ActionStatus.WARNING
+            self.status = ActionStatus.FAILURE if self._severity == ActionSeverity.NORMAL else ActionStatus.WARNING
             self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
             self.get_future().set_exception(exception)
 
@@ -356,7 +351,7 @@ class ActionExecution(WithLogger):
 
     def done(self) -> bool:
         """Indicate whether the action is over"""
-        return self.get_future().done() or self._status in (ActionStatus.SKIPPED, ActionStatus.OMITTED)
+        return self.get_future().done() or self.status in (ActionStatus.SKIPPED, ActionStatus.OMITTED)
 
 
 # pylint: disable=abstract-method
