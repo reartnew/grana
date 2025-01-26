@@ -33,8 +33,6 @@ class SubflowAction(ActionBase):
         from ...runner import Runner  # pylint: disable=import-outside-toplevel,cyclic-import
 
         action: SubflowAction = self
-        if self._communicator is None:
-            raise RuntimeError()
 
         def _resend_event_via_action(event: DisplayEvent) -> None:
             # These events shall not pass to the parent runner
@@ -43,20 +41,8 @@ class SubflowAction(ActionBase):
                 DisplayEventName.ON_PLAN_INTERACTION,  # Pauses the execution
             ):
                 event.future.set_result(None)  # Unlock the execution and continue
-            elif event.name == DisplayEventName.ON_RUNNER_START:
-                event.kwargs["children"] = map(self._communicator.compose_source, event.kwargs["children"])
-                self._communicator.send_display_event(event)  # Pass modified event
-            elif event.name in (
-                DisplayEventName.ON_ACTION_START,
-                DisplayEventName.ON_ACTION_FINISH,
-                DisplayEventName.ON_ACTION_MESSAGE,
-                DisplayEventName.ON_ACTION_ERROR,
-            ):
-                event.kwargs["source"] = self._communicator.compose_source(event.kwargs["source"])
-                self._communicator.send_display_event(event)  # Pass modified event
             else:
-                # Just in case we add some event types later and not specify behaviour here
-                raise ValueError(f"Unknown event name: {event.name!r}")  # pragma: no cover
+                self._communicator.resend_display_event(event)  # Pass modified event
 
         class SubflowRunner(Runner):
             """A runner that intercepts and filters out events"""

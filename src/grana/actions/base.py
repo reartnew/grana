@@ -46,14 +46,9 @@ class AbstractExecutionCommunicator(WithLogger):
         """Pass an outcome to the execution"""
         self.logger.warning("`yield_outcome` did not take effect")
 
-    def send_display_event(self, event: DisplayEvent) -> None:
+    def resend_display_event(self, event: DisplayEvent) -> None:
         """Pass a display event to the execution"""
         self.logger.warning("`send_display_event` did not take effect")
-
-    @classmethod
-    def compose_source(cls, origin: NamedMessageSource) -> NamedMessageSource:
-        """Compose a nested source"""
-        raise NotImplementedError
 
 
 class ActionSkip(BaseException):
@@ -204,6 +199,11 @@ class ActionExecution(WithLogger):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self.status.value})"
 
+    @functools.lru_cache()
+    def compose_nested_source(self, origin: NamedMessageSource) -> NamedMessageSource:
+        """Make a nested event"""
+        return RenamedMessageSource(name=f"{self.name}/{origin.name}", origin=origin)
+
     async def _run_with_log_context(self) -> None:
         self.logger.info(f"Running action: {self.name!r}")
         execution = self
@@ -211,20 +211,28 @@ class ActionExecution(WithLogger):
         class Communicator(AbstractExecutionCommunicator):
             """aaa"""
 
-            def send_display_event(self, event: DisplayEvent) -> None:
-                execution.event_queue.put_nowait(event)
-
-            @classmethod
-            @functools.lru_cache()
-            def _mk_src(cls, origin: NamedMessageSource) -> NamedMessageSource:
-                return RenamedMessageSource(name=f"{execution.name}/{origin.name}", origin=origin)
-
-            @classmethod
-            def compose_source(cls, origin: NamedMessageSource) -> NamedMessageSource:
-                return cls._mk_src(origin)
+            def resend_display_event(self, event: DisplayEvent) -> None:
+                new_event = DisplayEvent(name=event.name, **event.kwargs)
+                new_event.future.add_done_callback(lambda _: event.future.set_result(None))
+                if event.name == DisplayEventName.ON_RUNNER_START:
+                    new_event.kwargs["children"] = map(execution.compose_nested_source, event.kwargs["children"])
+                elif event.name in (
+                    DisplayEventName.ON_ACTION_START,
+                    DisplayEventName.ON_ACTION_FINISH,
+                    DisplayEventName.ON_ACTION_MESSAGE,
+                    DisplayEventName.ON_ACTION_ERROR,
+                ):
+                    new_event.kwargs["source"] = execution.compose_nested_source(event.kwargs["source"])
+                elif event.name not in (
+                    DisplayEventName.ON_RUNNER_FINISH,
+                    DisplayEventName.ON_PLAN_INTERACTION,
+                ):
+                    # Just in case we add some event types later and not specify behaviour here
+                    raise ValueError(f"Unknown event name: {event.name!r}")  # pragma: no cover
+                execution.event_queue.put_nowait(new_event)
 
             def send_say(self, message: str) -> None:
-                self.send_display_event(
+                execution.event_queue.put_nowait(
                     DisplayEvent(
                         DisplayEventName.ON_ACTION_MESSAGE,
                         source=execution,
