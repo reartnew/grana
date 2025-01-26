@@ -167,7 +167,7 @@ class Runner:
         async for action in self.strategy:  # type: ActionExecution
             # Finalize all actions that have been done already
             for maybe_finished_action, corresponding_runner_task in list(action_runners.items()):
-                if maybe_finished_action.done():
+                if maybe_finished_action.future.done():
                     self.logger.debug(f"Finalizing done action {maybe_finished_action.name!r} runner")
                     await corresponding_runner_task
                     action_runners.pop(maybe_finished_action)

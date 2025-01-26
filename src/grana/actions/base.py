@@ -16,7 +16,7 @@ from dataclasses import dataclass, fields
 import dacite
 
 from .constants import ACTION_RESERVED_FIELD_NAMES
-from .types import Stderr, OutcomeStorageType, ActionStatus, RenamedMessageSource, NamedMessageSource
+from .types import Stderr, ActionStatus, RenamedMessageSource, NamedMessageSource
 from ..display.types import DisplayEvent, DisplayEventName
 from ..exceptions import ActionRunError, ActionRenderError, ActionArgumentsLoadError
 from ..logging import WithLogger, context
@@ -150,8 +150,7 @@ class ActionExecution(WithLogger):
         self.ancestors: dict[str, ActionDependency] = ancestors or {}
         self.selectable: bool = selectable
         self.templar_factory = None
-
-        self.outcomes: OutcomeStorageType = {}
+        self.outcomes: dict[str, t.Any] = {}
         self.status: ActionStatus = ActionStatus.PENDING
         self.enabled: bool = True
         # Do not create asyncio-related objects on constructing object to decouple from the event loop
@@ -313,7 +312,7 @@ class ActionExecution(WithLogger):
             )
             if queue_getter.done():
                 yield queue_getter.result()
-            if self.done():
+            if self.future.done():
                 # The action is done, so we should drain the queue.
                 # Prevent queue from async get since then.
                 queue_getter.cancel()
@@ -326,7 +325,7 @@ class ActionExecution(WithLogger):
 
     def done(self) -> bool:
         """Indicate whether the action is over"""
-        return self.future.done() or self.status in (ActionStatus.SKIPPED, ActionStatus.OMITTED)
+        return self.future.done()
 
 
 # pylint: disable=abstract-method

@@ -109,7 +109,7 @@ class ExplicitStrategy(BaseStrategy):
 
     def _get_maybe_next_action(self) -> t.Optional[ActionExecution]:
         """Completely non-optimal (always scan all actions), but readable yet"""
-        done_action_names: set[str] = {action.name for action in self._workflow.values() if action.done()}
+        done_action_names: set[str] = {action.name for action in self._workflow.values() if action.future.done()}
         # Copy into a list for further possible pop
         for maybe_next_action_name, maybe_next_action_blockers in list(self._action_blockers.items()):
             maybe_next_action_blockers -= done_action_names
@@ -149,7 +149,7 @@ class ExplicitStrategy(BaseStrategy):
                 return_when=asyncio.FIRST_COMPLETED,
             )
             for action in active_actions:  # type: ActionExecution
-                if action.done():
+                if action.future.done():
                     self.logger.debug(f"Action {action.name!r} execution finished")
                     del self._active_actions_map[action.name]
             # Maybe now?

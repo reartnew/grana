@@ -5,10 +5,7 @@ import dataclasses
 import enum
 import typing as t
 
-OutcomeStorageType = dict[str, str]
-
 __all__ = [
-    "OutcomeStorageType",
     "NamedMessageSource",
     "RenamedMessageSource",
     "Stderr",
