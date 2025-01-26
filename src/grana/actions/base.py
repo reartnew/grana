@@ -156,7 +156,7 @@ class ActionExecution(WithLogger):
         self._enabled: bool = True
         # Do not create asyncio-related objects on constructing object to decouple from the event loop
         self._maybe_finish_flag: t.Optional[asyncio.Future] = None
-        self._maybe_message_queue: t.Optional[asyncio.Queue[DisplayEvent]] = None
+        self.event_queue: asyncio.Queue[DisplayEvent] = asyncio.Queue()
         self._running_task: t.Optional[asyncio.Task] = None
         self._severity: ActionSeverity = severity
         self._check_action_class_args()
@@ -216,13 +216,6 @@ class ActionExecution(WithLogger):
         if self._maybe_finish_flag is None:
             self._maybe_finish_flag = asyncio.get_event_loop().create_future()
         return self._maybe_finish_flag
-
-    @property
-    def event_queue(self) -> asyncio.Queue[DisplayEvent]:
-        """aaa"""
-        if self._maybe_message_queue is None:
-            self._maybe_message_queue = asyncio.Queue()
-        return self._maybe_message_queue
 
     @property
     def status(self) -> ActionStatus:
