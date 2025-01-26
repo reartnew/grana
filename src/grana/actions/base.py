@@ -36,7 +36,7 @@ __all__ = [
 
 # pylint: disable=unused-argument
 class AbstractExecutionCommunicator(WithLogger):
-    """aaa"""
+    """Communication shim between action and its execution unit"""
 
     def send_say(self, message: str) -> None:
         """Pass a message to the execution"""
@@ -191,7 +191,7 @@ class ActionExecution(WithLogger):
         execution = self
 
         class Communicator(AbstractExecutionCommunicator):
-            """aaa"""
+            """Closure-based communication interface"""
 
             def resend_display_event(self, event: DisplayEvent) -> None:
                 new_event = DisplayEvent(name=event.name, **event.kwargs)
@@ -280,13 +280,13 @@ class ActionExecution(WithLogger):
             self.future.set_result(None)
 
     def skip_execution(self) -> None:
-        """aaa"""
+        """Skipping the action properly"""
         self.status = ActionStatus.SKIPPED
         self.future.set_result(None)
         self.logger.info(f"Action {self.name!r} skipped")
 
     def omit_execution(self) -> None:
-        """aaa"""
+        """Omitting the action properly"""
         self.status = ActionStatus.OMITTED
         self.future.set_result(None)
         self.logger.info(f"Action {self.name!r} omitted")
