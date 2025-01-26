@@ -15,7 +15,6 @@ from dataclasses import dataclass, fields
 import dacite
 
 from ..tools.concealment import represent_object_type
-from ..tools.inspect import get_class_annotations
 from .constants import ACTION_RESERVED_FIELD_NAMES
 from .types import Stderr, OutcomeStorageType, ActionStatus
 from ..display.types import DisplayEvent, DisplayEventName
@@ -128,6 +127,7 @@ class ActionExecution(WithLogger):
         self,
         *,
         action_class: type[ActionBase],
+        args_class: type[ArgsBase],
         name: str,
         raw_args: dict,
         ancestors: t.Optional[dict[str, ActionDependency]] = None,
@@ -136,6 +136,7 @@ class ActionExecution(WithLogger):
         severity: ActionSeverity = ActionSeverity.NORMAL,
     ) -> None:
         self.action_class = action_class
+        self.args_class = args_class
         self.name: str = name
         self.raw_args: dict = raw_args
         self.description: t.Optional[str] = description
@@ -219,20 +220,17 @@ class ActionExecution(WithLogger):
         """Prepare action to execution by rendering its template fields"""
         templar = self.templar_factory()
 
-        for mro_class in self.action_class.__mro__:
-            if args_class := get_class_annotations(mro_class).get("args"):
-                break
-        else:
-            raise TypeError(f"Couldn't find an `args` annotation for class {self.action_class.__name__}")
         rendered_args_dict: dict = templar.recursive_render(self.raw_args)
         try:
             parsed_args: ArgsBase = t.cast(
                 ArgsBase,
                 dacite.from_dict(
-                    data_class=args_class,
+                    data_class=self.args_class,
                     data=rendered_args_dict,
                     config=dacite.Config(
+                        check_types=True,
                         strict=True,
+                        strict_unions_match=True,
                         cast=[enum.Enum, pathlib.Path],
                     ),
                 ),
@@ -256,9 +254,7 @@ class ActionExecution(WithLogger):
             if (running_task_result := await self._running_task) is not None:
                 self.logger.warning(f"Action {self.name!r} return type is {type(running_task_result)} (not NoneType)")
         except ActionSkip:
-            pass
-        except ActionRunError:
-            raise
+            self._internal_skip()
         except Exception as e:
             self._internal_fail(e)
             raise

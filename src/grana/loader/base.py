@@ -198,9 +198,36 @@ class AbstractBaseWorkflowLoader(WithLogger):
         except ValueError:
             valid_severities: str = ", ".join(sorted(s.value for s in ActionSeverity))
             self._throw(f"Invalid severity: {severity_str!r} (expected one of: {valid_severities})")
+        for mro_class in action_class.__mro__:
+            if args_class := get_class_annotations(mro_class).get("args"):
+                break
+        else:
+            self._throw(f"Couldn't find an `args` annotation for class {action_class.__name__}")
+        try:
+            dacite.from_dict(
+                data_class=args_class,
+                data=node,
+                config=TemplateIndifferentConfig(
+                    check_types=False,
+                    strict=True,
+                    strict_unions_match=True,
+                ),
+            )
+        except ValueError as e:
+            self._throw(f"Action {name!r}: {e}")
+        except dacite.MissingValueError as e:
+            self._throw(f"Missing key for action {name!r}: {e.field_path!r}")
+        except dacite.UnexpectedDataError as e:
+            self._throw(f"Unrecognized keys for action {name!r}: {sorted(e.keys)}")
+        except dacite.WrongTypeError as e:
+            self._throw(
+                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
+                f" (expected {e.field_type!r})"
+            )
         action_instance: ActionExecution = ActionExecution(
             name=name,
             action_class=action_class,
+            args_class=args_class,
             raw_args=node,
             description=description,
             ancestors=dependencies,
@@ -210,40 +237,6 @@ class AbstractBaseWorkflowLoader(WithLogger):
         self._original_args_map[name] = node
         return action_instance
 
-    def _build_args_from_the_rest_of_the_dict_node(
-        self,
-        action_name: str,
-        action_class: type[ActionExecution],
-        node: dict,
-    ) -> ArgsBase:
-        for mro_class in action_class.__mro__:
-            if args_class := get_class_annotations(mro_class).get("args"):
-                break
-        else:
-            self._throw(f"Couldn't find an `args` annotation for class {action_class.__name__}")
-        try:
-            return t.cast(
-                ArgsBase,
-                dacite.from_dict(
-                    data_class=args_class,
-                    data=node,
-                    config=TemplateIndifferentConfig(
-                        strict=True,
-                        cast=[Path],
-                    ),
-                ),
-            )
-        except ValueError as e:
-            self._throw(f"Action {action_name!r}: {e}")
-        except dacite.MissingValueError as e:
-            self._throw(f"Missing key for action {action_name!r}: {e.field_path!r}")
-        except dacite.UnexpectedDataError as e:
-            self._throw(f"Unrecognized keys for action {action_name!r}: {sorted(e.keys)}")
-        except dacite.WrongTypeError as e:
-            self._throw(
-                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
-                f" (expected {e.field_type!r})"
-            )
 
     def get_original_args_dict_for_action(self, action: ActionExecution) -> dict:
         """Obtain dictionary representation of the action arguments as was initially loaded"""

@@ -212,7 +212,14 @@ class Runner:
         try:
             await action
         except Exception as e:
-            if message := str(e) if isinstance(e, ActionRunError) else f"Action {action.name!r} run exception: {e!r}":
+            message: str
+            if isinstance(e, ActionRunError):
+                message = str(e)
+            elif isinstance(e, ActionRenderError):
+                message = f"Action {action.name!r} rendering failed: {e}"
+            else:
+                message = f"Action {action.name!r} run exception: {e!r}"
+            if message:
                 await self._send_display_event(
                     DisplayEventName.ON_ACTION_ERROR,
                     source=action,

@@ -51,10 +51,7 @@ class BaseStrategy(WithLogger, t.AsyncIterable[ActionExecution]):
             )
 
     def _skip_action(self, action: ActionExecution) -> None:
-        try:
-            action.skip()
-        except ActionSkip:
-            pass
+        action._internal_skip()
 
 
 class FreeStrategy(BaseStrategy):
