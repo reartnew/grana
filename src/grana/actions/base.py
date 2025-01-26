@@ -18,9 +18,10 @@ import dacite
 from .constants import ACTION_RESERVED_FIELD_NAMES
 from .types import Stderr, OutcomeStorageType, ActionStatus, RenamedMessageSource, NamedMessageSource
 from ..display.types import DisplayEvent, DisplayEventName
-from ..exceptions import ActionRunError, ActionRenderError
+from ..exceptions import ActionRunError, ActionRenderError, ActionArgumentsLoadError
 from ..logging import WithLogger, context
 from ..tools.concealment import represent_object_type
+from ..tools.inspect import get_class_annotations
 
 __all__ = [
     "ActionDependency",
@@ -134,7 +135,6 @@ class ActionExecution(WithLogger):
         self,
         *,
         action_class: type[ActionBase],
-        args_class: type[ArgsBase],
         name: str,
         raw_args: dict,
         ancestors: t.Optional[dict[str, ActionDependency]] = None,
@@ -143,7 +143,7 @@ class ActionExecution(WithLogger):
         severity: ActionSeverity = ActionSeverity.NORMAL,
     ) -> None:
         self.action_class = action_class
-        self.args_class = args_class
+        self.args_class: type[ArgsBase] = ArgsBase
         self.name: str = name
         self.raw_args: dict = raw_args
         self.description: t.Optional[str] = description
@@ -159,6 +159,38 @@ class ActionExecution(WithLogger):
         self._maybe_message_queue: t.Optional[asyncio.Queue[DisplayEvent]] = None
         self._running_task: t.Optional[asyncio.Task] = None
         self._severity: ActionSeverity = severity
+        self._check_action_class_args()
+
+    def _check_action_class_args(self):
+        """Validate action class `args` annotation
+        and try the simplest loading of the dataclass from the original args map"""
+        for mro_class in self.action_class.__mro__:
+            if args_class := get_class_annotations(mro_class).get("args"):
+                break
+        else:
+            raise ActionArgumentsLoadError(f"Couldn't find an `args` annotation for class {self.action_class.__name__}")
+        self.args_class = args_class
+        try:
+            dacite.from_dict(
+                data_class=self.args_class,
+                data=self.raw_args,
+                config=dacite.Config(
+                    check_types=False,
+                    strict=True,
+                    strict_unions_match=False,
+                ),
+            )
+        except ValueError as e:
+            raise ActionArgumentsLoadError(f"Action {self.name!r}: {e}") from e
+        except dacite.MissingValueError as e:
+            raise ActionArgumentsLoadError(f"Missing key for action {self.name!r}: {e.field_path!r}") from e
+        except dacite.UnexpectedDataError as e:
+            raise ActionArgumentsLoadError(f"Unrecognized keys for action {self.name!r}: {sorted(e.keys)}") from e
+        except dacite.WrongTypeError as e:
+            raise ActionArgumentsLoadError(
+                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
+                f" (expected {e.field_type!r})"
+            ) from e
 
     def set_templar_factory(self, factory):
         """aaa"""

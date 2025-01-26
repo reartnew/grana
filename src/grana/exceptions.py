@@ -11,8 +11,8 @@ __all__ = [
     "IntegrityError",
     "SourceError",
     "InteractionError",
+    "ActionArgumentsLoadError",
     "YAMLStructureError",
-    "PackageRequirementsError",
 ]
 
 
@@ -22,6 +22,10 @@ class ExecutionFailed(Exception):
 
 class ActionRenderError(Exception):
     """Action rendering failed"""
+
+
+class ActionArgumentsLoadError(Exception):
+    """Action arguments loading failed"""
 
 
 class ActionRenderRecursionError(ActionRenderError):
@@ -78,9 +82,3 @@ class YAMLStructureError(BaseError):
     """Custom tags structure error"""
 
     CODE: int = 106
-
-
-class PackageRequirementsError(BaseError):
-    """Package constrains violated"""
-
-    CODE: int = 107

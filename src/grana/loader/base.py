@@ -13,11 +13,9 @@ from dacite.types import is_subclass
 
 from ..actions.base import ActionExecution, ActionBase, ActionDependency, ActionSeverity
 from ..actions.types import Expression, qualify_string_as_potentially_renderable
-from ..exceptions import LoadError
+from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
-from ..tools.concealment import represent_object_type
-from ..tools.inspect import get_class_annotations
 from ..workflow import Workflow
 
 __all__ = [
@@ -53,7 +51,6 @@ class AbstractBaseWorkflowLoader(WithLogger):
         self._raw_file_names_stack: list[str] = []
         self._resolved_file_paths_stack: list[Path] = []
         self._gathered_context: dict[str, t.Any] = {}
-        self._original_args_map: dict[str, dict[str, t.Any]] = {}
         self._action_type_counters: dict[str, int] = collections.defaultdict(int)
         self._explicit_strategy_class: t.Optional[type[BaseStrategy]] = None
 
@@ -198,48 +195,19 @@ class AbstractBaseWorkflowLoader(WithLogger):
         except ValueError:
             valid_severities: str = ", ".join(sorted(s.value for s in ActionSeverity))
             self._throw(f"Invalid severity: {severity_str!r} (expected one of: {valid_severities})")
-        for mro_class in action_class.__mro__:
-            if args_class := get_class_annotations(mro_class).get("args"):
-                break
-        else:
-            self._throw(f"Couldn't find an `args` annotation for class {action_class.__name__}")
         try:
-            dacite.from_dict(
-                data_class=args_class,
-                data=node,
-                config=TemplateIndifferentConfig(
-                    check_types=False,
-                    strict=True,
-                    strict_unions_match=False,
-                ),
+            action_instance: ActionExecution = ActionExecution(
+                name=name,
+                action_class=action_class,
+                raw_args=node,
+                description=description,
+                ancestors=dependencies,
+                selectable=selectable,
+                severity=severity,
             )
-        except ValueError as e:
-            self._throw(f"Action {name!r}: {e}")
-        except dacite.MissingValueError as e:
-            self._throw(f"Missing key for action {name!r}: {e.field_path!r}")
-        except dacite.UnexpectedDataError as e:
-            self._throw(f"Unrecognized keys for action {name!r}: {sorted(e.keys)}")
-        except dacite.WrongTypeError as e:
-            self._throw(
-                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
-                f" (expected {e.field_type!r})"
-            )
-        action_instance: ActionExecution = ActionExecution(
-            name=name,
-            action_class=action_class,
-            args_class=args_class,
-            raw_args=node,
-            description=description,
-            ancestors=dependencies,
-            selectable=selectable,
-            severity=severity,
-        )
-        self._original_args_map[name] = node
+        except ActionArgumentsLoadError as e:
+            self._throw(str(e))
         return action_instance
-
-    def get_original_args_dict_for_action(self, action: ActionExecution) -> dict:
-        """Obtain dictionary representation of the action arguments as was initially loaded"""
-        return self._original_args_map[action.name]
 
     def load_configuration_from_dict(self, configuration_dict: dict[str, t.Any]) -> None:
         """Process configuration dictionary"""

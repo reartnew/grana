@@ -8,7 +8,6 @@ from grana.actions.base import (
     ActionExecution,
     ActionDependency,
     ActionBase,
-    ArgsBase,
 )
 from grana.workflow import Workflow
 
@@ -27,7 +26,6 @@ def _make_chained_workflow(action_class: type[ActionBase]) -> Workflow:
             step_name: ActionExecution(
                 name=step_name,
                 action_class=action_class,
-                args_class=ArgsBase,
                 raw_args={},
                 ancestors={step_names[num - 1]: ActionDependency(strict=True)} if num else {},
             )
