@@ -6,20 +6,21 @@ import asyncio
 import base64
 import collections
 import enum
+import functools
+import pathlib
 import re
 import textwrap
 import typing as t
-import pathlib
 from dataclasses import dataclass, fields
 
 import dacite
 
-from ..tools.concealment import represent_object_type
 from .constants import ACTION_RESERVED_FIELD_NAMES
-from .types import Stderr, OutcomeStorageType, ActionStatus
+from .types import Stderr, OutcomeStorageType, ActionStatus, RenamedMessageSource, NamedMessageSource
 from ..display.types import DisplayEvent, DisplayEventName
 from ..exceptions import ActionRunError, ActionRenderError
 from ..logging import WithLogger, context
+from ..tools.concealment import represent_object_type
 
 __all__ = [
     "ActionDependency",
@@ -45,6 +46,11 @@ class AbstractExecutionCommunicator:
 
     def send_display_event(self, event: DisplayEvent) -> None:
         """Pass a display event to the execution"""
+        raise NotImplementedError
+
+    @classmethod
+    def compose_source(cls, origin: NamedMessageSource) -> NamedMessageSource:
+        """Compose a nested source"""
         raise NotImplementedError
 
 
@@ -196,6 +202,11 @@ class ActionExecution(WithLogger):
 
             def send_display_event(self, event: DisplayEvent) -> None:
                 execution._event_queue.put_nowait(event)
+
+            @classmethod
+            @functools.lru_cache()
+            def compose_source(cls, origin: NamedMessageSource) -> NamedMessageSource:
+                return RenamedMessageSource(name=f"{execution.name}/{origin.name}", origin=origin)
 
             def send_say(self, message: str) -> None:
                 self.send_display_event(

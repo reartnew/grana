@@ -1,16 +1,11 @@
 """Separate module for subflow action"""
 
-import functools
 import typing as t
 from collections.abc import Mapping, MutableMapping
 from dataclasses import field
 from pathlib import Path
 
 from ..base import ArgsBase, ActionBase
-from ..types import (
-    NamedMessageSource,
-    RenamedMessageSource,
-)
 from ...display.types import DisplayEvent, DisplayEventName
 from ...exceptions import ExecutionFailed
 from ...rendering.containers import OutcomeDict
@@ -39,10 +34,6 @@ class SubflowAction(ActionBase):
 
         action: SubflowAction = self
 
-        @functools.lru_cache()
-        def _compose_source(origin: NamedMessageSource) -> NamedMessageSource:
-            return RenamedMessageSource(name=f"{self.name}/{origin.name}", origin=origin)
-
         def _resend_event_via_action(event: DisplayEvent) -> None:
             # These events shall not pass to the parent runner
             if event.name in (
@@ -51,16 +42,16 @@ class SubflowAction(ActionBase):
             ):
                 event.future.set_result(None)  # Unlock the execution and continue
             elif event.name == DisplayEventName.ON_RUNNER_START:
-                event.kwargs["children"] = map(_compose_source, event.kwargs["children"])
-                self._event_queue.put_nowait(event)  # Pass modified event
+                event.kwargs["children"] = map(self._communicator.compose_source, event.kwargs["children"])
+                self._communicator.send_display_event(event)  # Pass modified event
             elif event.name in (
                 DisplayEventName.ON_ACTION_START,
                 DisplayEventName.ON_ACTION_FINISH,
                 DisplayEventName.ON_ACTION_MESSAGE,
                 DisplayEventName.ON_ACTION_ERROR,
             ):
-                event.kwargs["source"] = _compose_source(event.kwargs["source"])
-                self._event_queue.put_nowait(event)  # Pass modified event
+                event.kwargs["source"] = self._communicator.compose_source(event.kwargs["source"])
+                self._communicator.send_display_event(event)  # Pass modified event
             else:
                 # Just in case we add some event types later and not specify behaviour here
                 raise ValueError(f"Unknown event name: {event.name!r}")  # pragma: no cover
