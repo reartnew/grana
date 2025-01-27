@@ -30,6 +30,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
         self._gathered_context: dict[str, t.Any] = {}
         self._action_type_counters: dict[str, int] = collections.defaultdict(int)
         self._explicit_strategy_class: t.Optional[type[BaseStrategy]] = None
+        self._wf = None
 
     @property
     def strategy_class(self) -> t.Optional[type[BaseStrategy]]:
@@ -87,12 +88,14 @@ class AbstractBaseWorkflowLoader(WithLogger):
     def loads(self, data: t.Union[str, bytes]) -> Workflow:
         """Load workflow from text"""
         self._internal_loads(data=data)
-        return Workflow(self._actions, context=self._gathered_context)
+        self._wf = Workflow(self._actions, context=self._gathered_context)
+        return self._wf
 
     def load(self, source_file: t.Union[str, Path]) -> Workflow:
         """Load workflow from file"""
         self._internal_load(source_file=source_file)
-        return Workflow(self._actions, context=self._gathered_context, source_file=Path(source_file))
+        self._wf = Workflow(self._actions, context=self._gathered_context, source_file=Path(source_file))
+        return self._wf
 
     def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> t.Tuple[str, ActionDependency]:
         """Unified method to process transform dependency source data"""
@@ -181,6 +184,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
                 ancestors=dependencies,
                 selectable=selectable,
                 severity=severity,
+                templar_factory=self._get_wf_templar,
             )
         except ActionArgumentsLoadError as e:
             self._throw(str(e))
@@ -198,3 +202,6 @@ class AbstractBaseWorkflowLoader(WithLogger):
             if strategy_value not in KNOWN_STRATEGIES:
                 self._throw(f"Unexpected strategy: {strategy_value!r}")
             self._explicit_strategy_class = KNOWN_STRATEGIES[strategy_value]
+
+    def _get_wf_templar(self):
+        return self._wf.get_templar()

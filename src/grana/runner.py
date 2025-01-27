@@ -18,7 +18,6 @@ from .config.constants import C
 from .display.types import DisplayEvent, DisplayEventName
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.helpers import get_default_loader_class_for_source
-from .rendering import Templar
 from .workflow import Workflow
 
 __all__ = [
@@ -183,7 +182,6 @@ class Runner:
             self._events_flow.put_nowait(event)
 
     async def _run_action(self, action: ActionExecution) -> None:
-        action.set_templar_factory(self._get_templar)
         if not action.enabled:
             action.omit_execution()
             return None
@@ -224,11 +222,3 @@ class Runner:
     def run_sync(self):
         """Wrap async run into an event loop"""
         asyncio.run(self.run_async())
-
-    def _get_templar(self) -> Templar:
-        return Templar(
-            outcomes_map=self._outcomes,
-            action_states={name: self.workflow[name].status.value for name in self.workflow},
-            context_map=self.workflow.context,
-            metadata=self.workflow.get_metadata(),
-        )

@@ -4,7 +4,6 @@ import typing as t
 
 import lazy_object_proxy  # type: ignore
 
-from ..config.constants import C
 from ..exceptions import ActionRenderError
 
 __all__ = [
@@ -47,6 +46,8 @@ class OutcomeDict(AttrDict):
         try:
             return super().__getitem__(item)
         except KeyError as e:
+            from ..config.constants import C  # pylint: disable=import-outside-toplevel
+
             if C.STRICT_OUTCOMES_RENDERING:
                 raise ActionRenderError(f"Outcome key {e} not found") from e
             return ""

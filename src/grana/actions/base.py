@@ -125,6 +125,7 @@ class ActionExecution(WithLogger):
         *,
         action_class: type[ActionBase],
         name: str,
+        templar_factory,
         raw_args: dict,
         ancestors: t.Optional[dict[str, ActionDependency]] = None,
         description: t.Optional[str] = None,
@@ -138,7 +139,7 @@ class ActionExecution(WithLogger):
         self.description: t.Optional[str] = description
         self.ancestors: dict[str, ActionDependency] = ancestors or {}
         self.selectable: bool = selectable
-        self.templar_factory = None
+        self.templar_factory = templar_factory
         self.outcomes: dict[str, t.Any] = {}
         self.status: ActionStatus = ActionStatus.PENDING
         self.enabled: bool = True
@@ -173,10 +174,6 @@ class ActionExecution(WithLogger):
             raise ActionArgumentsLoadError(f"Missing key for action {self.name!r}: {e.field_path!r}") from e
         except dacite.UnexpectedDataError as e:
             raise ActionArgumentsLoadError(f"Unrecognized keys for action {self.name!r}: {sorted(e.keys)}") from e
-
-    def set_templar_factory(self, factory):
-        """aaa"""
-        self.templar_factory = factory
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self.status.value})"

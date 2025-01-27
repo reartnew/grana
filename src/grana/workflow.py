@@ -9,6 +9,7 @@ import typing as t
 from .actions.base import ActionExecution, ActionDependency
 from .exceptions import IntegrityError
 from .logging import WithLogger
+from .rendering.templar import Templar
 
 __all__ = [
     "Workflow",
@@ -25,6 +26,7 @@ class Workflow(dict[str, ActionExecution], WithLogger):
         source_file: t.Optional[pathlib.Path] = None,
     ) -> None:
         super().__init__(actions_map)
+        # self._templar_factory: t.Callable[[], AbstractTemplar] = templar_factory
         self.source_file: t.Optional[pathlib.Path] = source_file
         self._entrypoints: set[str] = set()
         self._tiers_sequence: list[list[ActionExecution]] = []
@@ -34,6 +36,15 @@ class Workflow(dict[str, ActionExecution], WithLogger):
         self._establish_descendants()
         # Create order map to check all actions are reachable
         self._allocate_tiers()
+
+    def get_templar(self) -> Templar:
+        """Create a Templar object"""
+        return Templar(
+            outcomes_map={name: self[name].outcomes for name in self},
+            action_states={name: self[name].status.value for name in self},
+            context_map=self.context,
+            metadata=self.get_metadata(),
+        )
 
     def get_metadata(self) -> dict[str, t.Any]:
         """Obtain workflow metadata for further use in templating"""
