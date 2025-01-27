@@ -7,7 +7,7 @@ import contextlib
 import typing as t
 from pathlib import Path
 
-from ..actions.base import ActionExecution, ActionBase, ActionDependency, ActionSeverity
+from ..actions.base import WorkflowActionExecution, ActionBase, ActionDependency, ActionSeverity
 from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
 from ..rendering import Templar
@@ -25,7 +25,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
     STATIC_ACTION_FACTORIES: dict[str, type[ActionBase]] = {}
 
     def __init__(self) -> None:
-        self._actions: dict[str, ActionExecution] = {}
+        self._actions: dict[str, WorkflowActionExecution] = {}
         self._raw_file_names_stack: list[str] = []
         self._resolved_file_paths_stack: list[Path] = []
         self._gathered_context: dict[str, t.Any] = {}
@@ -52,7 +52,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Return explicitly-set strategy class, if any"""
         return self._explicit_strategy_class
 
-    def _register_action(self, action: ActionExecution) -> None:
+    def _register_action(self, action: WorkflowActionExecution) -> None:
         if action.name in self._actions:
             self._throw(f"Action declared twice: {action.name!r}")
         self._actions[action.name] = action
@@ -142,7 +142,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
             return dep_name, dep_holder
         self._throw(f"Unrecognized dependency node structure: {type(dep_node)!r} (expected a string or a dict)")
 
-    def build_action_from_dict_data(self, node: dict) -> ActionExecution:
+    def build_action_from_dict_data(self, node: dict) -> WorkflowActionExecution:
         """Process a dictionary representing an action"""
         # Action type
         if "type" not in node:
@@ -191,7 +191,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
             valid_severities: str = ", ".join(sorted(s.value for s in ActionSeverity))
             self._throw(f"Invalid severity: {severity_str!r} (expected one of: {valid_severities})")
         try:
-            action_instance: ActionExecution = ActionExecution(
+            action_instance: WorkflowActionExecution = WorkflowActionExecution(
                 name=name,
                 action_class=action_class,
                 raw_args=node,

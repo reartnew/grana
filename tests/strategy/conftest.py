@@ -5,7 +5,7 @@
 import pytest_asyncio
 
 from grana.actions.base import (
-    ActionExecution,
+    WorkflowActionExecution,
     ActionDependency,
     ActionBase,
 )
@@ -23,7 +23,7 @@ def _make_chained_workflow(action_class: type[ActionBase]) -> Workflow:
     ]
     return Workflow(
         {
-            step_name: ActionExecution(
+            step_name: WorkflowActionExecution(
                 name=step_name,
                 action_class=action_class,
                 raw_args={},

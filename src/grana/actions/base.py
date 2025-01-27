@@ -28,7 +28,7 @@ __all__ = [
     "ActionDependency",
     "ActionSeverity",
     "ActionBase",
-    "ActionExecution",
+    "WorkflowActionExecution",
     "ActionSkip",
     "ArgsBase",
     "EmissionScannerActionBase",
@@ -118,7 +118,7 @@ class ActionBase(WithLogger):
         raise NotImplementedError
 
 
-class ActionExecution(WithLogger):
+class WorkflowActionExecution(WithLogger):
     """An action that is executed within a workflow"""
 
     def __init__(

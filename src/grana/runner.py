@@ -12,7 +12,7 @@ import typing as t
 from pathlib import Path
 
 from . import types
-from .actions.base import ActionExecution
+from .actions.base import WorkflowActionExecution
 from .actions.types import ActionStatus
 from .config.constants import C
 from .display.types import DisplayEvent, DisplayEventName
@@ -158,8 +158,8 @@ class Runner:
         if self._started:
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
-        action_runners: dict[ActionExecution, asyncio.Task] = {}
-        async for action in self.strategy:  # type: ActionExecution
+        action_runners: dict[WorkflowActionExecution, asyncio.Task] = {}
+        async for action in self.strategy:  # type: WorkflowActionExecution
             # Finalize all actions that have been done already
             for maybe_finished_action, corresponding_runner_task in list(action_runners.items()):
                 if maybe_finished_action.future.done():
@@ -173,11 +173,11 @@ class Runner:
         for task in action_runners.values():
             await task
 
-    async def _dispatch_action_messages_to_display(self, action: ActionExecution) -> None:
+    async def _dispatch_action_messages_to_display(self, action: WorkflowActionExecution) -> None:
         async for event in action.read_messages():
             self._events_flow.put_nowait(event)
 
-    async def _run_action(self, action: ActionExecution) -> None:
+    async def _run_action(self, action: WorkflowActionExecution) -> None:
         if not action.enabled:
             action.omit_execution()
             return None
