@@ -25,7 +25,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
     STATIC_ACTION_FACTORIES: dict[str, type[ActionBase]] = {}
 
     def __init__(self) -> None:
-        self._actions: dict[str, WorkflowActionExecution] = {}
+        self._executions: dict[str, WorkflowActionExecution] = {}
         self._raw_file_names_stack: list[str] = []
         self._resolved_file_paths_stack: list[Path] = []
         self._gathered_context: dict[str, t.Any] = {}
@@ -52,10 +52,10 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Return explicitly-set strategy class, if any"""
         return self._explicit_strategy_class
 
-    def _register_action(self, action: WorkflowActionExecution) -> None:
-        if action.name in self._actions:
-            self._throw(f"Action declared twice: {action.name!r}")
-        self._actions[action.name] = action
+    def _register_action(self, action_execution: WorkflowActionExecution) -> None:
+        if action_execution.name in self._executions:
+            self._throw(f"Action declared twice: {action_execution.name!r}")
+        self._executions[action_execution.name] = action_execution
 
     def _throw(self, message: str) -> t.NoReturn:
         """Raise loader exception from text"""
@@ -103,13 +103,13 @@ class AbstractBaseWorkflowLoader(WithLogger):
     def loads(self, data: t.Union[str, bytes]) -> Workflow:
         """Load workflow from text"""
         self._internal_loads(data=data)
-        self.workflow = Workflow(self._actions, context=self._gathered_context)
+        self.workflow = Workflow(self._executions, context=self._gathered_context)
         return self.workflow
 
     def load(self, source_file: t.Union[str, Path]) -> Workflow:
         """Load workflow from file"""
         self._internal_load(source_file=source_file)
-        self.workflow = Workflow(self._actions, context=self._gathered_context, source_file=Path(source_file))
+        self.workflow = Workflow(self._executions, context=self._gathered_context, source_file=Path(source_file))
         return self.workflow
 
     def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> t.Tuple[str, ActionDependency]:

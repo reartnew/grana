@@ -137,6 +137,9 @@ class Runner:
 
     async def run_async(self) -> None:
         """Primary coroutine for all further processing"""
+        if self._started:
+            raise RuntimeError("Runner has been started more than one time")
+        self._started = True
         # Build workflow and display
         workflow: Workflow = self.workflow
         display_events_flow_processing_task: asyncio.Task = asyncio.create_task(self._process_display_events())
@@ -155,9 +158,6 @@ class Runner:
             display_events_flow_processing_task.cancel()
 
     async def _run_all_actions(self) -> None:
-        if self._started:
-            raise RuntimeError("Runner has been started more than one time")
-        self._started = True
         action_runners: dict[WorkflowActionExecution, asyncio.Task] = {}
         async for action in self.strategy:  # type: WorkflowActionExecution
             # Finalize all actions that have been done already
