@@ -5,7 +5,7 @@ import typing as t
 
 import pytest
 
-from grana.rendering.templar import Templar
+from grana.rendering import Templar
 
 
 @pytest.fixture

@@ -6,7 +6,7 @@ import pytest
 
 from grana.exceptions import ActionRenderError
 from grana.rendering.containers import LazyProxy
-from grana.rendering.templar import Templar
+from grana.rendering import Templar
 
 
 def test_outcome_rendering(loose_templar: Templar) -> None:

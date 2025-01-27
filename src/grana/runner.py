@@ -40,7 +40,6 @@ class Runner:
         self._workflow_source: t.Union[Path, IOType] = self._detect_workflow_source(explicit_source=source)
         self._explicit_display: t.Optional[types.DisplayType] = display
         self._started: bool = False
-        self._outcomes: dict[str, dict[str, t.Any]] = {}
         self._execution_failed: bool = False
 
     @functools.cached_property
@@ -160,9 +159,6 @@ class Runner:
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
         action_runners: dict[ActionExecution, asyncio.Task] = {}
-        # Prefill outcomes map
-        for action_name in self.workflow:
-            self._outcomes[action_name] = {}
         async for action in self.strategy:  # type: ActionExecution
             # Finalize all actions that have been done already
             for maybe_finished_action, corresponding_runner_task in list(action_runners.items()):
@@ -214,7 +210,6 @@ class Runner:
                 self._execution_failed = True
             self.logger.debug("Action failure traceback", exc_info=True)
         finally:
-            self._outcomes[action.name].update(action.outcomes)
             await action_messages_reader_task
             self.logger.debug(f"Calling `{DisplayEventName.ON_ACTION_FINISH.value}` for {action.name!r}")
             await self._send_display_event(DisplayEventName.ON_ACTION_FINISH, source=action)

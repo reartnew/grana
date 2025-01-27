@@ -9,7 +9,7 @@ import typing as t
 from .actions.base import ActionExecution, ActionDependency
 from .exceptions import IntegrityError
 from .logging import WithLogger
-from .rendering.templar import Templar
+from .rendering import Templar
 
 __all__ = [
     "Workflow",

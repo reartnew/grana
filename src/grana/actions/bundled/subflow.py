@@ -77,8 +77,8 @@ class SubflowAction(ActionBase):
                 try:
                     return await super().run_async()
                 finally:
-                    for sub_action_name, sub_action_outcomes in self._outcomes.items():
-                        action.yield_outcome(sub_action_name, OutcomeDict(sub_action_outcomes))
+                    for sub_action in self.workflow.values():
+                        action.yield_outcome(sub_action.name, OutcomeDict(sub_action.outcomes))
 
         runner = SubflowRunner(source=self.args.path)
         try:

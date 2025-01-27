@@ -10,6 +10,7 @@ from pathlib import Path
 from ..actions.base import ActionExecution, ActionBase, ActionDependency, ActionSeverity
 from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
+from ..rendering import Templar
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
 from ..workflow import Workflow
 
@@ -30,7 +31,21 @@ class AbstractBaseWorkflowLoader(WithLogger):
         self._gathered_context: dict[str, t.Any] = {}
         self._action_type_counters: dict[str, int] = collections.defaultdict(int)
         self._explicit_strategy_class: t.Optional[type[BaseStrategy]] = None
-        self._wf = None
+        self._loaded_workflow: t.Optional[Workflow] = None
+
+    @property
+    def workflow(self) -> Workflow:
+        """Loaded workflow getter"""
+        if self._loaded_workflow is None:
+            raise ValueError("No workflow was loaded")
+        return self._loaded_workflow
+
+    @workflow.setter
+    def workflow(self, workflow: Workflow) -> None:
+        """Loaded workflow setter"""
+        if self._loaded_workflow is not None:
+            raise ValueError("Workflow was loaded already")
+        self._loaded_workflow = workflow
 
     @property
     def strategy_class(self) -> t.Optional[type[BaseStrategy]]:
@@ -88,14 +103,14 @@ class AbstractBaseWorkflowLoader(WithLogger):
     def loads(self, data: t.Union[str, bytes]) -> Workflow:
         """Load workflow from text"""
         self._internal_loads(data=data)
-        self._wf = Workflow(self._actions, context=self._gathered_context)
-        return self._wf
+        self.workflow = Workflow(self._actions, context=self._gathered_context)
+        return self.workflow
 
     def load(self, source_file: t.Union[str, Path]) -> Workflow:
         """Load workflow from file"""
         self._internal_load(source_file=source_file)
-        self._wf = Workflow(self._actions, context=self._gathered_context, source_file=Path(source_file))
-        return self._wf
+        self.workflow = Workflow(self._actions, context=self._gathered_context, source_file=Path(source_file))
+        return self.workflow
 
     def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> t.Tuple[str, ActionDependency]:
         """Unified method to process transform dependency source data"""
@@ -184,7 +199,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
                 ancestors=dependencies,
                 selectable=selectable,
                 severity=severity,
-                templar_factory=self._get_wf_templar,
+                templar_factory=self._get_workflow_templar,
             )
         except ActionArgumentsLoadError as e:
             self._throw(str(e))
@@ -203,5 +218,5 @@ class AbstractBaseWorkflowLoader(WithLogger):
                 self._throw(f"Unexpected strategy: {strategy_value!r}")
             self._explicit_strategy_class = KNOWN_STRATEGIES[strategy_value]
 
-    def _get_wf_templar(self):
-        return self._wf.get_templar()
+    def _get_workflow_templar(self) -> Templar:
+        return self.workflow.get_templar()
