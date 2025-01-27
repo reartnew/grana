@@ -5,10 +5,7 @@ import dataclasses
 import enum
 import typing as t
 
-OutcomeStorageType = dict[str, str]
-
 __all__ = [
-    "OutcomeStorageType",
     "NamedMessageSource",
     "RenamedMessageSource",
     "Stderr",
@@ -36,7 +33,7 @@ class ActionStatus(enum.Enum):
     __str__ = __repr__
 
 
-class NamedMessageSource(t.Protocol):
+class NamedMessageSource(t.Protocol, t.Hashable):
     """Anything that can be a message source (e.g. an action instance)"""
 
     @property

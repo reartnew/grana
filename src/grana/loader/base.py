@@ -5,42 +5,18 @@ from __future__ import annotations
 import collections
 import contextlib
 import typing as t
-from enum import Enum
 from pathlib import Path
 
-import dacite
-from dacite.types import is_subclass
-
-from ..actions.base import ActionBase, ArgsBase, ActionDependency, ActionSeverity
-from ..actions.types import Expression, qualify_string_as_potentially_renderable
-from ..exceptions import LoadError
+from ..actions.base import WorkflowActionExecution, ActionBase, ActionDependency, ActionSeverity
+from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
+from ..rendering import Templar
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
-from ..tools.concealment import represent_object_type
-from ..tools.inspect import get_class_annotations
 from ..workflow import Workflow
 
 __all__ = [
     "AbstractBaseWorkflowLoader",
 ]
-
-
-class TemplateIndifferentConfig(dacite.Config, WithLogger):
-    """Configuration for initial workflow loading"""
-
-    @classmethod
-    def is_instance(cls, value: t.Any, type_: t.Type) -> bool:
-        if isinstance(value, Expression):
-            cls.logger.info(f"Skipping type check for object template, where {type_!r} was expected")
-            return True
-        if is_subclass(type_, Enum):
-            if isinstance(value, str) and qualify_string_as_potentially_renderable(value):
-                cls.logger.info(f"Skipping type check for a renderable string, where {type_!r} was expected")
-            else:
-                # This is not subject to rendering: check enum right away
-                type_(value)
-            return True
-        return super().is_instance(value, type_)
 
 
 class AbstractBaseWorkflowLoader(WithLogger):
@@ -49,23 +25,37 @@ class AbstractBaseWorkflowLoader(WithLogger):
     STATIC_ACTION_FACTORIES: dict[str, type[ActionBase]] = {}
 
     def __init__(self) -> None:
-        self._actions: dict[str, ActionBase] = {}
+        self._executions: dict[str, WorkflowActionExecution] = {}
         self._raw_file_names_stack: list[str] = []
         self._resolved_file_paths_stack: list[Path] = []
         self._gathered_context: dict[str, t.Any] = {}
-        self._original_args_map: dict[str, dict[str, t.Any]] = {}
         self._action_type_counters: dict[str, int] = collections.defaultdict(int)
         self._explicit_strategy_class: t.Optional[type[BaseStrategy]] = None
+        self._loaded_workflow: t.Optional[Workflow] = None
+
+    @property
+    def workflow(self) -> Workflow:
+        """Loaded workflow getter"""
+        if self._loaded_workflow is None:
+            raise ValueError("No workflow was loaded")
+        return self._loaded_workflow
+
+    @workflow.setter
+    def workflow(self, workflow: Workflow) -> None:
+        """Loaded workflow setter"""
+        if self._loaded_workflow is not None:
+            raise ValueError("Workflow was loaded already")
+        self._loaded_workflow = workflow
 
     @property
     def strategy_class(self) -> t.Optional[type[BaseStrategy]]:
         """Return explicitly-set strategy class, if any"""
         return self._explicit_strategy_class
 
-    def _register_action(self, action: ActionBase) -> None:
-        if action.name in self._actions:
-            self._throw(f"Action declared twice: {action.name!r}")
-        self._actions[action.name] = action
+    def _register_action(self, action_execution: WorkflowActionExecution) -> None:
+        if action_execution.name in self._executions:
+            self._throw(f"Action declared twice: {action_execution.name!r}")
+        self._executions[action_execution.name] = action_execution
 
     def _throw(self, message: str) -> t.NoReturn:
         """Raise loader exception from text"""
@@ -113,12 +103,14 @@ class AbstractBaseWorkflowLoader(WithLogger):
     def loads(self, data: t.Union[str, bytes]) -> Workflow:
         """Load workflow from text"""
         self._internal_loads(data=data)
-        return Workflow(self._actions, context=self._gathered_context)
+        self.workflow = Workflow(self._executions, context=self._gathered_context)
+        return self.workflow
 
     def load(self, source_file: t.Union[str, Path]) -> Workflow:
         """Load workflow from file"""
         self._internal_load(source_file=source_file)
-        return Workflow(self._actions, context=self._gathered_context, source_file=Path(source_file))
+        self.workflow = Workflow(self._executions, context=self._gathered_context, source_file=Path(source_file))
+        return self.workflow
 
     def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> t.Tuple[str, ActionDependency]:
         """Unified method to process transform dependency source data"""
@@ -150,7 +142,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
             return dep_name, dep_holder
         self._throw(f"Unrecognized dependency node structure: {type(dep_node)!r} (expected a string or a dict)")
 
-    def build_action_from_dict_data(self, node: dict) -> ActionBase:
+    def build_action_from_dict_data(self, node: dict) -> WorkflowActionExecution:
         """Process a dictionary representing an action"""
         # Action type
         if "type" not in node:
@@ -198,61 +190,20 @@ class AbstractBaseWorkflowLoader(WithLogger):
         except ValueError:
             valid_severities: str = ", ".join(sorted(s.value for s in ActionSeverity))
             self._throw(f"Invalid severity: {severity_str!r} (expected one of: {valid_severities})")
-        # Make action instance
-        args_instance: ArgsBase = self._build_args_from_the_rest_of_the_dict_node(
-            action_name=name,
-            action_class=action_class,
-            node=node,
-        )
-        action_instance: ActionBase = action_class(
-            name=name,
-            args=args_instance,
-            description=description,
-            ancestors=dependencies,
-            selectable=selectable,
-            severity=severity,
-        )
-        self._original_args_map[name] = node
-        return action_instance
-
-    def _build_args_from_the_rest_of_the_dict_node(
-        self,
-        action_name: str,
-        action_class: type[ActionBase],
-        node: dict,
-    ) -> ArgsBase:
-        for mro_class in action_class.__mro__:
-            if args_class := get_class_annotations(mro_class).get("args"):
-                break
-        else:
-            self._throw(f"Couldn't find an `args` annotation for class {action_class.__name__}")
         try:
-            return t.cast(
-                ArgsBase,
-                dacite.from_dict(
-                    data_class=args_class,
-                    data=node,
-                    config=TemplateIndifferentConfig(
-                        strict=True,
-                        cast=[Path],
-                    ),
-                ),
+            action_instance: WorkflowActionExecution = WorkflowActionExecution(
+                name=name,
+                action_class=action_class,
+                raw_args=node,
+                description=description,
+                ancestors=dependencies,
+                selectable=selectable,
+                severity=severity,
+                templar_factory=self._get_workflow_templar,
             )
-        except ValueError as e:
-            self._throw(f"Action {action_name!r}: {e}")
-        except dacite.MissingValueError as e:
-            self._throw(f"Missing key for action {action_name!r}: {e.field_path!r}")
-        except dacite.UnexpectedDataError as e:
-            self._throw(f"Unrecognized keys for action {action_name!r}: {sorted(e.keys)}")
-        except dacite.WrongTypeError as e:
-            self._throw(
-                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
-                f" (expected {e.field_type!r})"
-            )
-
-    def get_original_args_dict_for_action(self, action: ActionBase) -> dict:
-        """Obtain dictionary representation of the action arguments as was initially loaded"""
-        return self._original_args_map[action.name]
+        except ActionArgumentsLoadError as e:
+            self._throw(str(e))
+        return action_instance
 
     def load_configuration_from_dict(self, configuration_dict: dict[str, t.Any]) -> None:
         """Process configuration dictionary"""
@@ -266,3 +217,6 @@ class AbstractBaseWorkflowLoader(WithLogger):
             if strategy_value not in KNOWN_STRATEGIES:
                 self._throw(f"Unexpected strategy: {strategy_value!r}")
             self._explicit_strategy_class = KNOWN_STRATEGIES[strategy_value]
+
+    def _get_workflow_templar(self) -> Templar:
+        return self.workflow.get_templar()

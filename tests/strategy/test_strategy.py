@@ -5,8 +5,9 @@ import typing as t
 
 import pytest
 
-from grana import ActionBase, ExplicitStrategy, StrictSequentialStrategy
-from grana.actions.base import ActionStatus
+from grana import ExplicitStrategy, StrictSequentialStrategy
+from grana.actions.base import WorkflowActionExecution
+from grana.actions.types import ActionStatus
 from grana.strategy import BaseStrategy
 from grana.workflow import Workflow
 
@@ -14,10 +15,10 @@ from grana.workflow import Workflow
 @pytest.mark.asyncio
 async def test_chain_success(strict_successful_workflow: Workflow) -> None:
     """Chain successful execution"""
-    result: list[ActionBase] = []
-    strategy: t.AsyncIterable[ActionBase] = ExplicitStrategy(strict_successful_workflow)
-    async for action in strategy:  # type: ActionBase
-        await action
+    result: list[WorkflowActionExecution] = []
+    strategy: t.AsyncIterable[WorkflowActionExecution] = ExplicitStrategy(strict_successful_workflow)
+    async for action in strategy:  # type: WorkflowActionExecution
+        await action.execute()
         result.append(action)
     assert len(result) == 6  # Should emit all actions
     assert all(action.status == ActionStatus.SUCCESS for action in result)
@@ -27,11 +28,11 @@ async def test_chain_success(strict_successful_workflow: Workflow) -> None:
 @pytest.mark.asyncio
 async def test_chain_failure(strict_failing_workflow: Workflow, strategy_class: type[BaseStrategy]) -> None:
     """Chain failing execution"""
-    result: list[ActionBase] = []
-    strategy: t.AsyncIterable[ActionBase] = strategy_class(strict_failing_workflow)
-    async for action in strategy:  # type: ActionBase
+    result: list[WorkflowActionExecution] = []
+    strategy: t.AsyncIterable[WorkflowActionExecution] = strategy_class(strict_failing_workflow)
+    async for action in strategy:  # type: WorkflowActionExecution
         with pytest.raises(RuntimeError):
-            await action
+            await action.execute()
         result.append(action)
     assert len(result) == 1  # Should not emit more than one action
     assert result[0].status == ActionStatus.FAILURE
@@ -45,10 +46,10 @@ async def test_chain_failure(strict_failing_workflow: Workflow, strategy_class: 
 @pytest.mark.asyncio
 async def test_chain_skip(strict_skipping_workflow: Workflow) -> None:
     """Chain skipping execution"""
-    result: list[ActionBase] = []
-    strategy: t.AsyncIterable[ActionBase] = ExplicitStrategy(strict_skipping_workflow)
-    async for action in strategy:  # type: ActionBase
-        await action
+    result: list[WorkflowActionExecution] = []
+    strategy: t.AsyncIterable[WorkflowActionExecution] = ExplicitStrategy(strict_skipping_workflow)
+    async for action in strategy:  # type: WorkflowActionExecution
+        await action.execute()
         result.append(action)
     assert len(result) == 1  # Should not emit more than one action
     assert result[0].status == ActionStatus.SKIPPED

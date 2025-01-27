@@ -1,7 +1,7 @@
 """Command-line interface entry"""
 
 import functools
-import logging
+from logging import getLogger
 import os
 import sys
 import typing as t
@@ -15,13 +15,13 @@ from .config.constants.cli import cliargs_receiver
 from .config.constants.environment import ENV_DOC
 from .display.default import KNOWN_DISPLAYS
 from .exceptions import BaseError, ExecutionFailed
-from .logging import configure_logging
+from . import logging as grana_logging
 from .runner import Runner
 from .strategy import KNOWN_STRATEGIES
 from .tools.proxy import DeferredCallsProxy
 from .version import __version__
 
-logger = DeferredCallsProxy(obj=logging.getLogger(__name__))
+logger = DeferredCallsProxy(obj=getLogger(__name__))
 
 
 class WorkflowPositionalArgument(click.Argument):
@@ -102,7 +102,7 @@ def wrap_cli_command(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         load_dotenv()
-        configure_logging(
+        grana_logging.configure_logging(
             main_file=C.LOG_FILE,
             level=C.LOG_LEVEL,
             colorize=C.USE_COLOR and not C.LOG_FILE,

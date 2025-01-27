@@ -9,20 +9,15 @@ import io
 import logging
 import sys
 import typing as t
-from enum import Enum
 from pathlib import Path
 
-import dacite
-
 from . import types
-from .actions.base import ActionBase, ArgsBase
+from .actions.base import WorkflowActionExecution
 from .actions.types import ActionStatus
 from .config.constants import C
 from .display.types import DisplayEvent, DisplayEventName
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.helpers import get_default_loader_class_for_source
-from .rendering import Templar
-from .tools.concealment import represent_object_type
 from .workflow import Workflow
 
 __all__ = [
@@ -45,7 +40,6 @@ class Runner:
         self._workflow_source: t.Union[Path, IOType] = self._detect_workflow_source(explicit_source=source)
         self._explicit_display: t.Optional[types.DisplayType] = display
         self._started: bool = False
-        self._outcomes: dict[str, dict[str, t.Any]] = {}
         self._execution_failed: bool = False
 
     @functools.cached_property
@@ -143,6 +137,9 @@ class Runner:
 
     async def run_async(self) -> None:
         """Primary coroutine for all further processing"""
+        if self._started:
+            raise RuntimeError("Runner has been started more than one time")
+        self._started = True
         # Build workflow and display
         workflow: Workflow = self.workflow
         display_events_flow_processing_task: asyncio.Task = asyncio.create_task(self._process_display_events())
@@ -161,17 +158,11 @@ class Runner:
             display_events_flow_processing_task.cancel()
 
     async def _run_all_actions(self) -> None:
-        if self._started:
-            raise RuntimeError("Runner has been started more than one time")
-        self._started = True
-        action_runners: dict[ActionBase, asyncio.Task] = {}
-        # Prefill outcomes map
-        for action_name in self.workflow:
-            self._outcomes[action_name] = {}
-        async for action in self.strategy:  # type: ActionBase
+        action_runners: dict[WorkflowActionExecution, asyncio.Task] = {}
+        async for action in self.strategy:  # type: WorkflowActionExecution
             # Finalize all actions that have been done already
             for maybe_finished_action, corresponding_runner_task in list(action_runners.items()):
-                if maybe_finished_action.done():
+                if maybe_finished_action.future.done():
                     self.logger.debug(f"Finalizing done action {maybe_finished_action.name!r} runner")
                     await corresponding_runner_task
                     action_runners.pop(maybe_finished_action)
@@ -182,25 +173,14 @@ class Runner:
         for task in action_runners.values():
             await task
 
-    async def _dispatch_action_messages_to_display(self, action: ActionBase) -> None:
+    async def _dispatch_action_messages_to_display(self, action: WorkflowActionExecution) -> None:
         async for event in action.read_messages():
             self._events_flow.put_nowait(event)
 
-    async def _run_action(self, action: ActionBase) -> None:
+    async def _run_action(self, action: WorkflowActionExecution) -> None:
         if not action.enabled:
-            action._internal_omit()  # pylint: disable=protected-access
+            action.omit_execution()
             return None
-        message: str
-        try:
-            self._render_action(action)
-        except Exception as e:
-            details: str = str(e) if isinstance(e, ActionRenderError) else repr(e)
-            message = f"Action {action.name!r} rendering failed: {details}"
-            await self._send_display_event(DisplayEventName.ON_ACTION_ERROR, source=action, message=message)
-            self.logger.warning(message, exc_info=not isinstance(e, ActionRenderError))
-            action._internal_fail(e)  # pylint: disable=protected-access
-            self._execution_failed = True
-            return
         self.logger.debug(f"Calling `{DisplayEventName.ON_ACTION_START}` for {action.name!r}")
         await self._send_display_event(DisplayEventName.ON_ACTION_START, source=action)
         self.logger.debug(f"Allocating action dispatcher for {action.name!r}")
@@ -208,9 +188,16 @@ class Runner:
             self._dispatch_action_messages_to_display(action=action)
         )
         try:
-            await action
+            await action.execute()
         except Exception as e:
-            if message := str(e) if isinstance(e, ActionRunError) else f"Action {action.name!r} run exception: {e!r}":
+            message: str
+            if isinstance(e, ActionRunError):
+                message = str(e)
+            elif isinstance(e, ActionRenderError):
+                message = f"Action {action.name!r} rendering failed: {e}"
+            else:
+                message = f"Action {action.name!r} run exception: {e!r}"
+            if message:
                 await self._send_display_event(
                     DisplayEventName.ON_ACTION_ERROR,
                     source=action,
@@ -223,7 +210,6 @@ class Runner:
                 self._execution_failed = True
             self.logger.debug("Action failure traceback", exc_info=True)
         finally:
-            self._outcomes[action.name].update(action.get_outcomes())
             await action_messages_reader_task
             self.logger.debug(f"Calling `{DisplayEventName.ON_ACTION_FINISH.value}` for {action.name!r}")
             await self._send_display_event(DisplayEventName.ON_ACTION_FINISH, source=action)
@@ -231,29 +217,3 @@ class Runner:
     def run_sync(self):
         """Wrap async run into an event loop"""
         asyncio.run(self.run_async())
-
-    def _render_action(self, action: ActionBase) -> None:
-        """Prepare action to execution by rendering its template fields"""
-        templar: Templar = Templar(
-            outcomes_map=self._outcomes,
-            action_states={name: self.workflow[name].status.value for name in self.workflow},
-            context_map=self.workflow.context,
-            metadata=self.workflow.get_metadata(),
-        )
-
-        rendered_args_dict: dict = templar.recursive_render(self.loader.get_original_args_dict_for_action(action))
-        try:
-            parsed_args: ArgsBase = dacite.from_dict(
-                data_class=type(action.args),
-                data=rendered_args_dict,
-                config=dacite.Config(
-                    strict=True,
-                    cast=[Enum, Path],
-                ),
-            )
-        except dacite.WrongTypeError as e:
-            raise ActionRenderError(
-                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
-                f" (expected {e.field_type!r})"
-            ) from None
-        action.args = parsed_args

@@ -60,7 +60,7 @@ def test_yield_multiline_call(ctx_from_text: CtxFactoryType) -> None:
     )
     runner = grana.Runner()
     runner.run_sync()
-    assert not runner.workflow["Foo"].get_outcomes()["foo"] == much_data
+    assert not runner.workflow["Foo"].outcomes["foo"] == much_data
 
 
 def test_runner_multiple_run(runner_good_context: None) -> None:
@@ -206,7 +206,7 @@ def test_status_good_substitution(run_text: RunFactoryType) -> None:
           - name: Foo
             type: shell
             command: |
-              [ "@{meta.status.Foo}" = "PENDING" ] || exit 1
+              [ "@{meta.status.Foo}" = "RUNNING" ] || exit 1
         """
     )
 
@@ -353,26 +353,6 @@ def test_empty_echo_context(run_text: RunFactoryType) -> None:
         "[Foo]  | ",
         "✓ SUCCESS: Foo",
     ]
-
-
-def test_misplaced_disable_context(
-    run_text: RunFactoryType,
-    display_collector: list[str],
-) -> None:
-    """Test context with misplaced action disable call"""
-
-    with pytest.raises(exceptions.ExecutionFailed):
-        run_text(
-            """
-            actions:
-              - name: Foo
-                type: misplaced-disable
-            """
-        )
-    assert (
-        "[Foo] !| Action 'Foo' run exception: RuntimeError(\"Action Foo can't be disabled due to its status: RUNNING\")"
-        in display_collector
-    )
 
 
 def test_interaction_context(
