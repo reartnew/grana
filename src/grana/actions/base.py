@@ -7,13 +7,10 @@ import base64
 import collections
 import enum
 import functools
-import pathlib
 import re
 import textwrap
 import typing as t
 from dataclasses import dataclass, field, fields
-
-import dacite
 
 from .constants import ACTION_RESERVED_FIELD_NAMES
 from .types import Stderr, ActionStatus, RenamedMessageSource, NamedMessageSource
@@ -21,6 +18,7 @@ from ..display.types import DisplayEvent, DisplayEventName
 from ..exceptions import ActionRunError, ActionRenderError, ActionArgumentsLoadError
 from ..logging import WithLogger, context
 from ..rendering import Templar
+from ..tools import classloader
 from ..tools.concealment import represent_object_type
 from ..tools.inspect import get_class_annotations
 
@@ -153,20 +151,16 @@ class WorkflowActionExecution(WithLogger):
             raise ActionArgumentsLoadError(f"Couldn't find an `args` annotation for class {self.action_class.__name__}")
         self.args_class = args_class
         try:
-            dacite.from_dict(
+            classloader.from_dict(
                 data_class=self.args_class,
                 data=self.raw_args,
-                config=dacite.Config(
-                    check_types=False,
-                    strict=True,
-                    strict_unions_match=False,
-                ),
+                dry_run=True,
             )
         except ValueError as e:
             raise ActionArgumentsLoadError(f"Action {self.name!r}: {e}") from e
-        except dacite.MissingValueError as e:
+        except classloader.MissingValueError as e:
             raise ActionArgumentsLoadError(f"Missing key for action {self.name!r}: {e.field_path!r}") from e
-        except dacite.UnexpectedDataError as e:
+        except classloader.UnexpectedDataError as e:
             raise ActionArgumentsLoadError(f"Unrecognized keys for action {self.name!r}: {sorted(e.keys)}") from e
 
     def __repr__(self) -> str:
@@ -232,20 +226,11 @@ class WorkflowActionExecution(WithLogger):
 
         rendered_args_dict: dict = templar.recursive_render(self.raw_args)
         try:
-            parsed_args: ArgsBase = t.cast(
-                ArgsBase,
-                dacite.from_dict(
-                    data_class=self.args_class,
-                    data=rendered_args_dict,
-                    config=dacite.Config(
-                        check_types=True,
-                        strict=True,
-                        strict_unions_match=True,
-                        cast=[enum.Enum, pathlib.Path],
-                    ),
-                ),
+            parsed_args: ArgsBase = classloader.from_dict(
+                data_class=self.args_class,
+                data=rendered_args_dict,
             )
-        except dacite.WrongTypeError as e:
+        except classloader.WrongTypeError as e:
             raise ActionRenderError(
                 f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
                 f" (expected {e.field_type!r})"
