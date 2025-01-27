@@ -703,14 +703,13 @@ tomli = {version = "*", optional = true, markers = "python_full_version <= \"3.1
 toml = ["tomli"]
 
 [[package]]
-name = "dacite-cjunct"
-version = "1.8.1a0"
+name = "dacite"
+version = "1.8.1"
 description = "Simple creation of data classes from dictionaries."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "dacite_cjunct-1.8.1a0-py3-none-any.whl", hash = "sha256:a080fe6b7f0a822373f51b53a37bdec891c9f99229f611b5ef6e4a632848c134"},
-    {file = "dacite_cjunct-1.8.1a0.tar.gz", hash = "sha256:70bf238018914d91a10e615b7bf7f9966bc57d9e5802740552f9bfed2c494e90"},
+    {file = "dacite-1.8.1-py3-none-any.whl", hash = "sha256:cc31ad6fdea1f49962ea42db9421772afe01ac5442380d9a99fcf3d188c61afe"},
 ]
 
 [package.extras]
@@ -3415,4 +3414,4 @@ tests = ["bandit", "black", "coverage", "mypy", "pylint", "pytest", "pytest-asyn
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "614d5cfc9bf417c0efd71e4d3a60ea3305bb6104e617607193ba7f33a5433213"
+content-hash = "5ae641fa68319952f098b7c5eb0d525fed2575644cf60df2f1e9ba2fc8227237"
