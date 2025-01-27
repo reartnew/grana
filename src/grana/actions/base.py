@@ -20,6 +20,7 @@ from .types import Stderr, ActionStatus, RenamedMessageSource, NamedMessageSourc
 from ..display.types import DisplayEvent, DisplayEventName
 from ..exceptions import ActionRunError, ActionRenderError, ActionArgumentsLoadError
 from ..logging import WithLogger, context
+from ..rendering import Templar
 from ..tools.concealment import represent_object_type
 from ..tools.inspect import get_class_annotations
 
@@ -125,25 +126,25 @@ class ActionExecution(WithLogger):
         *,
         action_class: type[ActionBase],
         name: str,
-        templar_factory,
         raw_args: dict,
         ancestors: t.Optional[dict[str, ActionDependency]] = None,
         description: t.Optional[str] = None,
         selectable: bool = True,
         severity: ActionSeverity = ActionSeverity.NORMAL,
+        templar_factory: t.Optional[t.Callable[[], Templar]] = None,
     ) -> None:
         self.action_class = action_class
-        self.args_class: type[ArgsBase] = ArgsBase
         self.name: str = name
         self.raw_args: dict = raw_args
         self.description: t.Optional[str] = description
         self.ancestors: dict[str, ActionDependency] = ancestors or {}
         self.selectable: bool = selectable
-        self.templar_factory = templar_factory
-        self.outcomes: dict[str, t.Any] = {}
+        self.templar_factory: t.Optional[t.Callable[[], Templar]] = templar_factory
+
+        self.args_class: type[ArgsBase] = ArgsBase
         self.status: ActionStatus = ActionStatus.PENDING
+        self.outcomes: dict[str, t.Any] = {}
         self.enabled: bool = True
-        # Do not create asyncio-related objects on constructing object to decouple from the event loop
         self.future: asyncio.Future = asyncio.get_event_loop().create_future()
         self.event_queue: asyncio.Queue[DisplayEvent] = asyncio.Queue()
         self.severity: ActionSeverity = severity
