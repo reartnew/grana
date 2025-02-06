@@ -1,6 +1,6 @@
 # pylint: disable=import-outside-toplevel,cyclic-import
 """Lazy-loaded constants"""
-
+import functools
 import os
 import sys
 import typing as t
@@ -8,6 +8,7 @@ from io import UnsupportedOperation
 from pathlib import Path
 
 from . import environment
+from ...logging import WithLogger
 from .cli import get_cli_arg
 from .helpers import (
     Optional,
@@ -84,14 +85,89 @@ def _isatty() -> bool:
         return False
 
 
+VT = t.TypeVar("VT")
+
+
+class Inapplicable(BaseException):
+    """Used to indicate that the source can not be used"""
+
+
+class Constant(WithLogger, t.Generic[VT]):
+    """Constants used in grana runtime"""
+
+    def __init__(self) -> None:
+        self._name: str = ""
+        self._effective_source: str = ""
+
+    def __set_name__(self, owner: type, name: str) -> None:
+        self._name = name
+
+    @property
+    def effective_source(self) -> str:
+        """Effective source for the loaded value"""
+        self._get()
+        return self._effective_source
+
+    # Indefinite cache size, so all constants fit into it
+    # pylint: disable=method-cache-max-size-none
+    @functools.lru_cache(None)
+    def _get(self) -> VT:
+        for source, method in (
+            ("CLI argument", self.from_cli_arg),
+            ("environment variable", self.from_env),
+            ("default value", self.default),
+        ):
+            try:
+                result = method()
+            except (NotImplementedError, Inapplicable):
+                pass
+            else:
+                self.logger.debug(f"Effective value for the constant {self._name!r} is {result!r} (from {source})")
+                self._effective_source = source
+                return result
+        raise NotImplementedError
+
+    def __get__(self, instance: t.Any, owner: type) -> VT:
+        return self._get()
+
+    def inapplicable(self) -> t.NoReturn:
+        """Marks source as non-used"""
+        raise Inapplicable
+
+    def from_env(self) -> VT:
+        """Try to load the value from environment variables"""
+        raise NotImplementedError
+
+    def from_cli_arg(self) -> VT:
+        """Try to load the value from CLI args"""
+        raise NotImplementedError
+
+    def default(self) -> VT:
+        """Default value to be applied after every other source has been tested"""
+        raise NotImplementedError
+
+
+class LogLevel(Constant[str]):
+    """Log level constant"""
+
+    def from_cli_arg(self) -> str:
+        if (log_level := get_cli_arg("log_level")) is None:
+            self.inapplicable()
+        return LOG_LEVELS[log_level]
+
+    def from_env(self) -> str:
+        if (log_level := os.environ.get("GRANA_LOG_LEVEL")) is None:
+            self.inapplicable()
+        return log_level
+
+    def default(self) -> str:
+        return "ERROR"
+
+
 class C:
     """Runtime constants"""
 
-    LOG_LEVEL: Mandatory[str] = Mandatory(
-        lambda: LOG_LEVELS[get_cli_arg("log_level")] if get_cli_arg("log_level") is not None else None,
-        lambda: os.environ.get("GRANA_LOG_LEVEL"),
-        lambda: "ERROR",
-    )
+    LOG_LEVEL = LogLevel()
     LOG_FILE: Optional[Path] = Optional(
         lambda: maybe_path(os.environ.get("GRANA_LOG_FILE")),
     )
