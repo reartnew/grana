@@ -17,6 +17,7 @@ from .helpers import (
     maybe_class_from_module,
 )
 from ...logging import WithLogger
+from ...tools.inspect import get_class_annotations
 from ...types import (
     LoaderClassType,
     StrategyClassType,
@@ -27,7 +28,6 @@ __all__ = [
     "C",
     "LOG_LEVELS",
     "Constant",
-    "get_constant_value_and_effective_source",
 ]
 
 LOG_LEVELS: dict[str, str] = {
@@ -104,12 +104,6 @@ class ConstantSource(enum.Enum):
 
 
 _SOURCES: dict[str, ConstantSource] = {}
-
-
-def get_constant_value_and_effective_source(name: str) -> tuple[t.Any, ConstantSource]:
-    """Obtains the value and its effective source"""
-    value: t.Any = getattr(C, name)
-    return value, _SOURCES[name]
 
 
 class Constant(WithLogger, t.Generic[VT]):
@@ -215,6 +209,14 @@ class ContextDirectoryConstant(Constant[Path]):
         return Path().resolve()
 
 
+class ConstantValueInfo(t.NamedTuple):
+    """Constants value information"""
+
+    name: str
+    value: str
+    effective_source: ConstantSource
+
+
 class C:
     """Runtime constants"""
 
@@ -272,3 +274,15 @@ class C:
     DEFAULT_SHELL_EXECUTABLE: Mandatory[str] = Mandatory(
         lambda: os.environ.get("GRANA_DEFAULT_SHELL_EXECUTABLE", "/bin/sh"),
     )
+
+    @classmethod
+    def info(cls) -> list[ConstantValueInfo]:
+        """Return set of info for all constants"""
+        result: list[ConstantValueInfo] = []
+        for attr_name, attr_type in sorted(get_class_annotations(cls).items()):
+            if not isinstance(attr_type, type) or not issubclass(attr_type, Constant):
+                continue
+            attr_value: t.Any = getattr(C, attr_name)
+            attr_effective_source = _SOURCES[attr_name]
+            result.append(ConstantValueInfo(attr_name, attr_value, attr_effective_source))
+        return result

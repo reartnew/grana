@@ -11,7 +11,7 @@ import click
 from dotenv.main import DotEnv
 
 from . import logging as grana_logging
-from .config.constants import C, LOG_LEVELS, Constant, get_constant_value_and_effective_source
+from .config.constants import C, LOG_LEVELS
 from .config.constants.cli import cliargs_receiver
 from .config.constants.environment import ENV_DOC
 from .display.color import Color
@@ -19,7 +19,6 @@ from .display.default import KNOWN_DISPLAYS, DefaultDisplay
 from .exceptions import BaseError, ExecutionFailed
 from .runner import Runner
 from .strategy import KNOWN_STRATEGIES
-from .tools.inspect import get_class_annotations
 from .tools.proxy import DeferredCallsProxy
 from .version import __version__
 
@@ -189,10 +188,7 @@ def runtime() -> None:
     kv("Executable", sys.executable)
 
     section("Configuration")
-    for attr_name, attr_type in sorted(get_class_annotations(C).items()):
-        if attr_type is not Constant:
-            continue
-        attr_value, attr_effective_source = get_constant_value_and_effective_source(attr_name)
+    for attr_name, attr_value, attr_effective_source in C.info():
         mapping(attr_name)
         kv("Value", attr_value, prefix="    ")
         kv("Source", attr_effective_source.name.lower(), prefix="    ")
