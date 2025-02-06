@@ -28,6 +28,7 @@ __all__ = [
     "C",
     "LOG_LEVELS",
     "Constant",
+    "ConstantSource",
 ]
 
 LOG_LEVELS: dict[str, str] = {
@@ -40,28 +41,6 @@ LOG_LEVELS: dict[str, str] = {
     "INFO": "INFO",
     "DEBUG": "DEBUG",
 }
-
-
-def _maybe_strategy(name: t.Optional[str]) -> t.Optional[StrategyClassType]:
-    """Transform an optional strategy name into an optional strategy class"""
-    from ...strategy import KNOWN_STRATEGIES
-
-    try:
-        return KNOWN_STRATEGIES[name] if name else None
-    except KeyError:
-        raise ValueError(f"Invalid strategy name: {name!r} (allowed: {sorted(KNOWN_STRATEGIES)})") from None
-
-
-def _get_strategy_class_from_cli_arg() -> t.Optional[StrategyClassType]:
-    from ...strategy import KNOWN_STRATEGIES
-
-    return _maybe_strategy(get_cli_arg("strategy", valid_options=KNOWN_STRATEGIES))
-
-
-def _get_default_strategy_class() -> StrategyClassType:
-    from ...strategy import ExplicitStrategy
-
-    return ExplicitStrategy
 
 
 def _isatty() -> bool:
@@ -277,6 +256,48 @@ class DisplayClassConstant(Constant[DisplayClassType]):
         return DefaultDisplay
 
 
+class StrategyClassConstant(Constant[StrategyClassType]):
+    """Strategy class constant"""
+
+    @classmethod
+    def _strategy_class_by_name(cls, name: str) -> StrategyClassType:
+        from ...strategy import KNOWN_STRATEGIES
+
+        try:
+            return KNOWN_STRATEGIES[name]
+        except KeyError:
+            raise ValueError(f"Invalid strategy name: {name!r} (allowed: {sorted(KNOWN_STRATEGIES)})") from None
+
+    def from_cli_arg(self) -> StrategyClassType:
+        strategy_name: str = self._get_cli_arg("strategy")
+        return self._strategy_class_by_name(strategy_name)
+
+    def from_env(self) -> StrategyClassType:
+        strategy_name: str = self._get_env("GRANA_STRATEGY_NAME")
+        return self._strategy_class_by_name(strategy_name)
+
+    def default(self) -> StrategyClassType:
+        from ...strategy import ExplicitStrategy
+
+        return ExplicitStrategy
+
+
+class UseColorConstant(Constant[t.Optional[bool]]):
+    """Use color constant"""
+
+    def from_env(self) -> bool:
+        force_color: str = self._get_env("GRANA_FORCE_COLOR")
+        if (result := environment.to_ternary(force_color)) is None:
+            raise Inapplicable
+        return result
+
+    def default(self) -> bool:
+        try:
+            return os.isatty(sys.stdout.fileno())
+        except UnsupportedOperation:
+            return False
+
+
 class C:
     """Runtime constants"""
 
@@ -288,21 +309,14 @@ class C:
     WORKFLOW_SOURCE_FILE: Constant = WorkflowSourceFileConstant()
     WORKFLOW_LOADER_CLASS: Constant = WorkflowLoaderClassConstant()
     DISPLAY_CLASS: Constant = DisplayClassConstant()
+    STRATEGY_CLASS: Constant = StrategyClassConstant()
+    USE_COLOR: Constant = UseColorConstant()
 
     ACTION_CLASSES_DIRECTORIES: Mandatory[list[str]] = Mandatory(
         lambda: environment.to_path_list(os.environ.get("GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY", "")),
     )
     EXTERNAL_PYTHON_MODULES_PATHS: Mandatory[list[Path]] = Mandatory(
         lambda: environment.to_path_list(os.environ.get("GRANA_EXTERNAL_MODULES_PATHS", "")),
-    )
-    STRATEGY_CLASS: Mandatory[StrategyClassType] = Mandatory(
-        _get_strategy_class_from_cli_arg,
-        lambda: _maybe_strategy(os.environ.get("GRANA_STRATEGY_NAME")),
-        _get_default_strategy_class,
-    )
-    USE_COLOR: Mandatory[bool] = Mandatory(
-        lambda: environment.to_ternary(os.environ.get("GRANA_FORCE_COLOR", "")),
-        _isatty,
     )
     SHELL_INJECT_YIELD_FUNCTION: Mandatory[bool] = Mandatory(
         lambda: environment.to_bool(os.environ.get("GRANA_SHELL_INJECT_YIELD_FUNCTION", "Y")),

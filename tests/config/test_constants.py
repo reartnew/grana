@@ -6,7 +6,7 @@ import os
 import pytest
 from pytest import MonkeyPatch
 
-from grana.config.constants import C
+from grana.config.constants import C, Constant
 from grana.config.constants.helpers import Mandatory
 
 
@@ -43,12 +43,16 @@ def test_constant_with_ternary_env(monkeypatch: MonkeyPatch) -> None:
 
     monkeypatch.setattr(os, "isatty", isatty)
     monkeypatch.setenv("GRANA_FORCE_COLOR", "Y")
+    Constant.cache_clear()
     assert C.USE_COLOR is True
     monkeypatch.setenv("GRANA_FORCE_COLOR", "N")
+    Constant.cache_clear()
     assert C.USE_COLOR is False
     monkeypatch.setenv("GRANA_FORCE_COLOR", "")
+    Constant.cache_clear()
     with pytest.raises(TTYException):
         assert C.USE_COLOR
     monkeypatch.setenv("GRANA_FORCE_COLOR", "foo")
+    Constant.cache_clear()
     with pytest.raises(ValueError):
         assert C.USE_COLOR

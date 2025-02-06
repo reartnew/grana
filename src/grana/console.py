@@ -11,7 +11,8 @@ import click
 from dotenv.main import DotEnv
 
 from . import logging as grana_logging
-from .config.constants import C, LOG_LEVELS
+from .config.constants import C, LOG_LEVELS, ConstantSource
+from .config.constants.cli import get_cli_arg
 from .config.constants.cli import cliargs_receiver
 from .config.constants.environment import ENV_DOC
 from .display.color import Color
@@ -169,6 +170,7 @@ def env_vars() -> None:
 
 
 @info.command
+@click.option("--show-defaults", help="Show constants with default values", is_flag=True, default=False)
 @cliargs_receiver
 def runtime() -> None:
     """Shows runtime information."""
@@ -189,6 +191,8 @@ def runtime() -> None:
 
     section("Configuration")
     for attr_name, attr_value, attr_effective_source in C.info():
+        if attr_effective_source == ConstantSource.DEFAULT and not get_cli_arg("show_defaults"):
+            continue
         mapping(attr_name)
         kv("Value", attr_value, prefix="    ")
         kv("Source", attr_effective_source.name.lower(), prefix="    ")
