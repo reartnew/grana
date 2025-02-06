@@ -8,7 +8,6 @@ from io import UnsupportedOperation
 from pathlib import Path
 
 from . import environment
-from ...logging import WithLogger
 from .cli import get_cli_arg
 from .helpers import (
     Optional,
@@ -16,6 +15,7 @@ from .helpers import (
     maybe_path,
     maybe_class_from_module,
 )
+from ...logging import WithLogger
 from ...types import (
     LoaderClassType,
     StrategyClassType,
@@ -119,7 +119,7 @@ class Constant(WithLogger, t.Generic[VT]):
         ):
             try:
                 result = method()
-            except (NotImplementedError, Inapplicable):
+            except Inapplicable:
                 pass
             else:
                 self.logger.debug(f"Effective value for the constant {self._name!r} is {result!r} (from {source})")
@@ -130,47 +130,61 @@ class Constant(WithLogger, t.Generic[VT]):
     def __get__(self, instance: t.Any, owner: type) -> VT:
         return self._get()
 
-    def inapplicable(self) -> t.NoReturn:
-        """Marks source as non-used"""
-        raise Inapplicable
+    def _get_cli_arg(self, name: str) -> str:
+        if (value := get_cli_arg(name)) is None:
+            raise Inapplicable
+        self.logger.debug(f"Defined CLI argument {name!r} is accessed by {self._name!r}")
+        return value
+
+    def _get_env(self, name: str) -> str:
+        if (value := os.environ.get(name)) is None:
+            raise Inapplicable
+        self.logger.debug(f"Defined environment variable {name!r} is accessed by {self._name!r}")
+        return value
 
     def from_env(self) -> VT:
         """Try to load the value from environment variables"""
-        raise NotImplementedError
+        raise Inapplicable
 
     def from_cli_arg(self) -> VT:
         """Try to load the value from CLI args"""
-        raise NotImplementedError
+        raise Inapplicable
 
     def default(self) -> VT:
         """Default value to be applied after every other source has been tested"""
-        raise NotImplementedError
+        raise Inapplicable
 
 
-class LogLevel(Constant[str]):
+class LogLevelConstant(Constant[str]):
     """Log level constant"""
 
     def from_cli_arg(self) -> str:
-        if (log_level := get_cli_arg("log_level")) is None:
-            self.inapplicable()
-        return LOG_LEVELS[log_level]
+        raw_log_level: str = self._get_cli_arg("log_level")
+        return LOG_LEVELS[raw_log_level]
 
     def from_env(self) -> str:
-        if (log_level := os.environ.get("GRANA_LOG_LEVEL")) is None:
-            self.inapplicable()
-        return log_level
+        return self._get_env("GRANA_LOG_LEVEL")
 
     def default(self) -> str:
         return "ERROR"
 
 
+class LogFileConstant(Constant[t.Optional[Path]]):
+    """Log file constant"""
+
+    def from_env(self) -> Path:
+        log_file_str: str = self._get_env("GRANA_LOG_FILE")
+        return Path(log_file_str)
+
+    def default(self) -> None:
+        return None
+
+
 class C:
     """Runtime constants"""
 
-    LOG_LEVEL = LogLevel()
-    LOG_FILE: Optional[Path] = Optional(
-        lambda: maybe_path(os.environ.get("GRANA_LOG_FILE")),
-    )
+    LOG_LEVEL: Constant = LogLevelConstant()
+    LOG_FILE: Constant = LogFileConstant()
     ENV_FILE: Mandatory[Path] = Mandatory(
         lambda: maybe_path(os.environ.get("GRANA_ENV_FILE")),
         lambda: Path().resolve() / ".env",
