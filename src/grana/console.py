@@ -178,6 +178,9 @@ def runtime() -> None:
     def section(name: str) -> None:
         d.display(f"\n{Color.bold(name)}")
 
+    def mapping(name: str) -> None:
+        d.display(f"{Color.yellow(name)}:")
+
     def kv(k: str, v: t.Any, prefix: str = "") -> None:
         d.display(f"{prefix}{Color.blue(k)}: {Color.green(str(v))}")
 
@@ -190,6 +193,6 @@ def runtime() -> None:
         if attr_type is not Constant:
             continue
         attr_value, attr_effective_source = get_constant_value_and_effective_source(attr_name)
-        d.display(f"{Color.yellow(attr_name)}:")
+        mapping(attr_name)
         kv("Value", attr_value, prefix="    ")
         kv("Source", attr_effective_source, prefix="    ")
