@@ -25,6 +25,8 @@ from ...types import (
 __all__ = [
     "C",
     "LOG_LEVELS",
+    "Constant",
+    "get_constant_value_and_effective_source",
 ]
 
 LOG_LEVELS: dict[str, str] = {
@@ -92,21 +94,23 @@ class Inapplicable(BaseException):
     """Used to indicate that the source can not be used"""
 
 
+_SOURCES: dict[str, str] = {}
+
+
+def get_constant_value_and_effective_source(name: str) -> tuple[t.Any, str]:
+    """Obtains the value and its effective source"""
+    value: t.Any = getattr(C, name)
+    return value, _SOURCES[name]
+
+
 class Constant(WithLogger, t.Generic[VT]):
     """Constants used in grana runtime"""
 
     def __init__(self) -> None:
         self._name: str = ""
-        self._effective_source: str = ""
 
     def __set_name__(self, owner: type, name: str) -> None:
         self._name = name
-
-    @property
-    def effective_source(self) -> str:
-        """Effective source for the loaded value"""
-        self._get()
-        return self._effective_source
 
     # Indefinite cache size, so all constants fit into it
     # pylint: disable=method-cache-max-size-none
@@ -123,7 +127,7 @@ class Constant(WithLogger, t.Generic[VT]):
                 pass
             else:
                 self.logger.debug(f"Effective value for the constant {self._name!r} is {result!r} (from {source})")
-                self._effective_source = source
+                _SOURCES[self._name] = source
                 return result
         raise NotImplementedError
 

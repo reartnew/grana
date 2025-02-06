@@ -1,23 +1,25 @@
 """Command-line interface entry"""
 
 import functools
-from logging import getLogger
 import os
 import sys
 import typing as t
+from logging import getLogger
 from pathlib import Path
 
 import click
 from dotenv.main import DotEnv
 
-from .config.constants import C, LOG_LEVELS
+from . import logging as grana_logging
+from .config.constants import C, LOG_LEVELS, Constant, get_constant_value_and_effective_source
 from .config.constants.cli import cliargs_receiver
 from .config.constants.environment import ENV_DOC
 from .display.default import KNOWN_DISPLAYS
+from .display.color import Color
 from .exceptions import BaseError, ExecutionFailed
-from . import logging as grana_logging
 from .runner import Runner
 from .strategy import KNOWN_STRATEGIES
+from .tools.inspect import get_class_annotations
 from .tools.proxy import DeferredCallsProxy
 from .version import __version__
 
@@ -161,6 +163,21 @@ def info() -> None:
 
 
 @info.command
+@cliargs_receiver
 def env_vars() -> None:
     """Shows environment variables names that are taken into account."""
     print(ENV_DOC)
+
+
+@info.command
+@cliargs_receiver
+def runtime() -> None:
+    """Shows runtime information."""
+    tab: str = "    "
+    print(f"Configuration constants:")
+    for attr_name, attr_type in sorted(get_class_annotations(C).items()):
+        if attr_type is Constant:
+            attr_value, attr_effective_source = get_constant_value_and_effective_source(attr_name)
+            print(f"{tab}{Color.green(attr_name)}:")
+            print(f"{tab * 2}{Color.gray('Value: ')} {Color.yellow(str(attr_value))}")
+            print(f"{tab * 2}{Color.gray('Source:')} {attr_effective_source}")
