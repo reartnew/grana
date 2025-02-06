@@ -1,34 +1,11 @@
 """Separate environment-centric module"""
 
 import pathlib
-import typing as t
 
 __all__ = [
     "ENV_DOC",
-    "to_ternary",
-    "to_bool",
     "to_path_list",
 ]
-
-
-def to_ternary(value: str) -> t.Optional[bool]:
-    """Converts a string value to an optional boolean"""
-    if value == "Y":
-        return True
-    if value == "N":
-        return False
-    if value == "":
-        return None
-    raise ValueError(f"{value!r} is not a valid value for a ternary variable. Expected one of: 'Y', 'N', ''.")
-
-
-def to_bool(value: str) -> bool:
-    """Converts a string value to a boolean"""
-    if value == "Y":
-        return True
-    if value == "N":
-        return False
-    raise ValueError(f"{value!r} is not a valid value for a boolean variable. Expected one of: 'Y', 'N'.")
 
 
 def to_path_list(value: str) -> list[pathlib.Path]:

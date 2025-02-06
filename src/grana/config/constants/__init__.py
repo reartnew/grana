@@ -124,6 +124,26 @@ class Constant(WithLogger, t.Generic[VT]):
         self.logger.debug(f"Defined environment variable {name!r} is accessed by {self._name!r}")
         return value
 
+    @classmethod
+    def _string_to_ternary(cls, value: str) -> bool:
+        """Converts a string value to an optional boolean"""
+        if value == "Y":
+            return True
+        if value == "N":
+            return False
+        if value == "":
+            raise Inapplicable
+        raise ValueError(f"{value!r} is not a valid value for a ternary variable. Expected one of: 'Y', 'N', ''.")
+
+    @classmethod
+    def _string_to_bool(cls, value: str) -> bool:
+        """Converts a string value to a boolean"""
+        if value == "Y":
+            return True
+        if value == "N":
+            return False
+        raise ValueError(f"{value!r} is not a valid value for a boolean variable. Expected one of: 'Y', 'N'.")
+
     def from_env(self) -> VT:
         """Try to load the value from environment variables"""
         raise Inapplicable
@@ -282,20 +302,48 @@ class StrategyClassConstant(Constant[StrategyClassType]):
         return ExplicitStrategy
 
 
-class UseColorConstant(Constant[t.Optional[bool]]):
+class UseColorConstant(Constant[bool]):
     """Use color constant"""
 
     def from_env(self) -> bool:
         force_color: str = self._get_env("GRANA_FORCE_COLOR")
-        if (result := environment.to_ternary(force_color)) is None:
-            raise Inapplicable
-        return result
+        return self._string_to_ternary(force_color)
 
     def default(self) -> bool:
         try:
             return os.isatty(sys.stdout.fileno())
         except UnsupportedOperation:
             return False
+
+
+class DefaultShellExecutableConstant(Constant[str]):
+    """Default shell executable constant"""
+
+    def from_env(self) -> str:
+        return self._get_env("GRANA_DEFAULT_SHELL_EXECUTABLE")
+
+    def default(self) -> str:
+        return "/bin/sh"
+
+
+class ShellInjectYieldFunctionConstant(Constant[bool]):
+    """Shell inject yield function constant"""
+
+    def from_env(self) -> bool:
+        return self._string_to_bool(self._get_env("GRANA_SHELL_INJECT_YIELD_FUNCTION"))
+
+    def default(self) -> bool:
+        return True
+
+
+class StrictOutcomesRenderingConstant(Constant[bool]):
+    """Strict outcomes rendering constant"""
+
+    def from_env(self) -> bool:
+        return self._string_to_bool(self._get_env("STRICT_OUTCOMES_RENDERING"))
+
+    def default(self) -> bool:
+        return True
 
 
 class C:
@@ -311,21 +359,15 @@ class C:
     DISPLAY_CLASS: Constant = DisplayClassConstant()
     STRATEGY_CLASS: Constant = StrategyClassConstant()
     USE_COLOR: Constant = UseColorConstant()
+    DEFAULT_SHELL_EXECUTABLE: Constant = DefaultShellExecutableConstant()
+    SHELL_INJECT_YIELD_FUNCTION: Constant = ShellInjectYieldFunctionConstant()
+    STRICT_OUTCOMES_RENDERING: Constant = StrictOutcomesRenderingConstant()
 
     ACTION_CLASSES_DIRECTORIES: Mandatory[list[str]] = Mandatory(
         lambda: environment.to_path_list(os.environ.get("GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY", "")),
     )
     EXTERNAL_PYTHON_MODULES_PATHS: Mandatory[list[Path]] = Mandatory(
         lambda: environment.to_path_list(os.environ.get("GRANA_EXTERNAL_MODULES_PATHS", "")),
-    )
-    SHELL_INJECT_YIELD_FUNCTION: Mandatory[bool] = Mandatory(
-        lambda: environment.to_bool(os.environ.get("GRANA_SHELL_INJECT_YIELD_FUNCTION", "Y")),
-    )
-    STRICT_OUTCOMES_RENDERING: Mandatory[bool] = Mandatory(
-        lambda: environment.to_bool(os.environ.get("GRANA_STRICT_OUTCOMES_RENDERING", "Y")),
-    )
-    DEFAULT_SHELL_EXECUTABLE: Mandatory[str] = Mandatory(
-        lambda: os.environ.get("GRANA_DEFAULT_SHELL_EXECUTABLE", "/bin/sh"),
     )
 
     @classmethod

@@ -5,6 +5,7 @@ import typing as t
 
 import pytest
 
+from grana.config.constants import C
 from grana.rendering import Templar
 
 
@@ -48,7 +49,7 @@ def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], Templar]:
 @pytest.fixture
 def loose_templar(templar_factory: t.Callable[[], Templar], monkeypatch: pytest.MonkeyPatch) -> Templar:
     """Loose templar"""
-    monkeypatch.setenv("GRANA_STRICT_OUTCOMES_RENDERING", "N")
+    monkeypatch.setattr(C, "STRICT_OUTCOMES_RENDERING", False)
     return templar_factory()
 
 

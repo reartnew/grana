@@ -24,10 +24,13 @@ def test_constant_with_boolean_env(monkeypatch: MonkeyPatch) -> None:
     """Check boolean env values"""
 
     monkeypatch.setenv("GRANA_SHELL_INJECT_YIELD_FUNCTION", "Y")
+    Constant.cache_clear()
     assert C.SHELL_INJECT_YIELD_FUNCTION is True
     monkeypatch.setenv("GRANA_SHELL_INJECT_YIELD_FUNCTION", "N")
+    Constant.cache_clear()
     assert C.SHELL_INJECT_YIELD_FUNCTION is False
     monkeypatch.setenv("GRANA_SHELL_INJECT_YIELD_FUNCTION", "foo")
+    Constant.cache_clear()
     with pytest.raises(ValueError):
         assert C.SHELL_INJECT_YIELD_FUNCTION
 
