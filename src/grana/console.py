@@ -195,4 +195,4 @@ def runtime() -> None:
         attr_value, attr_effective_source = get_constant_value_and_effective_source(attr_name)
         mapping(attr_name)
         kv("Value", attr_value, prefix="    ")
-        kv("Source", attr_effective_source, prefix="    ")
+        kv("Source", attr_effective_source.name.lower(), prefix="    ")

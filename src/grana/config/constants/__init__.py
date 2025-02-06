@@ -1,5 +1,6 @@
 # pylint: disable=import-outside-toplevel,cyclic-import
 """Lazy-loaded constants"""
+import enum
 import functools
 import os
 import sys
@@ -94,10 +95,18 @@ class Inapplicable(BaseException):
     """Used to indicate that the source can not be used"""
 
 
-_SOURCES: dict[str, str] = {}
+class ConstantSource(enum.Enum):
+    """Enumeration of constant effective value sources"""
+
+    COMMAND = "CLI argument"
+    ENVIRONMENT = "environment variable"
+    DEFAULT = "default value"
 
 
-def get_constant_value_and_effective_source(name: str) -> tuple[t.Any, str]:
+_SOURCES: dict[str, ConstantSource] = {}
+
+
+def get_constant_value_and_effective_source(name: str) -> tuple[t.Any, ConstantSource]:
     """Obtains the value and its effective source"""
     value: t.Any = getattr(C, name)
     return value, _SOURCES[name]
@@ -117,16 +126,16 @@ class Constant(WithLogger, t.Generic[VT]):
     @functools.lru_cache(None)
     def _get(self) -> VT:
         for source, method in (
-            ("CLI argument", self.from_cli_arg),
-            ("environment variable", self.from_env),
-            ("default value", self.default),
+            (ConstantSource.COMMAND, self.from_cli_arg),
+            (ConstantSource.ENVIRONMENT, self.from_env),
+            (ConstantSource.DEFAULT, self.default),
         ):
             try:
                 result = method()
             except Inapplicable:
                 pass
             else:
-                self.logger.debug(f"Effective value for the constant {self._name!r} is {result!r} (from {source})")
+                self.logger.debug(f"Effective value for {self._name!r} is {result!r} (from {source.value})")
                 _SOURCES[self._name] = source
                 return result
         raise NotImplementedError
