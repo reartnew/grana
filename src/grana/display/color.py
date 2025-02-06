@@ -36,6 +36,16 @@ class Color:
         return cls._add_formatting(message, 33)
 
     @classmethod
+    def blue(cls, message: str) -> str:
+        """Make a string blue"""
+        return cls._add_formatting(message, 34)
+
+    @classmethod
+    def bold(cls, message: str) -> str:
+        """Make a string bold"""
+        return cls._add_formatting(message, 1)
+
+    @classmethod
     def _add_formatting(cls, message: str, code: int) -> str:
         if not C.USE_COLOR:
             return message
