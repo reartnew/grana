@@ -19,7 +19,7 @@ __all__ = [
     "Optional",
     "Mandatory",
     "maybe_path",
-    "maybe_class_from_module",
+    "class_from_module",
 ]
 
 VT = t.TypeVar("VT")
@@ -97,15 +97,13 @@ def maybe_path(path_str: t.Optional[str]) -> t.Optional[Path]:
     return Path(path_str) if path_str else None
 
 
-def maybe_class_from_module(
-    path_str: t.Optional[str],
+def class_from_module(
+    source_path: Path,
     class_name: str,
     submodule_name: t.Optional[str] = None,
-) -> t.Optional[type]:
+) -> type:
     """Get a class from an external module, if given"""
-    if (source_path := maybe_path(path_str)) is None:
-        return None
     module: types.ModuleType = load_external_module(source_path, submodule_name)
     if not hasattr(module, class_name):
-        raise AttributeError(f"External module contains no class {class_name!r} in {path_str!r}")
+        raise AttributeError(f"External module contains no class {class_name!r} in {source_path!r}")
     return getattr(module, class_name)

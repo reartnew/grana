@@ -18,7 +18,7 @@ from ..actions.bundled import (
 )
 from ..actions.types import Expression, Import
 from ..config.constants import C
-from ..config.constants.helpers import maybe_class_from_module
+from ..config.constants.helpers import class_from_module
 from ..exceptions import YAMLStructureError
 
 __all__ = [
@@ -78,8 +78,8 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 self.logger.debug(f"Trying external action class source: {class_file}")
                 action_class: type[ActionBase] = t.cast(
                     type[ActionBase],
-                    maybe_class_from_module(
-                        path_str=str(class_file),
+                    class_from_module(
+                        source_path=class_file,
                         class_name="Action",
                         submodule_name=f"actions.{action_type}",
                     ),

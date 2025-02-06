@@ -14,7 +14,7 @@ from .helpers import (
     Optional,
     Mandatory,
     maybe_path,
-    maybe_class_from_module,
+    class_from_module,
 )
 from ...logging import WithLogger
 from ...tools.inspect import get_class_annotations
@@ -50,23 +50,6 @@ def _maybe_strategy(name: t.Optional[str]) -> t.Optional[StrategyClassType]:
         return KNOWN_STRATEGIES[name] if name else None
     except KeyError:
         raise ValueError(f"Invalid strategy name: {name!r} (allowed: {sorted(KNOWN_STRATEGIES)})") from None
-
-
-def _maybe_display_class_by_name(name: t.Optional[str]) -> t.Optional[DisplayClassType]:
-    from ...display.default import KNOWN_DISPLAYS
-
-    if not name:
-        return None
-    try:
-        return KNOWN_DISPLAYS[name]
-    except Exception:
-        raise ValueError(f"Display name should be one of: {sorted(KNOWN_DISPLAYS)}. Got {name!r}") from None
-
-
-def _get_default_display_class() -> DisplayClassType:
-    from ...display.default import DefaultDisplay
-
-    return DefaultDisplay
 
 
 def _get_strategy_class_from_cli_arg() -> t.Optional[StrategyClassType]:
@@ -240,6 +223,60 @@ class WorkflowSourceFileConstant(Constant[t.Optional[Path]]):
         return None
 
 
+class WorkflowLoaderClassConstant(Constant[t.Optional[LoaderClassType]]):
+    """Workflow loader class constant"""
+
+    def from_env(self) -> LoaderClassType:
+        return t.cast(
+            LoaderClassType,
+            class_from_module(
+                source_path=Path(self._get_env("GRANA_WORKFLOW_LOADER_SOURCE_FILE")),
+                class_name="WorkflowLoader",
+                submodule_name="workflow.loader",
+            ),
+        )
+
+    def default(self) -> None:
+        return None
+
+
+class DisplayClassConstant(Constant[DisplayClassType]):
+    """Display class constant"""
+
+    @classmethod
+    def _display_class_by_name(cls, name: str) -> DisplayClassType:
+        from ...display.default import KNOWN_DISPLAYS
+
+        try:
+            return KNOWN_DISPLAYS[name]
+        except Exception:
+            raise ValueError(f"Display name should be one of: {sorted(KNOWN_DISPLAYS)}. Got {name!r}") from None
+
+    def from_cli_arg(self) -> DisplayClassType:
+        display_name: str = self._get_cli_arg("display")
+        return self._display_class_by_name(display_name)
+
+    def from_env(self) -> DisplayClassType:
+        try:
+            custom_display_source_file: str = self._get_env("GRANA_DISPLAY_SOURCE_FILE")
+        except Inapplicable:
+            known_display_name: str = self._get_env("GRANA_DISPLAY_NAME")
+            return self._display_class_by_name(known_display_name)
+        return t.cast(
+            DisplayClassType,
+            class_from_module(
+                source_path=Path(custom_display_source_file),
+                class_name="Display",
+                submodule_name="display",
+            ),
+        )
+
+    def default(self) -> DisplayClassType:
+        from ...display.default import DefaultDisplay
+
+        return DefaultDisplay
+
+
 class C:
     """Runtime constants"""
 
@@ -249,29 +286,14 @@ class C:
     CONTEXT_DIRECTORY: Constant = ContextDirectoryConstant()
     INTERACTIVE_MODE: Constant = InteractiveModeConstant()
     WORKFLOW_SOURCE_FILE: Constant = WorkflowSourceFileConstant()
+    WORKFLOW_LOADER_CLASS: Constant = WorkflowLoaderClassConstant()
+    DISPLAY_CLASS: Constant = DisplayClassConstant()
 
-    WORKFLOW_LOADER_CLASS: Optional[LoaderClassType] = Optional(
-        lambda: maybe_class_from_module(
-            path_str=os.environ.get("GRANA_WORKFLOW_LOADER_SOURCE_FILE"),
-            class_name="WorkflowLoader",
-            submodule_name="workflow.loader",
-        )
-    )
     ACTION_CLASSES_DIRECTORIES: Mandatory[list[str]] = Mandatory(
         lambda: environment.to_path_list(os.environ.get("GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY", "")),
     )
     EXTERNAL_PYTHON_MODULES_PATHS: Mandatory[list[Path]] = Mandatory(
         lambda: environment.to_path_list(os.environ.get("GRANA_EXTERNAL_MODULES_PATHS", "")),
-    )
-    DISPLAY_CLASS: Mandatory[DisplayClassType] = Mandatory(
-        lambda: _maybe_display_class_by_name(get_cli_arg("display")),
-        lambda: maybe_class_from_module(
-            path_str=os.environ.get("GRANA_DISPLAY_SOURCE_FILE"),
-            class_name="Display",
-            submodule_name="display",
-        ),
-        lambda: _maybe_display_class_by_name(os.environ.get("GRANA_DISPLAY_NAME")),
-        _get_default_display_class,
     )
     STRATEGY_CLASS: Mandatory[StrategyClassType] = Mandatory(
         _get_strategy_class_from_cli_arg,
