@@ -93,8 +93,8 @@ class Runner:
             if isinstance(explicit_source, IOType):
                 return explicit_source
             return Path(explicit_source)
-        if C.ACTIONS_SOURCE_FILE is not None:
-            source_file: Path = C.ACTIONS_SOURCE_FILE
+        if C.WORKFLOW_SOURCE_FILE is not None:
+            source_file: Path = C.WORKFLOW_SOURCE_FILE
             if str(source_file) == "-":
                 cls.logger.info("Using stdin as workflow source")
                 return t.cast(IOType, sys.stdin)

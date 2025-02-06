@@ -106,6 +106,14 @@ class ConstantSource(enum.Enum):
 _SOURCES: dict[str, ConstantSource] = {}
 
 
+class ConstantValueInfo(t.NamedTuple):
+    """Constants value information"""
+
+    name: str
+    value: str
+    effective_source: ConstantSource
+
+
 class Constant(WithLogger, t.Generic[VT]):
     """Constants used in grana runtime"""
 
@@ -142,7 +150,7 @@ class Constant(WithLogger, t.Generic[VT]):
     def __get__(self, instance: t.Any, owner: type) -> VT:
         return self._get()
 
-    def _get_cli_arg(self, name: str) -> str:
+    def _get_cli_arg(self, name: str) -> t.Any:
         if (value := get_cli_arg(name)) is None:
             raise Inapplicable
         self.logger.debug(f"Defined CLI argument {name!r} is accessed by {self._name!r}")
@@ -209,12 +217,27 @@ class ContextDirectoryConstant(Constant[Path]):
         return Path().resolve()
 
 
-class ConstantValueInfo(t.NamedTuple):
-    """Constants value information"""
+class InteractiveModeConstant(Constant[bool]):
+    """Interactive mode constant"""
 
-    name: str
-    value: str
-    effective_source: ConstantSource
+    def from_cli_arg(self) -> bool:
+        return self._get_cli_arg("interactive")
+
+    def default(self) -> bool:
+        return False
+
+
+class WorkflowSourceFileConstant(Constant[t.Optional[Path]]):
+    """Workflow source file constant"""
+
+    def from_env(self) -> Path:
+        return Path(self._get_env("GRANA_WORKFLOW_FILE"))
+
+    def from_cli_arg(self) -> Path:
+        return Path(self._get_cli_arg("workflow_file"))
+
+    def default(self) -> None:
+        return None
 
 
 class C:
@@ -224,15 +247,9 @@ class C:
     LOG_FILE: Constant = LogFileConstant()
     ENV_FILE: Constant = EnvFileConstant()
     CONTEXT_DIRECTORY: Constant = ContextDirectoryConstant()
+    INTERACTIVE_MODE: Constant = InteractiveModeConstant()
+    WORKFLOW_SOURCE_FILE: Constant = WorkflowSourceFileConstant()
 
-    INTERACTIVE_MODE: Mandatory[bool] = Mandatory(
-        lambda: get_cli_arg("interactive"),
-        lambda: False,
-    )
-    ACTIONS_SOURCE_FILE: Optional[Path] = Optional(
-        lambda: maybe_path(get_cli_arg("workflow_file")),
-        lambda: maybe_path(os.environ.get("GRANA_WORKFLOW_FILE")),
-    )
     WORKFLOW_LOADER_CLASS: Optional[LoaderClassType] = Optional(
         lambda: maybe_class_from_module(
             path_str=os.environ.get("GRANA_WORKFLOW_LOADER_SOURCE_FILE"),
