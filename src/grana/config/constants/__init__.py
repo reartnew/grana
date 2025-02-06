@@ -115,6 +115,11 @@ def get_constant_value_and_effective_source(name: str) -> tuple[t.Any, ConstantS
 class Constant(WithLogger, t.Generic[VT]):
     """Constants used in grana runtime"""
 
+    @classmethod
+    def cache_clear(cls) -> None:
+        """Reset cache"""
+        cls._get.cache_clear()
+
     def __init__(self) -> None:
         self._name: str = ""
 
@@ -193,18 +198,31 @@ class LogFileConstant(Constant[t.Optional[Path]]):
         return None
 
 
+class EnvFileConstant(Constant[Path]):
+    """Environment variables file constant"""
+
+    def from_env(self) -> Path:
+        return Path(self._get_env("GRANA_ENV_FILE"))
+
+    def default(self) -> Path:
+        return Path().resolve() / ".env"
+
+
+class ContextDirectoryConstant(Constant[Path]):
+    """Context directory constant"""
+
+    def default(self) -> Path:
+        return Path().resolve()
+
+
 class C:
     """Runtime constants"""
 
     LOG_LEVEL: Constant = LogLevelConstant()
     LOG_FILE: Constant = LogFileConstant()
-    ENV_FILE: Mandatory[Path] = Mandatory(
-        lambda: maybe_path(os.environ.get("GRANA_ENV_FILE")),
-        lambda: Path().resolve() / ".env",
-    )
-    CONTEXT_DIRECTORY: Mandatory[Path] = Mandatory(
-        lambda: Path().resolve(),
-    )
+    ENV_FILE: Constant = EnvFileConstant()
+    CONTEXT_DIRECTORY: Constant = ContextDirectoryConstant()
+
     INTERACTIVE_MODE: Mandatory[bool] = Mandatory(
         lambda: get_cli_arg("interactive"),
         lambda: False,
