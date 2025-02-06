@@ -15,7 +15,7 @@ from .config.constants import C, LOG_LEVELS, Constant, get_constant_value_and_ef
 from .config.constants.cli import cliargs_receiver
 from .config.constants.environment import ENV_DOC
 from .display.color import Color
-from .display.default import KNOWN_DISPLAYS
+from .display.default import KNOWN_DISPLAYS, DefaultDisplay
 from .exceptions import BaseError, ExecutionFailed
 from .runner import Runner
 from .strategy import KNOWN_STRATEGIES
@@ -173,16 +173,23 @@ def env_vars() -> None:
 @cliargs_receiver
 def runtime() -> None:
     """Shows runtime information."""
-    tab: str = "    "
-    print()
-    print(Color.bold("Python"))
-    print(f"{Color.blue('Executable')}: {Color.green(sys.executable)}")
-    print(f"{Color.blue('Version')}:    {Color.green(sys.version.split(' ', 1)[0])}")
-    print()
-    print(Color.bold("Configuration"))
+    d = DefaultDisplay()
+
+    def section(name: str) -> None:
+        d.display(f"\n{Color.bold(name)}")
+
+    def kv(k: str, v: t.Any, prefix: str = "") -> None:
+        d.display(f"{prefix}{Color.blue(k)}: {Color.green(str(v))}")
+
+    section("Python")
+    kv("Version", sys.version.split(" ", 1)[0])
+    kv("Executable", sys.executable)
+
+    section("Configuration")
     for attr_name, attr_type in sorted(get_class_annotations(C).items()):
-        if attr_type is Constant:
-            attr_value, attr_effective_source = get_constant_value_and_effective_source(attr_name)
-            print(f"{Color.blue(attr_name)}:")
-            print(f"{tab}{Color.gray('Value')}:  {Color.green(str(attr_value))}")
-            print(f"{tab}{Color.gray('Source')}: {Color.yellow(attr_effective_source)}")
+        if attr_type is not Constant:
+            continue
+        attr_value, attr_effective_source = get_constant_value_and_effective_source(attr_name)
+        d.display(f"{Color.yellow(attr_name)}:")
+        kv("Value", attr_value, prefix="    ")
+        kv("Source", attr_effective_source, prefix="    ")
