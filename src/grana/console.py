@@ -11,7 +11,8 @@ import click
 from dotenv.main import DotEnv
 
 from . import logging as grana_logging
-from .config.constants import C, LOG_LEVELS
+from .config.constants import C
+from .config.constants.impl import LogLevel
 from .config.constants.base import ConstantSource
 from .config.constants.cli import get_cli_arg, cliargs_receiver
 from .config.constants.environment import ENV_DOC
@@ -57,7 +58,7 @@ class WorkflowPositionalArgument(click.Argument):
     "-l",
     "--log-level",
     help="Logging level. Defaults to `ERROR`. Also configurable via the `GRANA_LOG_LEVEL` environment variable.",
-    type=click.Choice(list(LOG_LEVELS)),
+    type=click.Choice(list(LogLevel.LOG_LEVELS)),
 )
 @click.option(
     "-d",
