@@ -11,9 +11,9 @@ import click
 from dotenv.main import DotEnv
 
 from . import logging as grana_logging
-from .config.constants import C, LOG_LEVELS, ConstantSource
-from .config.constants.cli import get_cli_arg
-from .config.constants.cli import cliargs_receiver
+from .config.constants import C, LOG_LEVELS
+from .config.constants.base import ConstantSource
+from .config.constants.cli import get_cli_arg, cliargs_receiver
 from .config.constants.environment import ENV_DOC
 from .display.color import Color
 from .display.default import KNOWN_DISPLAYS, DefaultDisplay

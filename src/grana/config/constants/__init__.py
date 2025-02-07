@@ -1,17 +1,15 @@
 # pylint: disable=import-outside-toplevel,cyclic-import
 """Lazy-loaded constants"""
 
-import enum
-import functools
 import os
 import sys
 import typing as t
 from io import UnsupportedOperation
 from pathlib import Path
 
+from . import base
 from .cli import get_cli_arg
 from .helpers import class_from_module
-from ...logging import WithLogger
 from ...tools.inspect import get_class_annotations
 from ...types import (
     LoaderClassType,
@@ -22,8 +20,6 @@ from ...types import (
 __all__ = [
     "C",
     "LOG_LEVELS",
-    "Constant",
-    "ConstantSource",
 ]
 
 LOG_LEVELS: dict[str, str] = {
@@ -38,116 +34,7 @@ LOG_LEVELS: dict[str, str] = {
 }
 
 
-def _isatty() -> bool:
-    try:
-        return os.isatty(sys.stdout.fileno())
-    except UnsupportedOperation:
-        return False
-
-
-VT = t.TypeVar("VT")
-
-
-class Inapplicable(BaseException):
-    """Used to indicate that the source can not be used"""
-
-
-class ConstantSource(enum.Enum):
-    """Enumeration of constant effective value sources"""
-
-    COMMAND = "CLI argument"
-    ENVIRONMENT = "environment variable"
-    DEFAULT = "default value"
-
-
-_SOURCES: dict[str, ConstantSource] = {}
-
-
-class ConstantValueInfo(t.NamedTuple):
-    """Constants value information"""
-
-    name: str
-    value: str
-    effective_source: ConstantSource
-
-
-class Constant(WithLogger, t.Generic[VT]):
-    """Constants used in grana runtime"""
-
-    @classmethod
-    def cache_clear(cls) -> None:
-        """Reset cache"""
-        cls._get.cache_clear()
-
-    def __init__(self) -> None:
-        self._name: str = ""
-
-    def __set_name__(self, owner: type, name: str) -> None:
-        self._name = name
-
-    # Indefinite cache size, so all constants fit into it
-    # pylint: disable=method-cache-max-size-none
-    @functools.lru_cache(None)
-    def _get(self) -> VT:
-        for source, method in (
-            (ConstantSource.COMMAND, self.from_cli_arg),
-            (ConstantSource.ENVIRONMENT, self.from_env),
-            (ConstantSource.DEFAULT, self.default),
-        ):
-            try:
-                result = method()
-            except Inapplicable:
-                pass
-            else:
-                self.logger.debug(f"Effective value for {self._name!r} is {result!r} (from {source.value})")
-                _SOURCES[self._name] = source
-                return result
-        raise NotImplementedError
-
-    def __get__(self, instance: t.Any, owner: type) -> VT:
-        return self._get()
-
-    def _get_cli_arg(self, name: str) -> t.Any:
-        if (value := get_cli_arg(name)) is None:
-            raise Inapplicable
-        self.logger.debug(f"Defined CLI argument {name!r} is accessed by {self._name!r}")
-        return value
-
-    def _get_env(self, name: str) -> str:
-        if (value := os.environ.get(name)) is None:
-            raise Inapplicable
-        self.logger.debug(f"Defined environment variable {name!r} is accessed by {self._name!r}")
-        return value
-
-    @classmethod
-    def _string_to_bool(cls, value: str) -> bool:
-        """Converts a string value to a boolean"""
-        if value == "Y":
-            return True
-        if value == "N":
-            return False
-        if value == "":
-            raise Inapplicable
-        raise ValueError(f"{value!r} is not a valid value for a boolean variable. Expected one of: 'Y', 'N'.")
-
-    @classmethod
-    def _string_to_path_list(cls, value: str) -> list[Path]:
-        return [Path(item.strip()) for item in value.split(":") if item]
-
-    def from_env(self) -> VT:
-        """Try to load the value from environment variables"""
-        raise Inapplicable
-
-    def from_cli_arg(self) -> VT:
-        """Try to load the value from CLI args"""
-        raise Inapplicable
-
-    def default(self) -> VT:
-        """Default value to be applied after every other source has been tested"""
-        raise Inapplicable
-
-
-class LogLevelConstant(Constant[str]):
+class LogLevelConstant(base.ConstantBase[str]):
     """Log level constant"""
 
     def from_cli_arg(self) -> str:
@@ -161,7 +48,7 @@ class LogLevelConstant(Constant[str]):
         return "ERROR"
 
 
-class LogFileConstant(Constant[t.Optional[Path]]):
+class LogFileConstant(base.ConstantBase[t.Optional[Path]]):
     """Log file constant"""
 
     def from_env(self) -> Path:
@@ -172,7 +59,7 @@ class LogFileConstant(Constant[t.Optional[Path]]):
         return None
 
 
-class EnvFileConstant(Constant[Path]):
+class EnvFileConstant(base.ConstantBase[Path]):
     """Environment variables file constant"""
 
     def from_env(self) -> Path:
@@ -182,14 +69,14 @@ class EnvFileConstant(Constant[Path]):
         return Path().resolve() / ".env"
 
 
-class ContextDirectoryConstant(Constant[Path]):
+class ContextDirectoryConstant(base.ConstantBase[Path]):
     """Context directory constant"""
 
     def default(self) -> Path:
         return Path().resolve()
 
 
-class InteractiveModeConstant(Constant[bool]):
+class InteractiveModeConstant(base.ConstantBase[bool]):
     """Interactive mode constant"""
 
     def from_cli_arg(self) -> bool:
@@ -199,7 +86,7 @@ class InteractiveModeConstant(Constant[bool]):
         return False
 
 
-class WorkflowSourceFileConstant(Constant[t.Optional[Path]]):
+class WorkflowSourceFileConstant(base.ConstantBase[t.Optional[Path]]):
     """Workflow source file constant"""
 
     def from_env(self) -> Path:
@@ -212,7 +99,7 @@ class WorkflowSourceFileConstant(Constant[t.Optional[Path]]):
         return None
 
 
-class WorkflowLoaderClassConstant(Constant[t.Optional[LoaderClassType]]):
+class WorkflowLoaderClassConstant(base.ConstantBase[t.Optional[LoaderClassType]]):
     """Workflow loader class constant"""
 
     def from_env(self) -> LoaderClassType:
@@ -229,7 +116,7 @@ class WorkflowLoaderClassConstant(Constant[t.Optional[LoaderClassType]]):
         return None
 
 
-class DisplayClassConstant(Constant[DisplayClassType]):
+class DisplayClassConstant(base.ConstantBase[DisplayClassType]):
     """Display class constant"""
 
     @classmethod
@@ -248,7 +135,7 @@ class DisplayClassConstant(Constant[DisplayClassType]):
     def from_env(self) -> DisplayClassType:
         try:
             custom_display_source_file: str = self._get_env("GRANA_DISPLAY_SOURCE_FILE")
-        except Inapplicable:
+        except base.Inapplicable:
             known_display_name: str = self._get_env("GRANA_DISPLAY_NAME")
             return self._display_class_by_name(known_display_name)
         return t.cast(
@@ -266,7 +153,7 @@ class DisplayClassConstant(Constant[DisplayClassType]):
         return DefaultDisplay
 
 
-class StrategyClassConstant(Constant[StrategyClassType]):
+class StrategyClassConstant(base.ConstantBase[StrategyClassType]):
     """Strategy class constant"""
 
     @classmethod
@@ -292,7 +179,7 @@ class StrategyClassConstant(Constant[StrategyClassType]):
         return ExplicitStrategy
 
 
-class UseColorConstant(Constant[bool]):
+class UseColorConstant(base.ConstantBase[bool]):
     """Use color constant"""
 
     def from_env(self) -> bool:
@@ -306,7 +193,7 @@ class UseColorConstant(Constant[bool]):
             return False
 
 
-class DefaultShellExecutableConstant(Constant[str]):
+class DefaultShellExecutableConstant(base.ConstantBase[str]):
     """Default shell executable constant"""
 
     def from_env(self) -> str:
@@ -316,7 +203,7 @@ class DefaultShellExecutableConstant(Constant[str]):
         return "/bin/sh"
 
 
-class ShellInjectYieldFunctionConstant(Constant[bool]):
+class ShellInjectYieldFunctionConstant(base.ConstantBase[bool]):
     """Shell inject yield function constant"""
 
     def from_env(self) -> bool:
@@ -326,7 +213,7 @@ class ShellInjectYieldFunctionConstant(Constant[bool]):
         return True
 
 
-class StrictOutcomesRenderingConstant(Constant[bool]):
+class StrictOutcomesRenderingConstant(base.ConstantBase[bool]):
     """Strict outcomes rendering constant"""
 
     def from_env(self) -> bool:
@@ -336,7 +223,7 @@ class StrictOutcomesRenderingConstant(Constant[bool]):
         return True
 
 
-class ActionClassDirectoriesConstant(Constant[list[Path]]):
+class ActionClassDirectoriesConstant(base.ConstantBase[list[Path]]):
     """Action class directories constant"""
 
     def from_env(self) -> list[Path]:
@@ -346,7 +233,7 @@ class ActionClassDirectoriesConstant(Constant[list[Path]]):
         return []
 
 
-class ExternalPythonModulesPathsConstant(Constant[list[Path]]):
+class ExternalPythonModulesPathsConstant(base.ConstantBase[list[Path]]):
     """External python module paths constant"""
 
     def from_env(self) -> list[Path]:
@@ -359,30 +246,30 @@ class ExternalPythonModulesPathsConstant(Constant[list[Path]]):
 class C:
     """Runtime constants"""
 
-    LOG_LEVEL: Constant = LogLevelConstant()
-    LOG_FILE: Constant = LogFileConstant()
-    ENV_FILE: Constant = EnvFileConstant()
-    CONTEXT_DIRECTORY: Constant = ContextDirectoryConstant()
-    INTERACTIVE_MODE: Constant = InteractiveModeConstant()
-    WORKFLOW_SOURCE_FILE: Constant = WorkflowSourceFileConstant()
-    WORKFLOW_LOADER_CLASS: Constant = WorkflowLoaderClassConstant()
-    DISPLAY_CLASS: Constant = DisplayClassConstant()
-    STRATEGY_CLASS: Constant = StrategyClassConstant()
-    USE_COLOR: Constant = UseColorConstant()
-    DEFAULT_SHELL_EXECUTABLE: Constant = DefaultShellExecutableConstant()
-    SHELL_INJECT_YIELD_FUNCTION: Constant = ShellInjectYieldFunctionConstant()
-    STRICT_OUTCOMES_RENDERING: Constant = StrictOutcomesRenderingConstant()
-    ACTION_CLASSES_DIRECTORIES: Constant = ActionClassDirectoriesConstant()
-    EXTERNAL_PYTHON_MODULES_PATHS: Constant = ExternalPythonModulesPathsConstant()
+    LOG_LEVEL: base.ConstantBase = LogLevelConstant()
+    LOG_FILE: base.ConstantBase = LogFileConstant()
+    ENV_FILE: base.ConstantBase = EnvFileConstant()
+    CONTEXT_DIRECTORY: base.ConstantBase = ContextDirectoryConstant()
+    INTERACTIVE_MODE: base.ConstantBase = InteractiveModeConstant()
+    WORKFLOW_SOURCE_FILE: base.ConstantBase = WorkflowSourceFileConstant()
+    WORKFLOW_LOADER_CLASS: base.ConstantBase = WorkflowLoaderClassConstant()
+    DISPLAY_CLASS: base.ConstantBase = DisplayClassConstant()
+    STRATEGY_CLASS: base.ConstantBase = StrategyClassConstant()
+    USE_COLOR: base.ConstantBase = UseColorConstant()
+    DEFAULT_SHELL_EXECUTABLE: base.ConstantBase = DefaultShellExecutableConstant()
+    SHELL_INJECT_YIELD_FUNCTION: base.ConstantBase = ShellInjectYieldFunctionConstant()
+    STRICT_OUTCOMES_RENDERING: base.ConstantBase = StrictOutcomesRenderingConstant()
+    ACTION_CLASSES_DIRECTORIES: base.ConstantBase = ActionClassDirectoriesConstant()
+    EXTERNAL_PYTHON_MODULES_PATHS: base.ConstantBase = ExternalPythonModulesPathsConstant()
 
     @classmethod
-    def info(cls) -> list[ConstantValueInfo]:
+    def info(cls) -> list[base.ConstantValueInfo]:
         """Return set of info for all constants"""
-        result: list[ConstantValueInfo] = []
+        result: list[base.ConstantValueInfo] = []
         for attr_name, attr_type in sorted(get_class_annotations(cls).items()):
-            if not isinstance(attr_type, type) or not issubclass(attr_type, Constant):
+            if not isinstance(attr_type, type) or not issubclass(attr_type, base.ConstantBase):
                 continue
             attr_value: t.Any = getattr(C, attr_name)
-            attr_effective_source = _SOURCES[attr_name]
-            result.append(ConstantValueInfo(attr_name, attr_value, attr_effective_source))
+            attr_effective_source = base.CONSTANT_SOURCES[attr_name]
+            result.append(base.ConstantValueInfo(attr_name, attr_value, attr_effective_source))
         return result
