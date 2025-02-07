@@ -33,7 +33,7 @@ def from_dict(data_class: type[T], data: dict, dry_run: bool = False) -> T:
         config = dacite.Config(
             check_types=True,
             strict=True,
-            strict_unions_match=True,
+            strict_unions_match=False,
             cast=[
                 enum.Enum,
                 pathlib.Path,
