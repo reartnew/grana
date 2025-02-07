@@ -1,17 +1,8 @@
 """Separate environment-centric module"""
 
-import pathlib
-
 __all__ = [
     "ENV_DOC",
-    "to_path_list",
 ]
-
-
-def to_path_list(value: str) -> list[pathlib.Path]:
-    """Converts a string value to a list of paths according to the same logic as for UNIX `path`"""
-    return [pathlib.Path(item.strip()) for item in value.split(":") if item]
-
 
 ENV_DOC: str = """
     GRANA_LOG_LEVEL:
