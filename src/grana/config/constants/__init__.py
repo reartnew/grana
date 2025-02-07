@@ -10,10 +10,7 @@ from io import UnsupportedOperation
 from pathlib import Path
 
 from .cli import get_cli_arg
-from .helpers import (
-    maybe_path,
-    class_from_module,
-)
+from .helpers import class_from_module
 from ...logging import WithLogger
 from ...tools.inspect import get_class_annotations
 from ...types import (

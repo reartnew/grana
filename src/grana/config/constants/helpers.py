@@ -16,7 +16,6 @@ from types import ModuleType
 from ...exceptions import SourceError
 
 __all__ = [
-    "maybe_path",
     "class_from_module",
 ]
 
@@ -60,11 +59,6 @@ def load_external_module(source: Path, submodule_name: t.Optional[str] = None) -
         module_spec.loader.exec_module(module)  # type: ignore
     sys.modules[module_name] = module
     return module
-
-
-def maybe_path(path_str: t.Optional[str]) -> t.Optional[Path]:
-    """Transform a string into an optional path"""
-    return Path(path_str) if path_str else None
 
 
 def class_from_module(
