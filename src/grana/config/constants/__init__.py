@@ -125,23 +125,14 @@ class Constant(WithLogger, t.Generic[VT]):
         return value
 
     @classmethod
-    def _string_to_ternary(cls, value: str) -> bool:
-        """Converts a string value to an optional boolean"""
-        if value == "Y":
-            return True
-        if value == "N":
-            return False
-        if value == "":
-            raise Inapplicable
-        raise ValueError(f"{value!r} is not a valid value for a ternary variable. Expected one of: 'Y', 'N', ''.")
-
-    @classmethod
     def _string_to_bool(cls, value: str) -> bool:
         """Converts a string value to a boolean"""
         if value == "Y":
             return True
         if value == "N":
             return False
+        if value == "":
+            raise Inapplicable
         raise ValueError(f"{value!r} is not a valid value for a boolean variable. Expected one of: 'Y', 'N'.")
 
     def from_env(self) -> VT:
@@ -307,7 +298,7 @@ class UseColorConstant(Constant[bool]):
 
     def from_env(self) -> bool:
         force_color: str = self._get_env("GRANA_FORCE_COLOR")
-        return self._string_to_ternary(force_color)
+        return self._string_to_bool(force_color)
 
     def default(self) -> bool:
         try:
