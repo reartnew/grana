@@ -18,6 +18,7 @@ from .config.constants.cli import get_cli_arg, cliargs_receiver
 from .config.constants.environment import ENV_DOC
 from .display.color import Color
 from .display.default import KNOWN_DISPLAYS, DefaultDisplay
+from .loader.default import DefaultYAMLWorkflowLoader
 from .exceptions import BaseError, ExecutionFailed
 from .runner import Runner
 from .strategy import KNOWN_STRATEGIES
@@ -180,6 +181,7 @@ def env_vars() -> None:
 @cliargs_receiver
 def runtime() -> None:
     """Shows runtime information."""
+    load_dotenv()
     setup_logging()
     d = DefaultDisplay()
 
@@ -189,8 +191,8 @@ def runtime() -> None:
     def mapping(name: str) -> None:
         d.display(f"{Color.yellow(name)}:")
 
-    def kv(k: str, v: t.Any, prefix: str = "") -> None:
-        d.display(f"{prefix}{Color.blue(k)}: {Color.green(str(v))}")
+    def kv(k: str, v: t.Any, *, indent: int = 0) -> None:
+        d.display(f"{'    ' * indent}{Color.blue(k)}: {Color.green(str(v))}")
 
     section("Python")
     kv("Version", sys.version.split(" ", 1)[0])
@@ -201,5 +203,14 @@ def runtime() -> None:
         if attr_effective_source == ConstantSource.DEFAULT and not get_cli_arg("show_defaults"):
             continue
         mapping(attr_name)
-        kv("Value", attr_value, prefix="    ")
-        kv("Source", attr_effective_source.name.lower(), prefix="    ")
+        kv("Value", attr_value, indent=1)
+        kv("Source", attr_effective_source.name.lower(), indent=1)
+
+    section("Actions")
+    for actions_name, (action_class, action_source) in sorted(
+        DefaultYAMLWorkflowLoader().get_action_factories_info().items()
+    ):
+        mapping(actions_name)
+        if doc := getattr(action_class, "__doc__", ""):
+            kv("Info", doc, indent=1)
+        kv("Source", action_source, indent=1)

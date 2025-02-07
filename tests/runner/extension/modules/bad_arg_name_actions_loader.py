@@ -22,8 +22,8 @@ class BadEchoAction(ActionBase):
 class WorkflowLoader(DefaultYAMLWorkflowLoader):
     """With bad action"""
 
-    def get_action_factories_mapping(self) -> dict[str, type[ActionBase]]:
+    def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
         return {
-            **super().get_action_factories_mapping(),
-            "echo": BadEchoAction,
+            **super().get_action_factories_info(),
+            "echo": (BadEchoAction, "tests-extra"),
         }

@@ -50,16 +50,16 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
 
     ALLOWED_ROOT_TAGS: set[str] = {"actions", "context", "miscellaneous", "configuration"}
 
-    def get_action_factories_mapping(self) -> dict[str, type[ActionBase]]:
+    def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
         return {
             **self._get_static_action_factories_mapping(),
             **self._load_external_action_factories_mapping(),
         }
 
     @lru_cache(maxsize=1)
-    def _get_static_action_factories_mapping(self) -> dict[str, type[ActionBase]]:
+    def _get_static_action_factories_mapping(self) -> dict[str, tuple[type[ActionBase], str]]:
         return {
-            name: klass
+            name: (klass, "built-in")
             for name, klass in (
                 ("echo", EchoAction),
                 ("shell", ShellAction),
@@ -70,8 +70,8 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
         }
 
     @lru_cache(maxsize=1)
-    def _load_external_action_factories_mapping(self) -> dict[str, type[ActionBase]]:
-        dynamic_bases_map: dict[str, type[ActionBase]] = {}
+    def _load_external_action_factories_mapping(self) -> dict[str, tuple[type[ActionBase], str]]:
+        dynamic_bases_map: dict[str, tuple[type[ActionBase], str]] = {}
         for class_directory in C.ACTION_CLASSES_DIRECTORIES:  # type: str
             class_directory_path = Path(class_directory).resolve()
             self.logger.info(f"Loading external action classes from {str(class_directory_path)!r}")
@@ -90,7 +90,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 )
                 if action_type in dynamic_bases_map:
                     self.logger.warning(f"Class {action_type!r} is already defined: overriding from {class_file}")
-                dynamic_bases_map[action_type] = action_class
+                dynamic_bases_map[action_type] = (action_class, str(class_file))
         return dynamic_bases_map
 
     def _parse_import(self, tag: Import, allowed_root_keys: set[str]) -> None:

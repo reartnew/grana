@@ -93,15 +93,15 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Load workflow partially from text (can be called recursively)"""
         raise NotImplementedError
 
-    def get_action_factories_mapping(self) -> dict[str, type[ActionBase]]:
-        """Returns a mpaaing of action factories names to its implementation classes"""
+    def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
+        """Returns a mapping of action factories names to its implementation classes and source information"""
         return {}
 
     def _get_action_factory_by_type(self, action_type: str) -> type[ActionBase]:
-        action_factory: t.Optional[type[ActionBase]] = self.get_action_factories_mapping().get(action_type)
-        if action_factory is None:
+        action_info: t.Optional[tuple[type[ActionBase], str]] = self.get_action_factories_info().get(action_type)
+        if action_info is None:
             self._throw(f"Unknown dispatched type: {action_type}")
-        return action_factory
+        return action_info[0]
 
     def loads(self, data: t.Union[str, bytes]) -> Workflow:
         """Load workflow from text"""

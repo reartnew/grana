@@ -90,7 +90,7 @@ class DockerShellArgs(ArgsBase):
 
 
 class DockerShellAction(EmissionScannerActionBase):
-    """Docker shell commands handler"""
+    """Runs a shell command in a docker container."""
 
     args: DockerShellArgs
     _ENTRY_SCRIPT_FILE_NAME: str = "entry.sh"
