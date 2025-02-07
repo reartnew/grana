@@ -135,6 +135,10 @@ class Constant(WithLogger, t.Generic[VT]):
             raise Inapplicable
         raise ValueError(f"{value!r} is not a valid value for a boolean variable. Expected one of: 'Y', 'N'.")
 
+    @classmethod
+    def _string_to_path_list(cls, value: str) -> list[Path]:
+        return [Path(item.strip()) for item in value.split(":") if item]
+
     def from_env(self) -> VT:
         """Try to load the value from environment variables"""
         raise Inapplicable
@@ -337,6 +341,26 @@ class StrictOutcomesRenderingConstant(Constant[bool]):
         return True
 
 
+class ActionClassDirectoriesConstant(Constant[list[Path]]):
+    """Action class directories constant"""
+
+    def from_env(self) -> list[Path]:
+        return self._string_to_path_list(self._get_env("GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY"))
+
+    def default(self) -> list[Path]:
+        return []
+
+
+class ExternalPythonModulesPathsConstant(Constant[list[Path]]):
+    """External python module paths constant"""
+
+    def from_env(self) -> list[Path]:
+        return self._string_to_path_list(self._get_env("GRANA_EXTERNAL_MODULES_PATHS"))
+
+    def default(self) -> list[Path]:
+        return []
+
+
 class C:
     """Runtime constants"""
 
@@ -353,13 +377,8 @@ class C:
     DEFAULT_SHELL_EXECUTABLE: Constant = DefaultShellExecutableConstant()
     SHELL_INJECT_YIELD_FUNCTION: Constant = ShellInjectYieldFunctionConstant()
     STRICT_OUTCOMES_RENDERING: Constant = StrictOutcomesRenderingConstant()
-
-    ACTION_CLASSES_DIRECTORIES: Mandatory[list[str]] = Mandatory(
-        lambda: environment.to_path_list(os.environ.get("GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY", "")),
-    )
-    EXTERNAL_PYTHON_MODULES_PATHS: Mandatory[list[Path]] = Mandatory(
-        lambda: environment.to_path_list(os.environ.get("GRANA_EXTERNAL_MODULES_PATHS", "")),
-    )
+    ACTION_CLASSES_DIRECTORIES: Constant = ActionClassDirectoriesConstant()
+    EXTERNAL_PYTHON_MODULES_PATHS: Constant = ExternalPythonModulesPathsConstant()
 
     @classmethod
     def info(cls) -> list[ConstantValueInfo]:
