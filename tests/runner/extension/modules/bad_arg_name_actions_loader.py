@@ -1,6 +1,6 @@
 """Check extension possibilities"""
 
-from grana import ArgsBase
+from grana import ArgsBase, ActionBase
 from grana.loader.default import DefaultYAMLWorkflowLoader
 
 
@@ -10,20 +10,20 @@ class ReservedArgs(ArgsBase):
     name: str
 
 
-class BadEchoAction:
+class BadEchoAction(ActionBase):
     """Reserved args"""
 
     args: ReservedArgs
 
-    async def run(self) -> str:
-        """Just check return"""
-        return f"I am a string: {self.args.name}"
+    async def run(self) -> None:
+        """Do nothing"""
 
 
 class WorkflowLoader(DefaultYAMLWorkflowLoader):
-    """Able to build echoes"""
+    """With bad action"""
 
-    STATIC_ACTION_FACTORIES = {
-        **DefaultYAMLWorkflowLoader.STATIC_ACTION_FACTORIES,
-        "echo": BadEchoAction,  # type: ignore
-    }
+    def get_action_factories_mapping(self) -> dict[str, type[ActionBase]]:
+        return {
+            **super().get_action_factories_mapping(),
+            "echo": BadEchoAction,
+        }

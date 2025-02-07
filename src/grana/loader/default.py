@@ -49,21 +49,22 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
     """Default loader for YAML source files"""
 
     ALLOWED_ROOT_TAGS: set[str] = {"actions", "context", "miscellaneous", "configuration"}
-    STATIC_ACTION_FACTORIES = {
-        name: klass
-        for name, klass in (
-            ("echo", EchoAction),
-            ("shell", ShellAction),
-            ("subflow", SubflowAction),
-            ("docker-shell", DockerShellAction),
-        )
-        if klass is not None
-    }
 
-    def _get_action_factory_by_type(self, action_type: str) -> type[ActionBase]:
-        if (dynamically_resolved_action_class := self._load_external_action_factories().get(action_type)) is not None:
-            return dynamically_resolved_action_class
-        return super()._get_action_factory_by_type(action_type)
+    def get_action_factories_mapping(self) -> dict[str, type[ActionBase]]:
+        static_action_factories: dict[str, type[ActionBase]] = {
+            name: klass
+            for name, klass in (
+                ("echo", EchoAction),
+                ("shell", ShellAction),
+                ("subflow", SubflowAction),
+                ("docker-shell", DockerShellAction),
+            )
+            if klass is not None
+        }
+        return {
+            **static_action_factories,
+            **self._load_external_action_factories(),
+        }
 
     @lru_cache(maxsize=1)
     def _load_external_action_factories(self) -> dict[str, type[ActionBase]]:

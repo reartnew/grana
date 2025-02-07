@@ -22,8 +22,6 @@ __all__ = [
 class AbstractBaseWorkflowLoader(WithLogger):
     """Loaders base class"""
 
-    STATIC_ACTION_FACTORIES: dict[str, type[ActionBase]] = {}
-
     def __init__(self) -> None:
         self._executions: dict[str, WorkflowActionExecution] = {}
         self._raw_file_names_stack: list[str] = []
@@ -95,10 +93,15 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Load workflow partially from text (can be called recursively)"""
         raise NotImplementedError
 
+    def get_action_factories_mapping(self) -> dict[str, type[ActionBase]]:
+        """Returns a mpaaing of action factories names to its implementation classes"""
+        return {}
+
     def _get_action_factory_by_type(self, action_type: str) -> type[ActionBase]:
-        if action_type not in self.STATIC_ACTION_FACTORIES:
+        action_factory: t.Optional[type[ActionBase]] = self.get_action_factories_mapping().get(action_type)
+        if action_factory is None:
             self._throw(f"Unknown dispatched type: {action_type}")
-        return self.STATIC_ACTION_FACTORIES[action_type]
+        return action_factory
 
     def loads(self, data: t.Union[str, bytes]) -> Workflow:
         """Load workflow from text"""
