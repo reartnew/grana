@@ -7,6 +7,7 @@ import typing as t
 from pathlib import Path
 
 from .cli import get_cli_arg
+from .rc import RC, sentinel
 from ...logging import WithLogger
 
 __all__ = [
@@ -28,6 +29,7 @@ class ConstantSource(enum.Enum):
     """Enumeration of constant effective value sources"""
 
     COMMAND = "CLI argument"
+    CONFIG = "configuration file"
     ENVIRONMENT = "environment variable"
     DEFAULT = "default value"
 
@@ -50,6 +52,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     def cache_clear(cls) -> None:
         """Reset cache"""
         cls._get.cache_clear()
+        cls._build_rc_config.cache_clear()
 
     def __init__(self) -> None:
         self._name: str = ""
@@ -64,6 +67,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         for source, method in (
             (ConstantSource.COMMAND, self.from_cli_arg),
             (ConstantSource.ENVIRONMENT, self.from_env),
+            (ConstantSource.CONFIG, self.from_rc_file),
             (ConstantSource.DEFAULT, self.default),
         ):
             try:
@@ -78,6 +82,19 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def __get__(self, instance: t.Any, owner: type) -> VT:
         return self._get()
+
+    # pylint: disable=method-cache-max-size-none
+    @classmethod
+    @functools.lru_cache(maxsize=1)
+    def _build_rc_config(cls) -> RC:
+        return RC.build()
+
+    def _get_rc_value(self, name: str) -> t.Any:
+        cfg: RC = self._build_rc_config()
+        value: t.Any = getattr(cfg, name)
+        if value is sentinel:
+            raise Inapplicable
+        return value
 
     def _get_cli_arg(self, name: str) -> t.Any:
         if (value := get_cli_arg(name)) is None:
@@ -112,6 +129,10 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def from_cli_arg(self) -> VT:
         """Try to load the value from CLI args"""
+        raise Inapplicable
+
+    def from_rc_file(self) -> VT:
+        """Try to load the value from the RC file"""
         raise Inapplicable
 
     def default(self) -> VT:

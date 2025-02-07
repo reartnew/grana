@@ -11,7 +11,7 @@ import click
 from dotenv.main import DotEnv
 
 from . import logging as grana_logging
-from .config.constants import C
+from .config.constants import C, rc
 from .config.constants.base import ConstantSource
 from .config.constants.cli import get_cli_arg, cliargs_receiver
 from .config.constants.environment import ENV_DOC
@@ -111,6 +111,7 @@ def wrap_cli_command(func):
             colorize=C.USE_COLOR and not C.LOG_FILE,
         )
         logger.uncork()
+        rc.logger.uncork()
         try:
             return func(*args, **kwargs)
         except BaseError as e:

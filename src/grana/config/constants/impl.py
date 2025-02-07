@@ -19,6 +19,7 @@ __all__ = [
     "LogLevel",
     "LogFile",
     "EnvFile",
+    "RcFile",
     "ContextDirectory",
     "InteractiveMode",
     "WorkflowSourceFile",
@@ -55,6 +56,9 @@ class LogLevel(base.ConstantBase[str]):
     def from_env(self) -> str:
         return self._get_env("GRANA_LOG_LEVEL")
 
+    def from_rc_file(self) -> str:
+        return self._get_rc_value("log_level")
+
     def default(self) -> str:
         return "ERROR"
 
@@ -78,6 +82,16 @@ class EnvFile(base.ConstantBase[Path]):
 
     def default(self) -> Path:
         return Path().resolve() / ".env"
+
+
+class RcFile(base.ConstantBase[Path]):
+    """Runtime configuration file constant"""
+
+    def from_env(self) -> Path:
+        return Path(self._get_env("GRANA_RC_FILE"))
+
+    def default(self) -> Path:
+        return Path().resolve() / ".granarc"
 
 
 class ContextDirectory(base.ConstantBase[Path]):
