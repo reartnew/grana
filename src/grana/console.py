@@ -12,14 +12,14 @@ from dotenv.main import DotEnv
 
 from . import logging as grana_logging
 from .config.constants import C
-from .config.constants.impl import LogLevel
 from .config.constants.base import ConstantSource
 from .config.constants.cli import get_cli_arg, cliargs_receiver
 from .config.constants.environment import ENV_DOC
+from .config.constants.impl import LogLevel
 from .display.color import Color
 from .display.default import KNOWN_DISPLAYS, DefaultDisplay
-from .loader.default import DefaultYAMLWorkflowLoader
 from .exceptions import BaseError, ExecutionFailed
+from .loader.default import DefaultYAMLWorkflowLoader
 from .runner import Runner
 from .strategy import KNOWN_STRATEGIES
 from .tools.proxy import DeferredCallsProxy
@@ -98,25 +98,19 @@ def load_dotenv() -> None:  # pragma: no cover
             os.environ.pop(here_var_name)
 
 
-def setup_logging() -> None:
-    """Setup logging"""
-    grana_logging.configure_logging(
-        main_file=C.LOG_FILE,
-        level=C.LOG_LEVEL,
-        colorize=C.USE_COLOR and not C.LOG_FILE,
-    )
-    logger.uncork()
-
-
 def wrap_cli_command(func):
     """Standard loading and error handling"""
 
-    @main.command
     @cliargs_receiver
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         load_dotenv()
-        setup_logging()
+        grana_logging.configure_logging(
+            main_file=C.LOG_FILE,
+            level=C.LOG_LEVEL,
+            colorize=C.USE_COLOR and not C.LOG_FILE,
+        )
+        logger.uncork()
         try:
             return func(*args, **kwargs)
         except BaseError as e:
@@ -134,6 +128,7 @@ def wrap_cli_command(func):
     return wrapped
 
 
+@main.command
 @wrap_cli_command
 @click.option(
     "-s",
@@ -149,6 +144,7 @@ def run() -> None:
     Runner().run_sync()
 
 
+@main.command
 @wrap_cli_command
 @click.argument("workflow_file", cls=WorkflowPositionalArgument)
 def validate() -> None:
@@ -158,6 +154,7 @@ def validate() -> None:
     logger.info(f"Located actions number: {action_num}")
 
 
+@main.command
 @wrap_cli_command
 def version() -> None:
     """Display package version."""
@@ -170,19 +167,16 @@ def info() -> None:
 
 
 @info.command
-@cliargs_receiver
 def env_vars() -> None:
     """Shows environment variables names that are taken into account."""
     print(ENV_DOC)
 
 
 @info.command
+@wrap_cli_command
 @click.option("--show-defaults", help="Show constants with default values", is_flag=True, default=False)
-@cliargs_receiver
 def runtime() -> None:
     """Shows runtime information."""
-    load_dotenv()
-    setup_logging()
     d = DefaultDisplay()
 
     def section(name: str) -> None:
