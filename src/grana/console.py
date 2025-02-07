@@ -96,6 +96,16 @@ def load_dotenv() -> None:  # pragma: no cover
             os.environ.pop(here_var_name)
 
 
+def setup_logging() -> None:
+    """Setup logging"""
+    grana_logging.configure_logging(
+        main_file=C.LOG_FILE,
+        level=C.LOG_LEVEL,
+        colorize=C.USE_COLOR and not C.LOG_FILE,
+    )
+    logger.uncork()
+
+
 def wrap_cli_command(func):
     """Standard loading and error handling"""
 
@@ -104,12 +114,7 @@ def wrap_cli_command(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         load_dotenv()
-        grana_logging.configure_logging(
-            main_file=C.LOG_FILE,
-            level=C.LOG_LEVEL,
-            colorize=C.USE_COLOR and not C.LOG_FILE,
-        )
-        logger.uncork()
+        setup_logging()
         try:
             return func(*args, **kwargs)
         except BaseError as e:
@@ -174,6 +179,7 @@ def env_vars() -> None:
 @cliargs_receiver
 def runtime() -> None:
     """Shows runtime information."""
+    setup_logging()
     d = DefaultDisplay()
 
     def section(name: str) -> None:
