@@ -7,17 +7,6 @@ import pytest
 from pytest import MonkeyPatch
 
 from grana.config.constants import C, Constant
-from grana.config.constants.helpers import Mandatory
-
-
-def test_mandatory_failure():
-    """Validate mandatory variable ValueError"""
-
-    class LocalConstants:
-        FAILED = Mandatory(lambda: None)
-
-    with pytest.raises(ValueError, match="getters failed"):
-        assert LocalConstants.FAILED
 
 
 def test_constant_with_boolean_env(monkeypatch: MonkeyPatch) -> None:

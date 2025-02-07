@@ -1,5 +1,6 @@
 # pylint: disable=import-outside-toplevel,cyclic-import
 """Lazy-loaded constants"""
+
 import enum
 import functools
 import os
@@ -8,11 +9,8 @@ import typing as t
 from io import UnsupportedOperation
 from pathlib import Path
 
-from . import environment
 from .cli import get_cli_arg
 from .helpers import (
-    Optional,
-    Mandatory,
     maybe_path,
     class_from_module,
 )

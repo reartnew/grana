@@ -16,8 +16,6 @@ from types import ModuleType
 from ...exceptions import SourceError
 
 __all__ = [
-    "Optional",
-    "Mandatory",
     "maybe_path",
     "class_from_module",
 ]
@@ -62,34 +60,6 @@ def load_external_module(source: Path, submodule_name: t.Optional[str] = None) -
         module_spec.loader.exec_module(module)  # type: ignore
     sys.modules[module_name] = module
     return module
-
-
-class Optional(t.Generic[VT]):
-    """Optional lazy variable"""
-
-    def __init__(self, *getters: GetterType) -> None:
-        self._getters: t.Tuple[GetterType, ...] = getters
-        self._name: str = ""
-
-    def __set_name__(self, owner: type, name: str) -> None:
-        self._name = name
-
-    def __get__(self, instance: t.Any, owner: type) -> t.Optional[VT]:
-        getter_result: t.Optional[VT] = None
-        for getter in self._getters:
-            if (getter_result := getter()) is not None:
-                break
-        return getter_result
-
-
-class Mandatory(Optional, t.Generic[VT]):
-    """Mandatory lazy variable"""
-
-    def __get__(self, instance: t.Any, owner: type) -> VT:
-        result: t.Optional[VT] = super().__get__(instance, owner)
-        if result is None:
-            raise ValueError(f"{self._name!r} getters failed")
-        return result
 
 
 def maybe_path(path_str: t.Optional[str]) -> t.Optional[Path]:
