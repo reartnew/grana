@@ -81,6 +81,12 @@ def version_cmd(builder: BuilderType) -> RunnerType:
     return builder("version")
 
 
+@pytest.fixture
+def runtime_info_cmd(builder: BuilderType) -> RunnerType:
+    """Setup test info runtime"""
+    return builder("info", "runtime")
+
+
 GOOD_WORKFLOW_TEXT: str = """---
 actions:
   - type: echo
@@ -169,3 +175,12 @@ def test_cli_multiple_positional_args(run_cmd: RunnerType) -> None:
     """Only one positional argument should be accepted"""
     with pytest.raises(CLIError, match="<2>"):
         run_cmd(opts=["foo", "bar"])
+
+
+@pytest.mark.parametrize("opts", [[], ["--show-defaults"]], ids=["without-defaults", "with-defaults"])
+def test_me(runtime_info_cmd: RunnerType, opts: list[str]) -> None:
+    """Check `grana info runtime` command"""
+    info: list[str] = runtime_info_cmd(opts=opts)
+    assert "Python" in info
+    assert "Configuration" in info
+    assert "Actions" in info

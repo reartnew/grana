@@ -37,20 +37,15 @@ __all__ = [
 class LogLevel(base.ConstantBase[str]):
     """Log level constant"""
 
-    LOG_LEVELS: dict[str, str] = {
-        "0": "ERROR",
-        "1": "WARNING",
-        "2": "INFO",
-        "3": "DEBUG",
-        "ERROR": "ERROR",
-        "WARNING": "WARNING",
-        "INFO": "INFO",
-        "DEBUG": "DEBUG",
-    }
-
     def from_cli_arg(self) -> str:
         raw_log_level: str = self._get_cli_arg("log_level")
-        return self.LOG_LEVELS[raw_log_level]
+        _log_levels_normalization_map: dict[str, str] = {
+            "0": "ERROR",
+            "1": "WARNING",
+            "2": "INFO",
+            "3": "DEBUG",
+        }
+        return _log_levels_normalization_map.get(raw_log_level, raw_log_level)
 
     def from_env(self) -> str:
         return self._get_env("GRANA_LOG_LEVEL")

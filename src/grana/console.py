@@ -12,9 +12,8 @@ from .config.constants import C, rc
 from .config.constants.base import ConstantSource
 from .config.constants.cli import get_cli_arg, cliargs_receiver
 from .config.constants.environment import ENV_DOC
-from .config.constants.impl import LogLevel
 from .display.color import Color
-from .display.default import KNOWN_DISPLAYS, DefaultDisplay
+from .display.default import DefaultDisplay
 from .exceptions import BaseError, ExecutionFailed
 from .loader.default import DefaultYAMLWorkflowLoader
 from .runner import Runner
@@ -56,13 +55,11 @@ class WorkflowPositionalArgument(click.Argument):
     "-l",
     "--log-level",
     help="Logging level. Defaults to `ERROR`. Also configurable via the `GRANA_LOG_LEVEL` environment variable.",
-    type=click.Choice(list(LogLevel.LOG_LEVELS)),
 )
 @click.option(
     "-d",
     "--display",
     help="Display name. Defaults to `prefixes`. Also configurable via the `GRANA_DISPLAY_NAME` environment variable.",
-    type=click.Choice(list(KNOWN_DISPLAYS)),
 )
 @cliargs_receiver
 def main() -> None:
