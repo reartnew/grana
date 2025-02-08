@@ -32,13 +32,8 @@ class Runner:
 
     logger = logging.getLogger(f"{__name__}.Runner")
 
-    def __init__(
-        self,
-        source: t.Union[str, Path, IOType, None] = None,
-        display: t.Optional[types.DisplayType] = None,
-    ) -> None:
+    def __init__(self, source: t.Union[str, Path, IOType, None] = None) -> None:
         self._workflow_source: t.Union[Path, IOType] = self._detect_workflow_source(explicit_source=source)
-        self._explicit_display: t.Optional[types.DisplayType] = display
         self._started: bool = False
         self._execution_failed: bool = False
 
@@ -69,9 +64,6 @@ class Runner:
     @functools.cached_property
     def display(self) -> types.DisplayType:
         """Attached display"""
-        if self._explicit_display is not None:
-            self.logger.debug(f"Using explicit display: {self._explicit_display}")
-            return self._explicit_display
         display_class: types.DisplayClassType = C.DISPLAY_CLASS
         self.logger.debug(f"Using display class: {display_class}")
         return display_class()
