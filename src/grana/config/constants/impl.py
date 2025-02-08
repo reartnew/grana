@@ -67,8 +67,10 @@ class LogFile(base.ConstantBase[t.Optional[Path]]):
     """Log file constant"""
 
     def from_env(self) -> Path:
-        log_file_str: str = self._get_env("GRANA_LOG_FILE")
-        return Path(log_file_str)
+        return Path(self._get_env("GRANA_LOG_FILE"))
+
+    def from_rc_file(self) -> Path:
+        return Path(self._get_rc_value("log_file"))
 
     def default(self) -> None:
         return None
@@ -117,6 +119,9 @@ class WorkflowSourceFile(base.ConstantBase[t.Optional[Path]]):
     def from_env(self) -> Path:
         return Path(self._get_env("GRANA_WORKFLOW_FILE"))
 
+    def from_rc_file(self) -> Path:
+        return Path(self._get_rc_value("workflow_source_file"))
+
     def from_cli_arg(self) -> Path:
         return Path(self._get_cli_arg("workflow_file"))
 
@@ -127,15 +132,22 @@ class WorkflowSourceFile(base.ConstantBase[t.Optional[Path]]):
 class WorkflowLoaderClass(base.ConstantBase[t.Optional[LoaderClassType]]):
     """Workflow loader class constant"""
 
-    def from_env(self) -> LoaderClassType:
+    @classmethod
+    def _file_name_to_loader_class(cls, file_name: str) -> LoaderClassType:
         return t.cast(
             LoaderClassType,
             class_from_module(
-                source_path=Path(self._get_env("GRANA_WORKFLOW_LOADER_SOURCE_FILE")),
+                source_path=Path(file_name),
                 class_name="WorkflowLoader",
                 submodule_name="workflow.loader",
             ),
         )
+
+    def from_env(self) -> LoaderClassType:
+        return self._file_name_to_loader_class(self._get_env("GRANA_WORKFLOW_LOADER_SOURCE_FILE"))
+
+    def from_rc_file(self) -> LoaderClassType:
+        return self._file_name_to_loader_class(self._get_rc_value("workflow_loader_source_file"))
 
     def default(self) -> None:
         return None
@@ -157,11 +169,15 @@ class DisplayClass(base.ConstantBase[DisplayClassType]):
         display_name: str = self._get_cli_arg("display")
         return self._display_class_by_name(display_name)
 
-    def from_env(self) -> DisplayClassType:
+    def _load_from_source_file_or_by_name(
+        self,
+        display_source_file_getter: t.Callable[[], str],
+        display_name_getter: t.Callable[[], str],
+    ) -> DisplayClassType:
         try:
-            custom_display_source_file: str = self._get_env("GRANA_DISPLAY_SOURCE_FILE")
+            custom_display_source_file: str = display_source_file_getter()
         except base.Inapplicable:
-            known_display_name: str = self._get_env("GRANA_DISPLAY_NAME")
+            known_display_name: str = display_name_getter()
             return self._display_class_by_name(known_display_name)
         return t.cast(
             DisplayClassType,
@@ -170,6 +186,18 @@ class DisplayClass(base.ConstantBase[DisplayClassType]):
                 class_name="Display",
                 submodule_name="display",
             ),
+        )
+
+    def from_rc_file(self) -> DisplayClassType:
+        return self._load_from_source_file_or_by_name(
+            display_source_file_getter=lambda: self._get_rc_value("display_source_file"),
+            display_name_getter=lambda: self._get_rc_value("display_name"),
+        )
+
+    def from_env(self) -> DisplayClassType:
+        return self._load_from_source_file_or_by_name(
+            display_source_file_getter=lambda: self._get_env("GRANA_DISPLAY_SOURCE_FILE"),
+            display_name_getter=lambda: self._get_env("GRANA_DISPLAY_NAME"),
         )
 
     def default(self) -> DisplayClassType:
