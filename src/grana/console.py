@@ -1,14 +1,11 @@
 """Command-line interface entry"""
 
 import functools
-import os
 import sys
 import typing as t
 from logging import getLogger
-from pathlib import Path
 
 import click
-from dotenv.main import DotEnv
 
 from . import logging as grana_logging
 from .config.constants import C, rc
@@ -72,39 +69,12 @@ def main() -> None:
     """Open-source command-line declarative automation tool."""
 
 
-def load_dotenv() -> None:  # pragma: no cover
-    """Try loading environment from the dotenv file.
-    Special variable called "HERE" is injected into the environment during dotenv loading,
-    which points to the directory of the dotenv file (if not specified in advance)."""
-    here_var_name: str = "HERE"
-    here_value_was_defined: bool = here_var_name in os.environ
-    dotenv_path: Path = C.ENV_FILE
-    if not here_value_was_defined:
-        os.environ[here_var_name] = str(dotenv_path.parent)
-    else:
-        logger.debug(f"{here_var_name!r} was set externally")
-    try:
-        dotenv = DotEnv(dotenv_path=dotenv_path)
-        if here_var_name in dotenv.dict():
-            logger.debug(f"{here_var_name!r} is explicitly set via dotenv file")
-            here_value_was_defined = True
-        if dotenv.set_as_environment_variables():
-            logger.info(f"Loaded environment variables from {str(dotenv_path)!r}")
-        else:
-            logger.debug(f"Dotenv not found: {str(dotenv_path)!r}")
-
-    finally:
-        if not here_value_was_defined:
-            os.environ.pop(here_var_name)
-
-
 def wrap_cli_command(func):
     """Standard loading and error handling"""
 
     @cliargs_receiver
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        load_dotenv()
         grana_logging.configure_logging(
             main_file=C.LOG_FILE,
             level=C.LOG_LEVEL,

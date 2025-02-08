@@ -5,7 +5,6 @@ import typing as t
 
 import pytest
 from click.testing import CliRunner
-from dotenv.main import DotEnv
 
 from grana import console, version, logging
 from grana.config.constants.environment import ENV_DOC
@@ -53,7 +52,6 @@ def _noop(*args, **kwargs) -> None:  # pylint: disable=unused-argument
 def builder(monkeypatch: pytest.MonkeyPatch) -> BuilderType:
     """Setup test command fed from stdin"""
 
-    monkeypatch.setattr(DotEnv, "set_as_environment_variables", _noop)
     monkeypatch.setattr(logging, "configure_logging", _noop)
 
     def build(*subcommand: str):
