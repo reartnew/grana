@@ -11,7 +11,6 @@ import typing as t
 import yaml
 
 from ...loader.utils import ExpressionYAMLLoader
-from ...rendering import CommonTemplar
 from ...tools.classloader import from_dict
 from ...tools.proxy import DeferredCallsProxy
 
@@ -31,7 +30,7 @@ class ConfigSentinel:
 sentinel = ConfigSentinel()
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass
 class RC:
     """Runtime configuration"""
 
@@ -56,9 +55,9 @@ class RC:
     @classmethod
     def build(cls) -> RC:
         """Load from file"""
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel,cyclic-import
         from . import C
-        from ...rendering import containers as c
+        from ...rendering import CommonTemplar, containers as c
 
         rc_file_path: pathlib.Path = C.RC_FILE
         if not rc_file_path.is_file():
