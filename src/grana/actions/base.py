@@ -17,7 +17,7 @@ from .types import Stderr, ActionStatus, RenamedMessageSource, NamedMessageSourc
 from ..display.types import DisplayEvent, DisplayEventName
 from ..exceptions import ActionRunError, ActionRenderError, ActionArgumentsLoadError
 from ..logging import WithLogger, context
-from ..rendering import Templar
+from ..rendering import WorkflowTemplar
 from ..tools import classloader
 from ..tools.concealment import represent_object_type
 from ..tools.inspect import get_class_annotations
@@ -127,7 +127,7 @@ class WorkflowActionExecution(WithLogger):
     description: t.Optional[str] = None
     selectable: bool = True
     severity: ActionSeverity = ActionSeverity.NORMAL
-    templar_factory: t.Optional[t.Callable[[], Templar]] = None
+    templar_factory: t.Optional[t.Callable[[], WorkflowTemplar]] = None
 
     def __post_init__(self) -> None:
         self.args_class: type[ArgsBase] = ArgsBase

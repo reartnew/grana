@@ -10,7 +10,7 @@ from pathlib import Path
 from ..actions.base import WorkflowActionExecution, ActionBase, ActionDependency, ActionSeverity
 from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
-from ..rendering import Templar
+from ..rendering import WorkflowTemplar
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
 from ..workflow import Workflow
 
@@ -221,5 +221,5 @@ class AbstractBaseWorkflowLoader(WithLogger):
                 self._throw(f"Unexpected strategy: {strategy_value!r}")
             self._explicit_strategy_class = KNOWN_STRATEGIES[strategy_value]
 
-    def _get_workflow_templar(self) -> Templar:
+    def _get_workflow_templar(self) -> WorkflowTemplar:
         return self.workflow.get_templar()

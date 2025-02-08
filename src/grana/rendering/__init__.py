@@ -11,43 +11,18 @@ from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRender
 from ..logging import WithLogger
 
 __all__ = [
-    "Templar",
+    "CommonTemplar",
+    "WorkflowTemplar",
 ]
 
 
-class Templar(WithLogger):
+class CommonTemplar(WithLogger):
     """Expression renderer"""
 
     DISABLED_GLOBALS: list[str] = ["exec", "eval", "compile", "setattr", "delattr"]
 
-    def __init__(
-        self,
-        outcomes_map: t.Mapping[str, t.Mapping[str, str]],
-        action_states: t.Mapping[str, str],
-        context_map: t.Mapping[str, t.Any],
-        metadata: t.Optional[t.Mapping[str, t.Any]] = None,
-    ) -> None:
-        outcomes_container: c.AttrDict = c.ActionContainingDict(
-            {name: c.OutcomeDict(outcomes_map.get(name, {})) for name in action_states}
-        )
-        status_container: c.AttrDict = c.ActionContainingDict(action_states)
-        context_container: c.AttrDict = c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
-        environment_container: c.AttrDict = c.LooseDict(os.environ)
-        metadata_container: c.AttrDict = c.LooseDict({"status": status_container})
-        if metadata is not None:
-            metadata_container.update(metadata)
-        self._locals: dict[str, c.AttrDict] = {
-            # Full names
-            "outcomes": outcomes_container,
-            "context": context_container,
-            "environment": environment_container,
-            "metadata": metadata_container,
-            # Aliases
-            "out": outcomes_container,
-            "ctx": context_container,
-            "env": environment_container,
-            "meta": metadata_container,
-        }
+    def __init__(self, args: dict[str, t.Any]) -> None:
+        self._locals: dict[str, t.Any] = args
         self._globals: dict[str, t.Any] = {f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS}
         self._depth: int = 0
 
@@ -102,6 +77,60 @@ class Templar(WithLogger):
             self.logger.warning(f"Expression render failed: {e!r} (for {expression!r})")
             raise ActionRenderError(render_failure_source) from e
 
+    def recursive_render(self, data: t.Any) -> t.Any:
+        """Perform recursive rendering"""
+        result: t.Any
+        if isinstance(data, dict):
+            result = {k: self.recursive_render(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            result = [self.recursive_render(v) for v in data]
+        elif isinstance(data, str):
+            result = self.render(data)
+        elif isinstance(data, Expression):
+            evaluated_expression: t.Any = self._eval(data.expression)
+            result = self.recursive_render(evaluated_expression)
+        else:
+            result = data
+        # Unwrap lazy proxies
+        while isinstance(result, c.LazyProxy):
+            result = result.__wrapped__
+        return result
+
+
+class WorkflowTemplar(CommonTemplar):
+    """Expression renderer specifically for workflows"""
+
+    def __init__(
+        self,
+        outcomes_map: t.Mapping[str, t.Mapping[str, str]],
+        action_states: t.Mapping[str, str],
+        context_map: t.Mapping[str, t.Any],
+        metadata: t.Optional[t.Mapping[str, t.Any]] = None,
+    ) -> None:
+        outcomes_container: c.AttrDict = c.ActionContainingDict(
+            {name: c.OutcomeDict(outcomes_map.get(name, {})) for name in action_states}
+        )
+        status_container: c.AttrDict = c.ActionContainingDict(action_states)
+        context_container: c.AttrDict = c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
+        environment_container: c.AttrDict = c.LooseDict(os.environ)
+        metadata_container: c.AttrDict = c.LooseDict({"status": status_container})
+        if metadata is not None:
+            metadata_container.update(metadata)
+        super().__init__(
+            {
+                # Full names
+                "outcomes": outcomes_container,
+                "context": context_container,
+                "environment": environment_container,
+                "metadata": metadata_container,
+                # Aliases
+                "out": outcomes_container,
+                "ctx": context_container,
+                "env": environment_container,
+                "meta": metadata_container,
+            }
+        )
+
     def _evaluate_context_object_expression(self, expression: str) -> t.Any:
         obj: t.Any = self._eval(expression)
         return self._load_ctx_node(obj)
@@ -125,22 +154,3 @@ class Templar(WithLogger):
         if isinstance(data, str) and qualify_string_as_potentially_renderable(data):
             return c.LazyProxy(lambda: self._internal_render(data))
         return data
-
-    def recursive_render(self, data: t.Any) -> t.Any:
-        """Perform recursive rendering"""
-        result: t.Any
-        if isinstance(data, dict):
-            result = {k: self.recursive_render(v) for k, v in data.items()}
-        elif isinstance(data, list):
-            result = [self.recursive_render(v) for v in data]
-        elif isinstance(data, str):
-            result = self.render(data)
-        elif isinstance(data, Expression):
-            evaluated_expression: t.Any = self._eval(data.expression)
-            result = self.recursive_render(evaluated_expression)
-        else:
-            result = data
-        # Unwrap lazy proxies
-        while isinstance(result, c.LazyProxy):
-            result = result.__wrapped__
-        return result
