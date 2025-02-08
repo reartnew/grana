@@ -52,7 +52,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     def cache_clear(cls) -> None:
         """Reset cache"""
         cls._get.cache_clear()
-        cls._build_rc_config.cache_clear()
+        RC.build.cache_clear()
 
     def __init__(self) -> None:
         self._name: str = ""
@@ -83,14 +83,8 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     def __get__(self, instance: t.Any, owner: type) -> VT:
         return self._get()
 
-    # pylint: disable=method-cache-max-size-none
-    @classmethod
-    @functools.lru_cache(maxsize=1)
-    def _build_rc_config(cls) -> RC:
-        return RC.build()
-
     def _get_rc_value(self, name: str) -> t.Any:
-        cfg: RC = self._build_rc_config()
+        cfg: RC = RC.build()
         value: t.Any = getattr(cfg, name)
         if value is sentinel:
             raise Inapplicable

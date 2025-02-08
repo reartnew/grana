@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import functools
 import logging
 import os
 import pathlib
@@ -49,6 +50,7 @@ class RC:
     external_python_modules_paths: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
 
     @classmethod
+    @functools.lru_cache(maxsize=1)
     def build(cls) -> RC:
         """Load from file"""
         # pylint: disable=import-outside-toplevel,cyclic-import
