@@ -48,10 +48,6 @@ class RC:
     action_classes_directories: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
     external_python_modules_paths: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
 
-    def __post_init__(self) -> None:
-        if self.display_source_file is not sentinel and self.display_name is not sentinel:
-            raise ValueError("Mutually exclusive options `display_source_file` and `display_name` have been provided")
-
     @classmethod
     def build(cls) -> RC:
         """Load from file"""
