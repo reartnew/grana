@@ -47,12 +47,19 @@ class Workflow(dict[str, WorkflowActionExecution], WithLogger):
 
     def get_metadata(self) -> dict[str, t.Any]:
         """Obtain workflow metadata for further use in templating"""
-        if self.source_file is None:
-            return {}
-        return {
-            "source_file": self.source_file,
-            "here": self.source_file.parent,
+        from .config.constants import C  # pylint: disable=import-outside-toplevel
+
+        metadata: dict[str, t.Any] = {
+            "cwd": C.CONTEXT_DIRECTORY,
         }
+        if self.source_file is not None:
+            metadata.update(
+                {
+                    "source_file": self.source_file,
+                    "here": self.source_file.parent,
+                }
+            )
+        return metadata
 
     def _establish_descendants(self) -> None:
         missing_non_external_deps: set[str] = set()

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import os
 import pathlib
 import typing as t
 
 import yaml
 
 from ...loader.utils import ExpressionYAMLLoader
-from ...rendering import CommonTemplar
+from ...rendering import CommonTemplar, containers as c
 from ...tools.classloader import from_dict
 from ...tools.proxy import DeferredCallsProxy
 
@@ -65,6 +66,21 @@ class RC:
         logger.info(f"Loading RC file: {str(rc_file_path)!r}")
         with rc_file_path.open() as f:
             config_data: dict = t.cast(dict, yaml.load(f, ExpressionYAMLLoader))  # nosec
-        templar = CommonTemplar({"here": rc_file_path.parent})
+        templar_metadata: dict = c.LooseDict(
+            {
+                "here": rc_file_path.parent,
+                "cwd": C.CONTEXT_DIRECTORY,
+            }
+        )
+        templar_env: dict = c.LooseDict(os.environ)
+        templar = CommonTemplar(
+            {
+                "metadata": templar_metadata,
+                "environment": templar_env,
+                # Aliases
+                "meta": templar_metadata,
+                "env": templar_env,
+            }
+        )
         rendered_data: t.Dict[str, t.Any] = templar.recursive_render(config_data)
         return from_dict(RC, rendered_data)

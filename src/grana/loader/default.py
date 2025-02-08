@@ -55,6 +55,12 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
         dynamic_bases_map: dict[str, tuple[type[ActionBase], str]] = {}
         for class_directory in C.ACTION_CLASSES_DIRECTORIES:  # type: str
             class_directory_path = Path(class_directory).resolve()
+            if not class_directory_path.exists():
+                self.logger.warning(f"Given actions classes directory does not exist: {class_directory_path!r}")
+                continue
+            if not class_directory_path.is_dir():
+                self.logger.warning(f"Given actions classes path is not a directory: {class_directory_path!r}")
+                continue
             self.logger.info(f"Loading external action classes from {str(class_directory_path)!r}")
             for class_file in class_directory_path.iterdir():
                 if not class_file.is_file() or not class_file.suffix == ".py":
