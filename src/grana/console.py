@@ -148,16 +148,16 @@ def env_vars() -> None:
 @click.option("--show-defaults", help="Show constants with default values", is_flag=True, default=False)
 def runtime() -> None:
     """Shows runtime information."""
-    d = DefaultDisplay()
+    display_spool: list[str] = []
 
     def section(name: str) -> None:
-        d.display(f"\n{Color.bold(name)}")
+        display_spool.append(f"\n{Color.bold(name)}")
 
     def mapping(name: str) -> None:
-        d.display(f"{Color.yellow(name)}:")
+        display_spool.append(f"{Color.yellow(name)}:")
 
     def kv(k: str, v: t.Any, *, indent: int = 0) -> None:
-        d.display(f"{'    ' * indent}{Color.blue(k)}: {Color.green(str(v))}")
+        display_spool.append(f"{'    ' * indent}{Color.blue(k)}: {Color.green(str(v))}")
 
     section("Python")
     kv("Version", sys.version.split(" ", 1)[0])
@@ -179,3 +179,7 @@ def runtime() -> None:
         if doc := getattr(action_class, "__doc__", ""):
             kv("Info", doc, indent=1)
         kv("Source", action_source, indent=1)
+
+    d = DefaultDisplay()
+    for line in display_spool:
+        d.display(line)
