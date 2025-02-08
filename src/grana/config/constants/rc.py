@@ -11,7 +11,7 @@ import typing as t
 import yaml
 
 from ...loader.utils import ExpressionYAMLLoader
-from ...rendering import CommonTemplar, containers as c
+from ...rendering import CommonTemplar
 from ...tools.classloader import from_dict
 from ...tools.proxy import DeferredCallsProxy
 
@@ -58,6 +58,7 @@ class RC:
         """Load from file"""
         # pylint: disable=import-outside-toplevel
         from . import C
+        from ...rendering import containers as c
 
         rc_file_path: pathlib.Path = C.RC_FILE
         if not rc_file_path.is_file():
