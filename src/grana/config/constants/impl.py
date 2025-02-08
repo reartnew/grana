@@ -120,7 +120,7 @@ class WorkflowSourceFile(base.ConstantBase[t.Optional[Path]]):
         return Path(self._get_env("GRANA_WORKFLOW_FILE"))
 
     def from_rc_file(self) -> Path:
-        return Path(self._get_rc_value("workflow_source_file"))
+        return Path(self._get_rc_value("workflow_file"))
 
     def from_cli_arg(self) -> Path:
         return Path(self._get_cli_arg("workflow_file"))
@@ -222,6 +222,10 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
         strategy_name: str = self._get_cli_arg("strategy")
         return self._strategy_class_by_name(strategy_name)
 
+    def from_rc_file(self) -> StrategyClassType:
+        strategy_name: str = self._get_rc_value("strategy_name")
+        return self._strategy_class_by_name(strategy_name)
+
     def from_env(self) -> StrategyClassType:
         strategy_name: str = self._get_env("GRANA_STRATEGY_NAME")
         return self._strategy_class_by_name(strategy_name)
@@ -239,6 +243,9 @@ class UseColor(base.ConstantBase[bool]):
         force_color: str = self._get_env("GRANA_FORCE_COLOR")
         return self._string_to_bool(force_color)
 
+    def from_rc_file(self) -> bool:
+        return self._get_rc_value("force_color")
+
     def default(self) -> bool:
         try:
             return os.isatty(sys.stdout.fileno())
@@ -252,6 +259,9 @@ class DefaultShellExecutable(base.ConstantBase[str]):
     def from_env(self) -> str:
         return self._get_env("GRANA_DEFAULT_SHELL_EXECUTABLE")
 
+    def from_rc_file(self) -> str:
+        return self._get_rc_value("default_shell_executable")
+
     def default(self) -> str:
         return "/bin/sh"
 
@@ -261,6 +271,9 @@ class ShellInjectYieldFunction(base.ConstantBase[bool]):
 
     def from_env(self) -> bool:
         return self._string_to_bool(self._get_env("GRANA_SHELL_INJECT_YIELD_FUNCTION"))
+
+    def from_rc_file(self) -> bool:
+        return self._get_rc_value("shell_inject_yield_function")
 
     def default(self) -> bool:
         return True
@@ -272,6 +285,9 @@ class StrictOutcomesRendering(base.ConstantBase[bool]):
     def from_env(self) -> bool:
         return self._string_to_bool(self._get_env("STRICT_OUTCOMES_RENDERING"))
 
+    def from_rc_file(self) -> bool:
+        return self._get_rc_value("strict_outcomes_rendering")
+
     def default(self) -> bool:
         return True
 
@@ -282,6 +298,9 @@ class ActionClassDirectories(base.ConstantBase[list[Path]]):
     def from_env(self) -> list[Path]:
         return self._string_to_path_list(self._get_env("GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY"))
 
+    def from_rc_file(self) -> list[Path]:
+        return self._get_rc_value("action_classes_directories")
+
     def default(self) -> list[Path]:
         return []
 
@@ -291,6 +310,9 @@ class ExternalPythonModulesPaths(base.ConstantBase[list[Path]]):
 
     def from_env(self) -> list[Path]:
         return self._string_to_path_list(self._get_env("GRANA_EXTERNAL_MODULES_PATHS"))
+
+    def from_rc_file(self) -> list[Path]:
+        return self._get_rc_value("external_python_modules_paths")
 
     def default(self) -> list[Path]:
         return []

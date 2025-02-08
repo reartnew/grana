@@ -34,12 +34,12 @@ class RC:
 
     log_level: t.Union[str, ConfigSentinel] = sentinel
     log_file: t.Union[str, ConfigSentinel] = sentinel
-    workflow_source_file: t.Union[pathlib.Path, ConfigSentinel] = sentinel
+    workflow_file: t.Union[pathlib.Path, ConfigSentinel] = sentinel
     workflow_loader_source_file: t.Union[pathlib.Path, ConfigSentinel] = sentinel
     display_source_file: t.Union[pathlib.Path, ConfigSentinel] = sentinel
     display_name: t.Union[str, ConfigSentinel] = sentinel
     strategy_name: t.Union[str, ConfigSentinel] = sentinel
-    use_color: t.Union[bool, ConfigSentinel] = sentinel
+    force_color: t.Union[bool, ConfigSentinel] = sentinel
     default_shell_executable: t.Union[str, ConfigSentinel] = sentinel
     shell_inject_yield_function: t.Union[bool, ConfigSentinel] = sentinel
     strict_outcomes_rendering: t.Union[bool, ConfigSentinel] = sentinel
