@@ -27,19 +27,6 @@ Configuration parameters
     - `GRANA_LOG_FILE`
 :::
 
-## ENV_FILE
-:::{list-table}
-:widths: 1 2
-*   - **Description**
-    - Path where to look for a dotenv file to load.
-*   - **Type**
-    - String
-*   - **Environment variable**
-    - `GRANA_ENV_FILE`
-*   - **Default**
-    - `./.env`
-:::
- 
 ## INTERACTIVE_MODE
 :::{list-table}
 :widths: 1 2

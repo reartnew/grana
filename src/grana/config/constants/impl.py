@@ -18,7 +18,6 @@ from ...types import (
 __all__ = [
     "LogLevel",
     "LogFile",
-    "EnvFile",
     "RcFile",
     "ContextDirectory",
     "InteractiveMode",
@@ -74,16 +73,6 @@ class LogFile(base.ConstantBase[t.Optional[Path]]):
 
     def default(self) -> None:
         return None
-
-
-class EnvFile(base.ConstantBase[Path]):
-    """Environment variables file constant"""
-
-    def from_env(self) -> Path:
-        return Path(self._get_env("GRANA_ENV_FILE"))
-
-    def default(self) -> Path:
-        return Path().resolve() / ".env"
 
 
 class RcFile(base.ConstantBase[Path]):

@@ -17,7 +17,6 @@ class C:
 
     LOG_LEVEL: base.ConstantBase = impl.LogLevel()
     LOG_FILE: base.ConstantBase = impl.LogFile()
-    ENV_FILE: base.ConstantBase = impl.EnvFile()
     RC_FILE: base.ConstantBase = impl.RcFile()
     CONTEXT_DIRECTORY: base.ConstantBase = impl.ContextDirectory()
     INTERACTIVE_MODE: base.ConstantBase = impl.InteractiveMode()

@@ -11,9 +11,6 @@ ENV_DOC: str = """
     GRANA_LOG_FILE:
         Specifies the log file.
         Defaults to the standard error stream.
-    GRANA_ENV_FILE:
-        Which file to load environment variables from. Expected format is k=v.
-        Default is .env in the current directory.
     GRANA_WORKFLOW_FILE:
         Workflow file to use.
         Default behaviour is scan the current working directory.
