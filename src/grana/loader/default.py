@@ -9,6 +9,7 @@ from pathlib import Path
 import yaml
 
 from .base import AbstractBaseWorkflowLoader
+from .utils import DefaultYAMLLoader
 from ..actions.base import WorkflowActionExecution, ActionBase
 from ..actions.bundled import (
     EchoAction,
@@ -16,33 +17,13 @@ from ..actions.bundled import (
     SubflowAction,
     DockerShellAction,
 )
-from ..actions.types import Expression, Import
+from ..actions.types import Import
 from ..config.constants import C
 from ..config.constants.helpers import class_from_module
-from ..exceptions import YAMLStructureError
 
 __all__ = [
     "DefaultYAMLWorkflowLoader",
 ]
-
-
-class YAMLLoader(yaml.SafeLoader):
-    """Extension loader"""
-
-    @classmethod
-    def add_string_constructor(cls, tag: str, target_class: type) -> None:
-        """Register simple string constructor with type checking"""
-
-        def construct(_, node):
-            if not isinstance(node.value, str):
-                raise YAMLStructureError(f"Expected string content after {tag!r}, got {node.value!r}")
-            return target_class(node.value)
-
-        cls.add_constructor(tag, construct)
-
-
-YAMLLoader.add_string_constructor("!@", Expression)
-YAMLLoader.add_string_constructor("!import", Import)
 
 
 class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
@@ -116,7 +97,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
     ) -> None:
         if isinstance(data, bytes):
             data = data.decode()
-        root_node: dict = yaml.load(data, YAMLLoader)  # nosec
+        root_node: dict = yaml.load(data, DefaultYAMLLoader)  # nosec
         if not isinstance(root_node, dict):
             self._throw(f"Unknown workflow structure: {type(root_node)!r} (should be a dict)")
         root_keys: set[str] = set(root_node)

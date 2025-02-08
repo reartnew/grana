@@ -9,6 +9,7 @@ import typing as t
 
 import yaml
 
+from ...loader.utils import ExpressionYAMLLoader
 from ...rendering import CommonTemplar
 from ...tools.classloader import from_dict
 from ...tools.proxy import DeferredCallsProxy
@@ -63,9 +64,7 @@ class RC:
             return RC()
         logger.info(f"Loading RC file: {str(rc_file_path)!r}")
         with rc_file_path.open() as f:
-            config_data: dict = t.cast(dict, yaml.safe_load(f))
+            config_data: dict = t.cast(dict, yaml.load(f, ExpressionYAMLLoader))  # nosec
         templar = CommonTemplar({"here": rc_file_path.parent})
         rendered_data: t.Dict[str, t.Any] = templar.recursive_render(config_data)
-        config: RC = from_dict(RC, rendered_data)
-        config.source_file = rc_file_path
-        return config
+        return from_dict(RC, rendered_data)
