@@ -13,16 +13,26 @@ __all__ = [
 CONTEXT_HOLDER: contextvars.ContextVar[dict[str, t.Any]] = contextvars.ContextVar("CONTEXT_HOLDER", default={})
 
 
+class ConfigSentinel:
+    """Sentinel type for workflow configuration parameters"""
+
+
+sentinel = ConfigSentinel()
+
+
 @dataclasses.dataclass
 class WorkflowConfiguration:
     """Configuration loaded from the workflow"""
 
-    strategy: t.Optional[str] = None
+    strategy: t.Union[str, ConfigSentinel] = sentinel
 
     @contextlib.contextmanager
-    def propagate(self) -> t.Generator[None, None, None]:
+    def apply(self) -> t.Generator[None, None, None]:
         """Apply contextual values for the workflow configuration"""
-        token: contextvars.Token = CONTEXT_HOLDER.set(dataclasses.asdict(self))
+        cfg_dict: t.Dict[str, t.Any] = {
+            k: v for k, v in dataclasses.asdict(self).items() if not isinstance(v, ConfigSentinel)
+        }
+        token: contextvars.Token = CONTEXT_HOLDER.set(cfg_dict)
         try:
             yield
         finally:

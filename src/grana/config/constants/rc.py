@@ -25,7 +25,7 @@ __all__ = [
 
 
 class ConfigSentinel:
-    """Sentinel type for configuration parameters"""
+    """Sentinel type for runtime configuration parameters"""
 
 
 sentinel = ConfigSentinel()

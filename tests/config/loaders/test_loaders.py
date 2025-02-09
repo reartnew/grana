@@ -22,7 +22,7 @@ def test_workflow_load_over_sample(
     def check():
         loader: AbstractBaseWorkflowLoader = loader_class()
         loader.load(workflow_path)
-        with loader.workflow.configuration.propagate():
+        with loader.workflow.configuration.apply():
             # Check constants
             C.info()
 

@@ -111,8 +111,9 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def _get_wf_config_value(self, name: str) -> t.Any:
         ctx_values_map: dict[str, t.Any] = workflow.CONTEXT_HOLDER.get()
-        if (value := ctx_values_map.get(name)) is None:
+        if name not in ctx_values_map:
             raise Inapplicable
+        value: t.Any = ctx_values_map[name]
         self.logger.debug(f"Defined workflow configuration value {name!r} is accessed by {self._name!r}")
         return value
 

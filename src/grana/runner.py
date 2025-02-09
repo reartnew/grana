@@ -123,7 +123,7 @@ class Runner:
         self._started = True
         # Build workflow and display
         workflow: Workflow = self.workflow
-        with workflow.configuration.propagate():
+        with workflow.configuration.apply():
             display: types.DisplayType = self.display
             display.logger.debug("Starting events processing")
             display_events_flow_processing_task: asyncio.Task = asyncio.create_task(self._process_display_events())
