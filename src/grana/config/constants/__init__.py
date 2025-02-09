@@ -39,6 +39,6 @@ class C:
             if not isinstance(attr_type, type) or not issubclass(attr_type, base.ConstantBase):
                 continue
             attr_value: t.Any = getattr(C, attr_name)
-            attr_effective_source = base.CONSTANT_SOURCES[attr_name]
+            attr_effective_source = base.CONSTANT_GLOBAL_SOURCES[attr_name]
             result.append(base.ConstantValueInfo(attr_name, attr_value, attr_effective_source))
         return result

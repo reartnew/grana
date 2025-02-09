@@ -15,7 +15,7 @@ __all__ = [
     "ConstantSource",
     "ConstantValueInfo",
     "ConstantBase",
-    "CONSTANT_SOURCES",
+    "CONSTANT_GLOBAL_SOURCES",
 ]
 
 VT = t.TypeVar("VT")
@@ -28,13 +28,14 @@ class Inapplicable(BaseException):
 class ConstantSource(enum.Enum):
     """Enumeration of constant effective value sources"""
 
+    WORKFLOW = "workflow configuration"
     COMMAND = "CLI argument"
-    CONFIG = "configuration file"
     ENVIRONMENT = "environment variable"
+    CONFIG = "configuration file"
     DEFAULT = "default value"
 
 
-CONSTANT_SOURCES: dict[str, ConstantSource] = {}
+CONSTANT_GLOBAL_SOURCES: dict[str, ConstantSource] = {}
 
 
 class ConstantValueInfo(t.NamedTuple):
@@ -51,7 +52,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     @classmethod
     def cache_clear(cls) -> None:
         """Reset cache"""
-        cls._get.cache_clear()
+        cls._get_global.cache_clear()
         RC.build.cache_clear()
 
     def __init__(self) -> None:
@@ -63,7 +64,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     # Indefinite cache size, so all constants fit into it
     # pylint: disable=method-cache-max-size-none
     @functools.lru_cache(None)
-    def _get(self) -> VT:
+    def _get_global(self) -> VT:
         for source, method in (
             (ConstantSource.COMMAND, self.from_cli_arg),
             (ConstantSource.ENVIRONMENT, self.from_env),
@@ -75,13 +76,24 @@ class ConstantBase(WithLogger, t.Generic[VT]):
             except Inapplicable:
                 pass
             else:
-                self.logger.debug(f"Effective value for {self._name!r} is {result!r} (from {source.value})")
-                CONSTANT_SOURCES[self._name] = source
+                self.logger.debug(f"Effective global value for {self._name!r} is {result!r} (from {source.value})")
+                CONSTANT_GLOBAL_SOURCES[self._name] = source
                 return result
-        raise NotImplementedError
+        raise Inapplicable
+
+    def _get_local(self) -> VT:
+        return self.from_workflow_configuration()
 
     def __get__(self, instance: t.Any, owner: type) -> VT:
-        return self._get()
+        try:
+            return self._get_local()
+        except Inapplicable:
+            pass
+        try:
+            return self._get_global()
+        except Inapplicable:
+            pass
+        raise NotImplementedError
 
     def _get_rc_value(self, name: str) -> t.Any:
         cfg: RC = RC.build()
@@ -117,12 +129,16 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     def _string_to_path_list(cls, value: str) -> list[Path]:
         return [Path(item.strip()) for item in value.split(":") if item]
 
-    def from_env(self) -> VT:
-        """Try to load the value from environment variables"""
+    def from_workflow_configuration(self) -> VT:
+        """Try to load the value from loaded workflow configuration variables"""
         raise Inapplicable
 
     def from_cli_arg(self) -> VT:
         """Try to load the value from CLI args"""
+        raise Inapplicable
+
+    def from_env(self) -> VT:
+        """Try to load the value from environment variables"""
         raise Inapplicable
 
     def from_rc_file(self) -> VT:
