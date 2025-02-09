@@ -17,7 +17,6 @@ from .display.default import DefaultDisplay
 from .exceptions import BaseError, ExecutionFailed
 from .loader.default import DefaultYAMLWorkflowLoader
 from .runner import Runner
-from .strategy import KNOWN_STRATEGIES
 from .tools.proxy import DeferredCallsProxy
 from .version import __version__
 
@@ -103,7 +102,6 @@ def wrap_cli_command(func):
     "--strategy",
     help="Execution strategy. Defaults to `explicit`. "
     "Also configurable via the `GRANA_STRATEGY_NAME` environment variable.",
-    type=click.Choice(list(KNOWN_STRATEGIES)),
 )
 @click.option("-i", "--interactive", help="Run in dialog mode.", is_flag=True, default=False)
 @click.argument("workflow_file", cls=WorkflowPositionalArgument, help="azaza")

@@ -207,7 +207,7 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
         return self._strategy_class_by_name(strategy_name)
 
     def from_rc_file(self) -> StrategyClassType:
-        strategy_name: str = self._get_rc_value("strategy_name")
+        strategy_name: str = self._get_rc_value("strategy")
         return self._strategy_class_by_name(strategy_name)
 
     def from_env(self) -> StrategyClassType:
