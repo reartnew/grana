@@ -68,17 +68,6 @@ class Runner:
         self.logger.debug(f"Using display class: {display_class}")
         return display_class()
 
-    @functools.cached_property
-    def strategy(self) -> types.StrategyType:
-        """Strategy iterator"""
-        if self.loader.strategy_class is not None:
-            strategy_class: types.StrategyClassType = self.loader.strategy_class
-            self.logger.debug(f"Using strategy class from the loaded workflow: {strategy_class}")
-        else:
-            strategy_class = C.STRATEGY_CLASS
-            self.logger.debug(f"Using globally-set strategy class: {strategy_class}")
-        return strategy_class(workflow=self.workflow)
-
     @classmethod
     def _detect_workflow_source(cls, explicit_source: t.Union[str, Path, IOType, None] = None) -> t.Union[Path, IOType]:
         if explicit_source is not None:
@@ -154,7 +143,9 @@ class Runner:
 
     async def _run_all_actions(self) -> None:
         action_runners: dict[WorkflowActionExecution, asyncio.Task] = {}
-        async for action in self.strategy:  # type: WorkflowActionExecution
+        strategy_class: types.StrategyClassType = C.STRATEGY_CLASS
+        strategy: types.StrategyType = strategy_class(workflow=self.workflow)
+        async for action in strategy:  # type: WorkflowActionExecution
             # Finalize all actions that have been done already
             for maybe_finished_action, corresponding_runner_task in list(action_runners.items()):
                 if maybe_finished_action.future.done():

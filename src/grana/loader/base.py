@@ -13,7 +13,6 @@ from ..config.constants.workflow import WorkflowConfiguration
 from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
 from ..rendering import WorkflowTemplar
-from ..strategy import KNOWN_STRATEGIES, BaseStrategy
 from ..tools.classloader import from_dict
 from ..workflow import Workflow
 
@@ -47,15 +46,6 @@ class AbstractBaseWorkflowLoader(WithLogger):
         if self._loaded_workflow is not None:
             raise ValueError("Workflow was loaded already")
         self._loaded_workflow = workflow
-
-    @property
-    def strategy_class(self) -> t.Optional[type[BaseStrategy]]:
-        """Return explicitly-set strategy class, if any"""
-        return (
-            None
-            if self.workflow.configuration.strategy is None
-            else KNOWN_STRATEGIES[self.workflow.configuration.strategy]
-        )
 
     def _register_action(self, action_execution: WorkflowActionExecution) -> None:
         if action_execution.name in self._executions:
