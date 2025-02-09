@@ -13,19 +13,12 @@ from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
 from ..rendering import WorkflowTemplar
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
-from ..workflow import Workflow
+from ..workflow import Workflow, Configuration
 from ..tools.classloader import from_dict
 
 __all__ = [
     "AbstractBaseWorkflowLoader",
 ]
-
-
-@dataclasses.dataclass
-class WorkflowConfig:
-    """Configuration loaded from the workflow"""
-
-    strategy: t.Optional[str] = None
 
 
 class AbstractBaseWorkflowLoader(WithLogger):
@@ -38,7 +31,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
         self._gathered_context: dict[str, t.Any] = {}
         self._action_type_counters: dict[str, int] = collections.defaultdict(int)
         self._loaded_workflow: t.Optional[Workflow] = None
-        self._loaded_config: t.Optional[WorkflowConfig] = None
+        self._loaded_config: t.Optional[Configuration] = None
 
     @property
     def workflow(self) -> Workflow:
@@ -55,16 +48,13 @@ class AbstractBaseWorkflowLoader(WithLogger):
         self._loaded_workflow = workflow
 
     @property
-    def configuration(self) -> WorkflowConfig:
-        """Loaded configuration getter"""
-        if self._loaded_config is None:
-            raise ValueError("No configuration was loaded")
-        return self._loaded_config
-
-    @property
     def strategy_class(self) -> t.Optional[type[BaseStrategy]]:
         """Return explicitly-set strategy class, if any"""
-        return None if self.configuration.strategy is None else KNOWN_STRATEGIES[self.configuration.strategy]
+        return (
+            None
+            if self.workflow.configuration.strategy is None
+            else KNOWN_STRATEGIES[self.workflow.configuration.strategy]
+        )
 
     def _register_action(self, action_execution: WorkflowActionExecution) -> None:
         if action_execution.name in self._executions:
@@ -122,13 +112,22 @@ class AbstractBaseWorkflowLoader(WithLogger):
     def loads(self, data: t.Union[str, bytes]) -> Workflow:
         """Load workflow from text"""
         self._internal_loads(data=data)
-        self.workflow = Workflow(self._executions, context=self._gathered_context)
+        self.workflow = Workflow(
+            self._executions,
+            context=self._gathered_context,
+            configuration=self._loaded_config,
+        )
         return self.workflow
 
     def load(self, source_file: t.Union[str, Path]) -> Workflow:
         """Load workflow from file"""
         self._internal_load(source_file=source_file)
-        self.workflow = Workflow(self._executions, context=self._gathered_context, source_file=Path(source_file))
+        self.workflow = Workflow(
+            self._executions,
+            context=self._gathered_context,
+            source_file=Path(source_file),
+            configuration=self._loaded_config,
+        )
         return self.workflow
 
     def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> t.Tuple[str, ActionDependency]:
@@ -228,11 +227,11 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Process configuration dictionary"""
         if not isinstance(configuration_dict, dict):
             self._throw(f"'configuration' contents should be a dict (got {type(configuration_dict)!r})")
-        allowed_cfg_keys: set[str] = {field.name for field in dataclasses.fields(WorkflowConfig)}
+        allowed_cfg_keys: set[str] = {field.name for field in dataclasses.fields(Configuration)}
         for unrecognized_cfg_key in sorted(set(configuration_dict) - allowed_cfg_keys):
             self.logger.warning(f"Unrecognized configuration key: {unrecognized_cfg_key!r}")
             configuration_dict.pop(unrecognized_cfg_key)
-        self._loaded_config = from_dict(WorkflowConfig, configuration_dict)
+        self._loaded_config = from_dict(Configuration, configuration_dict)
 
     def _get_workflow_templar(self) -> WorkflowTemplar:
         return self.workflow.get_templar()

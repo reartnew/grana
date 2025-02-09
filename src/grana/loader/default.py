@@ -147,7 +147,8 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                         self._throw(f"Context item #{num + 1} is not a dict nor an '!import' (got {type(item)!r})")
             else:
                 self._throw(f"'context' contents should be a dict or a list (got {type(context)!r})")
-        self.load_configuration_from_dict(root_node.get("configuration", {}))
+        if "configuration" in processable_keys:
+            self.load_configuration_from_dict(root_node["configuration"])
 
     def _loads_contexts_dict(self, data: dict[str, t.Any]) -> None:
         for context_key, context_value in data.items():
