@@ -32,13 +32,8 @@ class Runner:
 
     logger = logging.getLogger(f"{__name__}.Runner")
 
-    def __init__(
-        self,
-        source: t.Union[str, Path, IOType, None] = None,
-        display: t.Optional[types.DisplayType] = None,
-    ) -> None:
+    def __init__(self, source: t.Union[str, Path, IOType, None] = None) -> None:
         self._workflow_source: t.Union[Path, IOType] = self._detect_workflow_source(explicit_source=source)
-        self._explicit_display: t.Optional[types.DisplayType] = display
         self._started: bool = False
         self._execution_failed: bool = False
 
@@ -69,9 +64,6 @@ class Runner:
     @functools.cached_property
     def display(self) -> types.DisplayType:
         """Attached display"""
-        if self._explicit_display is not None:
-            self.logger.debug(f"Using explicit display: {self._explicit_display}")
-            return self._explicit_display
         display_class: types.DisplayClassType = C.DISPLAY_CLASS
         self.logger.debug(f"Using display class: {display_class}")
         return display_class()
@@ -93,8 +85,8 @@ class Runner:
             if isinstance(explicit_source, IOType):
                 return explicit_source
             return Path(explicit_source)
-        if C.ACTIONS_SOURCE_FILE is not None:
-            source_file: Path = C.ACTIONS_SOURCE_FILE
+        if C.WORKFLOW_SOURCE_FILE is not None:
+            source_file: Path = C.WORKFLOW_SOURCE_FILE
             if str(source_file) == "-":
                 cls.logger.info("Using stdin as workflow source")
                 return t.cast(IOType, sys.stdin)
@@ -142,6 +134,8 @@ class Runner:
         self._started = True
         # Build workflow and display
         workflow: Workflow = self.workflow
+        display: types.DisplayType = self.display
+        display.logger.debug("Starting events processing")
         display_events_flow_processing_task: asyncio.Task = asyncio.create_task(self._process_display_events())
         try:
             await self._send_display_event(

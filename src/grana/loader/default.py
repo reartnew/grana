@@ -9,6 +9,7 @@ from pathlib import Path
 import yaml
 
 from .base import AbstractBaseWorkflowLoader
+from .utils import DefaultYAMLLoader
 from ..actions.base import WorkflowActionExecution, ActionBase
 from ..actions.bundled import (
     EchoAction,
@@ -16,60 +17,50 @@ from ..actions.bundled import (
     SubflowAction,
     DockerShellAction,
 )
-from ..actions.types import Expression, Import
+from ..actions.types import Import
 from ..config.constants import C
-from ..config.constants.helpers import maybe_class_from_module
-from ..exceptions import YAMLStructureError
+from ..config.constants.helpers import class_from_module
 
 __all__ = [
     "DefaultYAMLWorkflowLoader",
 ]
 
 
-class YAMLLoader(yaml.SafeLoader):
-    """Extension loader"""
-
-    @classmethod
-    def add_string_constructor(cls, tag: str, target_class: type) -> None:
-        """Register simple string constructor with type checking"""
-
-        def construct(_, node):
-            if not isinstance(node.value, str):
-                raise YAMLStructureError(f"Expected string content after {tag!r}, got {node.value!r}")
-            return target_class(node.value)
-
-        cls.add_constructor(tag, construct)
-
-
-YAMLLoader.add_string_constructor("!@", Expression)
-YAMLLoader.add_string_constructor("!import", Import)
-
-
 class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
     """Default loader for YAML source files"""
 
     ALLOWED_ROOT_TAGS: set[str] = {"actions", "context", "miscellaneous", "configuration"}
-    STATIC_ACTION_FACTORIES = {
-        name: klass
-        for name, klass in (
-            ("echo", EchoAction),
-            ("shell", ShellAction),
-            ("subflow", SubflowAction),
-            ("docker-shell", DockerShellAction),
-        )
-        if klass is not None
-    }
 
-    def _get_action_factory_by_type(self, action_type: str) -> type[ActionBase]:
-        if (dynamically_resolved_action_class := self._load_external_action_factories().get(action_type)) is not None:
-            return dynamically_resolved_action_class
-        return super()._get_action_factory_by_type(action_type)
+    def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
+        return {
+            **self._get_static_action_factories_mapping(),
+            **self._load_external_action_factories_mapping(),
+        }
 
     @lru_cache(maxsize=1)
-    def _load_external_action_factories(self) -> dict[str, type[ActionBase]]:
-        dynamic_bases_map: dict[str, type[ActionBase]] = {}
+    def _get_static_action_factories_mapping(self) -> dict[str, tuple[type[ActionBase], str]]:
+        return {
+            name: (klass, "built-in")
+            for name, klass in (
+                ("echo", EchoAction),
+                ("shell", ShellAction),
+                ("subflow", SubflowAction),
+                ("docker-shell", DockerShellAction),
+            )
+            if klass is not None
+        }
+
+    @lru_cache(maxsize=1)
+    def _load_external_action_factories_mapping(self) -> dict[str, tuple[type[ActionBase], str]]:
+        dynamic_bases_map: dict[str, tuple[type[ActionBase], str]] = {}
         for class_directory in C.ACTION_CLASSES_DIRECTORIES:  # type: str
             class_directory_path = Path(class_directory).resolve()
+            if not class_directory_path.exists():
+                self.logger.warning(f"Given actions classes directory does not exist: {class_directory_path!r}")
+                continue
+            if not class_directory_path.is_dir():
+                self.logger.warning(f"Given actions classes path is not a directory: {class_directory_path!r}")
+                continue
             self.logger.info(f"Loading external action classes from {str(class_directory_path)!r}")
             for class_file in class_directory_path.iterdir():
                 if not class_file.is_file() or not class_file.suffix == ".py":
@@ -78,15 +69,15 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 self.logger.debug(f"Trying external action class source: {class_file}")
                 action_class: type[ActionBase] = t.cast(
                     type[ActionBase],
-                    maybe_class_from_module(
-                        path_str=str(class_file),
+                    class_from_module(
+                        source_path=class_file,
                         class_name="Action",
                         submodule_name=f"actions.{action_type}",
                     ),
                 )
                 if action_type in dynamic_bases_map:
                     self.logger.warning(f"Class {action_type!r} is already defined: overriding from {class_file}")
-                dynamic_bases_map[action_type] = action_class
+                dynamic_bases_map[action_type] = (action_class, str(class_file))
         return dynamic_bases_map
 
     def _parse_import(self, tag: Import, allowed_root_keys: set[str]) -> None:
@@ -112,7 +103,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
     ) -> None:
         if isinstance(data, bytes):
             data = data.decode()
-        root_node: dict = yaml.load(data, YAMLLoader)  # nosec
+        root_node: dict = yaml.load(data, DefaultYAMLLoader)  # nosec
         if not isinstance(root_node, dict):
             self._throw(f"Unknown workflow structure: {type(root_node)!r} (should be a dict)")
         root_keys: set[str] = set(root_node)

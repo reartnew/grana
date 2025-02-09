@@ -19,7 +19,7 @@ class BadDisplay(BaseDisplay):
         raise RuntimeError
 
 
-def test_bad_display() -> None:
+def test_bad_display(monkeypatch: pytest.MonkeyPatch) -> None:
     """Check that a bad display does not interrupt execution"""
     source = io.StringIO(
         """
@@ -32,7 +32,8 @@ def test_bad_display() -> None:
             command: baz
         """
     )
-    runner = Runner(source=source, display=BadDisplay())
+    monkeypatch.setattr(C, "DISPLAY_CLASS", BadDisplay)
+    runner = Runner(source=source)
     with pytest.raises(RuntimeError):
         runner.run_sync()
 

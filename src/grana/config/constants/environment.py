@@ -1,40 +1,8 @@
 """Separate environment-centric module"""
 
-import pathlib
-import typing as t
-
 __all__ = [
     "ENV_DOC",
-    "to_ternary",
-    "to_bool",
-    "to_path_list",
 ]
-
-
-def to_ternary(value: str) -> t.Optional[bool]:
-    """Converts a string value to an optional boolean"""
-    if value == "Y":
-        return True
-    if value == "N":
-        return False
-    if value == "":
-        return None
-    raise ValueError(f"{value!r} is not a valid value for a ternary variable. Expected one of: 'Y', 'N', ''.")
-
-
-def to_bool(value: str) -> bool:
-    """Converts a string value to a boolean"""
-    if value == "Y":
-        return True
-    if value == "N":
-        return False
-    raise ValueError(f"{value!r} is not a valid value for a boolean variable. Expected one of: 'Y', 'N'.")
-
-
-def to_path_list(value: str) -> list[pathlib.Path]:
-    """Converts a string value to a list of paths according to the same logic as for UNIX `path`"""
-    return [pathlib.Path(item.strip()) for item in value.split(":") if item]
-
 
 ENV_DOC: str = """
     GRANA_LOG_LEVEL:
@@ -43,9 +11,6 @@ ENV_DOC: str = """
     GRANA_LOG_FILE:
         Specifies the log file.
         Defaults to the standard error stream.
-    GRANA_ENV_FILE:
-        Which file to load environment variables from. Expected format is k=v.
-        Default is .env in the current directory.
     GRANA_WORKFLOW_FILE:
         Workflow file to use.
         Default behaviour is scan the current working directory.

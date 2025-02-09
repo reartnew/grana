@@ -15,7 +15,7 @@ class EchoArgs(ArgsBase):
 
 
 class EchoAction(ActionBase):
-    """Simple printer"""
+    """Prints a message to the output."""
 
     args: EchoArgs
 

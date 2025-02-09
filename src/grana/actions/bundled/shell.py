@@ -35,7 +35,7 @@ class ShellArgs(ArgsBase):
 
 
 class ShellAction(EmissionScannerActionBase):
-    """Shell commands handler"""
+    """Runs a shell command on the local system."""
 
     _BYTES_LINE_SEPARATOR: bytes = os.linesep.encode()
     _ENCODING: str = "utf-8"

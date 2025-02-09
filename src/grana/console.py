@@ -1,21 +1,21 @@
 """Command-line interface entry"""
 
 import functools
-from logging import getLogger
-import os
 import sys
 import typing as t
-from pathlib import Path
+from logging import getLogger
 
 import click
-from dotenv.main import DotEnv
 
-from .config.constants import C, LOG_LEVELS
-from .config.constants.cli import cliargs_receiver
-from .config.constants.environment import ENV_DOC
-from .display.default import KNOWN_DISPLAYS
-from .exceptions import BaseError, ExecutionFailed
 from . import logging as grana_logging
+from .config.constants import C, rc
+from .config.constants.base import ConstantSource
+from .config.constants.cli import get_cli_arg, cliargs_receiver
+from .config.constants.environment import ENV_DOC
+from .display.color import Color
+from .display.default import DefaultDisplay
+from .exceptions import BaseError, ExecutionFailed
+from .loader.default import DefaultYAMLWorkflowLoader
 from .runner import Runner
 from .strategy import KNOWN_STRATEGIES
 from .tools.proxy import DeferredCallsProxy
@@ -55,59 +55,30 @@ class WorkflowPositionalArgument(click.Argument):
     "-l",
     "--log-level",
     help="Logging level. Defaults to `ERROR`. Also configurable via the `GRANA_LOG_LEVEL` environment variable.",
-    type=click.Choice(list(LOG_LEVELS)),
 )
 @click.option(
     "-d",
     "--display",
     help="Display name. Defaults to `prefixes`. Also configurable via the `GRANA_DISPLAY_NAME` environment variable.",
-    type=click.Choice(list(KNOWN_DISPLAYS)),
 )
 @cliargs_receiver
 def main() -> None:
     """Open-source command-line declarative automation tool."""
 
 
-def load_dotenv() -> None:  # pragma: no cover
-    """Try loading environment from the dotenv file.
-    Special variable called "HERE" is injected into the environment during dotenv loading,
-    which points to the directory of the dotenv file (if not specified in advance)."""
-    here_var_name: str = "HERE"
-    here_value_was_defined: bool = here_var_name in os.environ
-    dotenv_path: Path = C.ENV_FILE
-    if not here_value_was_defined:
-        os.environ[here_var_name] = str(dotenv_path.parent)
-    else:
-        logger.debug(f"{here_var_name!r} was set externally")
-    try:
-        dotenv = DotEnv(dotenv_path=dotenv_path)
-        if here_var_name in dotenv.dict():
-            logger.debug(f"{here_var_name!r} is explicitly set via dotenv file")
-            here_value_was_defined = True
-        if dotenv.set_as_environment_variables():
-            logger.info(f"Loaded environment variables from {str(dotenv_path)!r}")
-        else:
-            logger.debug(f"Dotenv not found: {str(dotenv_path)!r}")
-
-    finally:
-        if not here_value_was_defined:
-            os.environ.pop(here_var_name)
-
-
 def wrap_cli_command(func):
     """Standard loading and error handling"""
 
-    @main.command
     @cliargs_receiver
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        load_dotenv()
         grana_logging.configure_logging(
             main_file=C.LOG_FILE,
             level=C.LOG_LEVEL,
             colorize=C.USE_COLOR and not C.LOG_FILE,
         )
         logger.uncork()
+        rc.logger.uncork()
         try:
             return func(*args, **kwargs)
         except BaseError as e:
@@ -125,6 +96,7 @@ def wrap_cli_command(func):
     return wrapped
 
 
+@main.command
 @wrap_cli_command
 @click.option(
     "-s",
@@ -140,6 +112,7 @@ def run() -> None:
     Runner().run_sync()
 
 
+@main.command
 @wrap_cli_command
 @click.argument("workflow_file", cls=WorkflowPositionalArgument)
 def validate() -> None:
@@ -149,6 +122,7 @@ def validate() -> None:
     logger.info(f"Located actions number: {action_num}")
 
 
+@main.command
 @wrap_cli_command
 def version() -> None:
     """Display package version."""
@@ -164,3 +138,45 @@ def info() -> None:
 def env_vars() -> None:
     """Shows environment variables names that are taken into account."""
     print(ENV_DOC)
+
+
+@info.command
+@wrap_cli_command
+@click.option("--show-defaults", help="Show constants with default values", is_flag=True, default=False)
+def runtime() -> None:
+    """Shows runtime information."""
+    display_spool: list[str] = []
+
+    def section(name: str) -> None:
+        display_spool.append(f"\n{Color.bold(name)}")
+
+    def mapping(name: str) -> None:
+        display_spool.append(f"{Color.yellow(name)}:")
+
+    def kv(k: str, v: t.Any, *, indent: int = 0) -> None:
+        display_spool.append(f"{'    ' * indent}{Color.blue(k)}: {Color.green(str(v))}")
+
+    section("Python")
+    kv("Version", sys.version.split(" ", 1)[0])
+    kv("Executable", sys.executable)
+
+    section("Configuration")
+    for attr_name, attr_value, attr_effective_source in C.info():
+        if attr_effective_source == ConstantSource.DEFAULT and not get_cli_arg("show_defaults"):
+            continue
+        mapping(attr_name)
+        kv("Value", attr_value, indent=1)
+        kv("Source", attr_effective_source.name.lower(), indent=1)
+
+    section("Actions")
+    for actions_name, (action_class, action_source) in sorted(
+        DefaultYAMLWorkflowLoader().get_action_factories_info().items()
+    ):
+        mapping(actions_name)
+        if doc := getattr(action_class, "__doc__", ""):
+            kv("Info", doc, indent=1)
+        kv("Source", action_source, indent=1)
+
+    d = DefaultDisplay()
+    for line in display_spool:
+        d.display(line)

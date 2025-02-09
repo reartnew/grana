@@ -9,7 +9,7 @@ import typing as t
 from .actions.base import WorkflowActionExecution, ActionDependency
 from .exceptions import IntegrityError
 from .logging import WithLogger
-from .rendering import Templar
+from .rendering import WorkflowTemplar
 
 __all__ = [
     "Workflow",
@@ -36,9 +36,9 @@ class Workflow(dict[str, WorkflowActionExecution], WithLogger):
         # Create order map to check all actions are reachable
         self._allocate_tiers()
 
-    def get_templar(self) -> Templar:
+    def get_templar(self) -> WorkflowTemplar:
         """Create a Templar object"""
-        return Templar(
+        return WorkflowTemplar(
             outcomes_map={name: self[name].outcomes for name in self},
             action_states={name: self[name].status.value for name in self},
             context_map=self.context,
@@ -47,12 +47,19 @@ class Workflow(dict[str, WorkflowActionExecution], WithLogger):
 
     def get_metadata(self) -> dict[str, t.Any]:
         """Obtain workflow metadata for further use in templating"""
-        if self.source_file is None:
-            return {}
-        return {
-            "source_file": self.source_file,
-            "here": self.source_file.parent,
+        from .config.constants import C  # pylint: disable=import-outside-toplevel
+
+        metadata: dict[str, t.Any] = {
+            "cwd": C.CONTEXT_DIRECTORY,
         }
+        if self.source_file is not None:
+            metadata.update(
+                {
+                    "source_file": self.source_file,
+                    "here": self.source_file.parent,
+                }
+            )
+        return metadata
 
     def _establish_descendants(self) -> None:
         missing_non_external_deps: set[str] = set()

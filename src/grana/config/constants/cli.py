@@ -13,7 +13,7 @@ __all__ = [
 _CLI_PARAMS: dict[str, t.Any] = {}
 
 
-def cliargs_receiver(func):  # pragma: no cover
+def cliargs_receiver(func):
     """Store CLI args in the _CLI_PARAMS container for further processing"""
 
     @functools.wraps(func)

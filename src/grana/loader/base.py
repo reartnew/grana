@@ -10,7 +10,7 @@ from pathlib import Path
 from ..actions.base import WorkflowActionExecution, ActionBase, ActionDependency, ActionSeverity
 from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
-from ..rendering import Templar
+from ..rendering import WorkflowTemplar
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
 from ..workflow import Workflow
 
@@ -21,8 +21,6 @@ __all__ = [
 
 class AbstractBaseWorkflowLoader(WithLogger):
     """Loaders base class"""
-
-    STATIC_ACTION_FACTORIES: dict[str, type[ActionBase]] = {}
 
     def __init__(self) -> None:
         self._executions: dict[str, WorkflowActionExecution] = {}
@@ -95,10 +93,15 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Load workflow partially from text (can be called recursively)"""
         raise NotImplementedError
 
+    def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
+        """Returns a mapping of action factories names to its implementation classes and source information"""
+        return {}
+
     def _get_action_factory_by_type(self, action_type: str) -> type[ActionBase]:
-        if action_type not in self.STATIC_ACTION_FACTORIES:
+        action_info: t.Optional[tuple[type[ActionBase], str]] = self.get_action_factories_info().get(action_type)
+        if action_info is None:
             self._throw(f"Unknown dispatched type: {action_type}")
-        return self.STATIC_ACTION_FACTORIES[action_type]
+        return action_info[0]
 
     def loads(self, data: t.Union[str, bytes]) -> Workflow:
         """Load workflow from text"""
@@ -218,5 +221,5 @@ class AbstractBaseWorkflowLoader(WithLogger):
                 self._throw(f"Unexpected strategy: {strategy_value!r}")
             self._explicit_strategy_class = KNOWN_STRATEGIES[strategy_value]
 
-    def _get_workflow_templar(self) -> Templar:
+    def _get_workflow_templar(self) -> WorkflowTemplar:
         return self.workflow.get_templar()

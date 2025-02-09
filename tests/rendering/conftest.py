@@ -5,16 +5,17 @@ import typing as t
 
 import pytest
 
-from grana.rendering import Templar
+from grana.config.constants import C
+from grana.rendering import WorkflowTemplar
 
 
 @pytest.fixture
-def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], Templar]:
+def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], WorkflowTemplar]:
     """Prepare a standalone templar"""
     monkeypatch.setenv("TEMPLAR_ENVIRONMENT_KEY", "test")
 
     def make():
-        return Templar(
+        return WorkflowTemplar(
             outcomes_map={
                 "Foo": {
                     "bar": "ok",
@@ -46,13 +47,13 @@ def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], Templar]:
 
 
 @pytest.fixture
-def loose_templar(templar_factory: t.Callable[[], Templar], monkeypatch: pytest.MonkeyPatch) -> Templar:
+def loose_templar(templar_factory: t.Callable[[], WorkflowTemplar], monkeypatch: pytest.MonkeyPatch) -> WorkflowTemplar:
     """Loose templar"""
-    monkeypatch.setenv("GRANA_STRICT_OUTCOMES_RENDERING", "N")
+    monkeypatch.setattr(C, "STRICT_OUTCOMES_RENDERING", False)
     return templar_factory()
 
 
 @pytest.fixture
-def strict_templar(templar_factory: t.Callable[[], Templar]) -> Templar:
+def strict_templar(templar_factory: t.Callable[[], WorkflowTemplar]) -> WorkflowTemplar:
     """Strict (default) templar"""
     return templar_factory()

@@ -14,9 +14,10 @@ class StringReturningAction(ActionBase):
 
 
 class WorkflowLoader(DefaultYAMLWorkflowLoader):
-    """Able to build echoes"""
+    """With returning strings"""
 
-    STATIC_ACTION_FACTORIES = {
-        **DefaultYAMLWorkflowLoader.STATIC_ACTION_FACTORIES,
-        "return-string": StringReturningAction,
-    }
+    def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
+        return {
+            **super().get_action_factories_info(),
+            "return-string": (StringReturningAction, "tests-extra"),
+        }

@@ -5,7 +5,6 @@ import typing as t
 
 import pytest
 from click.testing import CliRunner
-from dotenv.main import DotEnv
 
 from grana import console, version, logging
 from grana.config.constants.environment import ENV_DOC
@@ -53,7 +52,6 @@ def _noop(*args, **kwargs) -> None:  # pylint: disable=unused-argument
 def builder(monkeypatch: pytest.MonkeyPatch) -> BuilderType:
     """Setup test command fed from stdin"""
 
-    monkeypatch.setattr(DotEnv, "set_as_environment_variables", _noop)
     monkeypatch.setattr(logging, "configure_logging", _noop)
 
     def build(*subcommand: str):
@@ -81,6 +79,12 @@ def validate_cmd(builder: BuilderType) -> RunnerType:
 def version_cmd(builder: BuilderType) -> RunnerType:
     """Setup test version"""
     return builder("version")
+
+
+@pytest.fixture
+def runtime_info_cmd(builder: BuilderType) -> RunnerType:
+    """Setup test info runtime"""
+    return builder("info", "runtime")
 
 
 GOOD_WORKFLOW_TEXT: str = """---
@@ -171,3 +175,12 @@ def test_cli_multiple_positional_args(run_cmd: RunnerType) -> None:
     """Only one positional argument should be accepted"""
     with pytest.raises(CLIError, match="<2>"):
         run_cmd(opts=["foo", "bar"])
+
+
+@pytest.mark.parametrize("opts", [[], ["--show-defaults"]], ids=["without-defaults", "with-defaults"])
+def test_me(runtime_info_cmd: RunnerType, opts: list[str]) -> None:
+    """Check `grana info runtime` command"""
+    info: list[str] = runtime_info_cmd(opts=opts)
+    assert "Python" in info
+    assert "Configuration" in info
+    assert "Actions" in info
