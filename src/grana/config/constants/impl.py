@@ -214,6 +214,10 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
         strategy_name: str = self._get_env("GRANA_STRATEGY_NAME")
         return self._strategy_class_by_name(strategy_name)
 
+    def from_workflow_configuration(self) -> StrategyClassType:
+        strategy_name: str = self._get_wf_config_value("strategy")
+        return self._strategy_class_by_name(strategy_name)
+
     def default(self) -> StrategyClassType:
         from ...strategy import ExplicitStrategy
 

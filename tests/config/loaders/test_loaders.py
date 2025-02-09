@@ -9,6 +9,7 @@ from grana.exceptions import LoadError
 from grana.loader.base import AbstractBaseWorkflowLoader
 from grana.loader.default import DefaultYAMLWorkflowLoader
 from grana.loader.helpers import get_default_loader_class_for_source
+from grana.config.constants import C
 
 
 def test_workflow_load_over_sample(
@@ -17,13 +18,21 @@ def test_workflow_load_over_sample(
     """Check different variations of good/bad workflows"""
     workflow_path, maybe_exception, maybe_match = sample_workflow
     loader_class: type[AbstractBaseWorkflowLoader] = get_default_loader_class_for_source(workflow_path)
+
+    def check():
+        loader: AbstractBaseWorkflowLoader = loader_class()
+        loader.load(workflow_path)
+        with loader.workflow.configuration.propagate():
+            # Check constants
+            C.info()
+
     # Check good workflow
     if maybe_exception is None:
-        loader_class().load(workflow_path)
+        check()
         return
     # Check bad workflow
     with pytest.raises(maybe_exception, match=maybe_match):
-        loader_class().load(workflow_path)
+        check()
 
 
 def test_yaml_loads() -> None:

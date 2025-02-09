@@ -9,12 +9,13 @@ import typing as t
 from pathlib import Path
 
 from ..actions.base import WorkflowActionExecution, ActionBase, ActionDependency, ActionSeverity
+from ..config.constants.workflow import WorkflowConfiguration
 from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
 from ..rendering import WorkflowTemplar
 from ..strategy import KNOWN_STRATEGIES, BaseStrategy
-from ..workflow import Workflow, Configuration
 from ..tools.classloader import from_dict
+from ..workflow import Workflow
 
 __all__ = [
     "AbstractBaseWorkflowLoader",
@@ -31,7 +32,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
         self._gathered_context: dict[str, t.Any] = {}
         self._action_type_counters: dict[str, int] = collections.defaultdict(int)
         self._loaded_workflow: t.Optional[Workflow] = None
-        self._loaded_config: t.Optional[Configuration] = None
+        self._loaded_config: t.Optional[WorkflowConfiguration] = None
 
     @property
     def workflow(self) -> Workflow:
@@ -227,11 +228,11 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Process configuration dictionary"""
         if not isinstance(configuration_dict, dict):
             self._throw(f"'configuration' contents should be a dict (got {type(configuration_dict)!r})")
-        allowed_cfg_keys: set[str] = {field.name for field in dataclasses.fields(Configuration)}
+        allowed_cfg_keys: set[str] = {field.name for field in dataclasses.fields(WorkflowConfiguration)}
         for unrecognized_cfg_key in sorted(set(configuration_dict) - allowed_cfg_keys):
             self.logger.warning(f"Unrecognized configuration key: {unrecognized_cfg_key!r}")
             configuration_dict.pop(unrecognized_cfg_key)
-        self._loaded_config = from_dict(Configuration, configuration_dict)
+        self._loaded_config = from_dict(WorkflowConfiguration, configuration_dict)
 
     def _get_workflow_templar(self) -> WorkflowTemplar:
         return self.workflow.get_templar()

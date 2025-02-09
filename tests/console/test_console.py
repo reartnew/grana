@@ -178,7 +178,7 @@ def test_cli_multiple_positional_args(run_cmd: RunnerType) -> None:
 
 
 @pytest.mark.parametrize("opts", [[], ["--show-defaults"]], ids=["without-defaults", "with-defaults"])
-def test_me(runtime_info_cmd: RunnerType, opts: list[str]) -> None:
+def test_info_runtime(runtime_info_cmd: RunnerType, opts: list[str]) -> None:
     """Check `grana info runtime` command"""
     info: list[str] = runtime_info_cmd(opts=opts)
     assert "Python" in info

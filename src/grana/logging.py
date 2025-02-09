@@ -66,8 +66,10 @@ class ContextFilter(logging.Filter):
 def context(**kwargs) -> t.Generator[None, None, None]:
     """Manager for log record context data"""
     token = LOG_CONTEXT_DATA.set(kwargs)
-    yield
-    LOG_CONTEXT_DATA.reset(token)
+    try:
+        yield
+    finally:
+        LOG_CONTEXT_DATA.reset(token)
 
 
 class MonochromeFormatter(logging.Formatter):

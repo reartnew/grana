@@ -1,5 +1,6 @@
 """Loader call fixtures"""
 
+import builtins
 import re
 import typing as t
 from pathlib import Path
@@ -36,7 +37,11 @@ def sample_workflow(
     with file_path.open(encoding="utf-8") as f:
         for line in f:
             for match in pragma_exception_type_pattern.finditer(line):
-                expected_exception_type = getattr(exceptions, match.group(1))
+                exception_name: str = match.group(1)
+                try:
+                    expected_exception_type = getattr(exceptions, exception_name)
+                except AttributeError:
+                    expected_exception_type = getattr(builtins, exception_name)
                 break
             for match in pragma_exception_match_pattern.finditer(line):
                 expected_exception_match = match.group(1)

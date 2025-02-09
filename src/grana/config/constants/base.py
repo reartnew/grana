@@ -6,6 +6,7 @@ import os
 import typing as t
 from pathlib import Path
 
+from . import workflow
 from .cli import get_cli_arg
 from .rc import RC, sentinel
 from ...logging import WithLogger
@@ -106,6 +107,13 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         if (value := get_cli_arg(name)) is None:
             raise Inapplicable
         self.logger.debug(f"Defined CLI argument {name!r} is accessed by {self._name!r}")
+        return value
+
+    def _get_wf_config_value(self, name: str) -> t.Any:
+        ctx_values_map: dict[str, t.Any] = workflow.CONTEXT_HOLDER.get()
+        if (value := ctx_values_map.get(name)) is None:
+            raise Inapplicable
+        self.logger.debug(f"Defined workflow configuration value {name!r} is accessed by {self._name!r}")
         return value
 
     def _get_env(self, name: str) -> str:

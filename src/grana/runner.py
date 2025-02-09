@@ -134,22 +134,23 @@ class Runner:
         self._started = True
         # Build workflow and display
         workflow: Workflow = self.workflow
-        display: types.DisplayType = self.display
-        display.logger.debug("Starting events processing")
-        display_events_flow_processing_task: asyncio.Task = asyncio.create_task(self._process_display_events())
-        try:
-            await self._send_display_event(
-                DisplayEventName.ON_RUNNER_START,
-                children=workflow.iterate_actions(),
-            )
-            if C.INTERACTIVE_MODE:
-                await self._send_display_event(DisplayEventName.ON_PLAN_INTERACTION, workflow=workflow)
-            await self._run_all_actions()
-            await self._send_display_event(DisplayEventName.ON_RUNNER_FINISH)
-            if self._execution_failed:
-                raise ExecutionFailed
-        finally:
-            display_events_flow_processing_task.cancel()
+        with workflow.configuration.propagate():
+            display: types.DisplayType = self.display
+            display.logger.debug("Starting events processing")
+            display_events_flow_processing_task: asyncio.Task = asyncio.create_task(self._process_display_events())
+            try:
+                await self._send_display_event(
+                    DisplayEventName.ON_RUNNER_START,
+                    children=workflow.iterate_actions(),
+                )
+                if C.INTERACTIVE_MODE:
+                    await self._send_display_event(DisplayEventName.ON_PLAN_INTERACTION, workflow=workflow)
+                await self._run_all_actions()
+                await self._send_display_event(DisplayEventName.ON_RUNNER_FINISH)
+                if self._execution_failed:
+                    raise ExecutionFailed
+            finally:
+                display_events_flow_processing_task.cancel()
 
     async def _run_all_actions(self) -> None:
         action_runners: dict[WorkflowActionExecution, asyncio.Task] = {}

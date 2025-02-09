@@ -5,24 +5,16 @@ from __future__ import annotations
 import collections
 import pathlib
 import typing as t
-import dataclasses
 
 from .actions.base import WorkflowActionExecution, ActionDependency
 from .exceptions import IntegrityError
 from .logging import WithLogger
 from .rendering import WorkflowTemplar
+from .config.constants.workflow import WorkflowConfiguration
 
 __all__ = [
     "Workflow",
-    "Configuration",
 ]
-
-
-@dataclasses.dataclass
-class Configuration:
-    """Configuration loaded from the workflow"""
-
-    strategy: t.Optional[str] = None
 
 
 class Workflow(dict[str, WorkflowActionExecution], WithLogger):
@@ -33,11 +25,11 @@ class Workflow(dict[str, WorkflowActionExecution], WithLogger):
         actions_map: dict[str, WorkflowActionExecution],
         context: t.Optional[dict[str, t.Any]] = None,
         source_file: t.Optional[pathlib.Path] = None,
-        configuration: t.Optional[Configuration] = None,
+        configuration: t.Optional[WorkflowConfiguration] = None,
     ) -> None:
         super().__init__(actions_map)
         self.source_file: t.Optional[pathlib.Path] = source_file
-        self.configuration: Configuration = configuration or Configuration()
+        self.configuration: WorkflowConfiguration = configuration or WorkflowConfiguration()
         self._entrypoints: set[str] = set()
         self._tiers_sequence: list[list[WorkflowActionExecution]] = []
         self._descendants_map: dict[str, dict[str, ActionDependency]] = collections.defaultdict(dict)
