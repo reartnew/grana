@@ -1,6 +1,9 @@
 """All the templating stuff."""
 
+from __future__ import annotations
+
 import os
+import pathlib
 import typing as t
 
 from . import containers as c
@@ -25,6 +28,28 @@ class CommonTemplar(WithLogger):
         self._locals: dict[str, t.Any] = args
         self._globals: dict[str, t.Any] = {f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS}
         self._depth: int = 0
+
+    @classmethod
+    def from_path(cls, path: pathlib.Path) -> CommonTemplar:
+        """Construct a base templar from the source file path"""
+        # pylint: disable=import-outside-toplevel,cyclic-import
+        from ..config.constants import C
+
+        templar_metadata: dict = c.LooseDict(
+            {
+                "source_file": path,
+                "here": path.parent,
+                "cwd": C.CONTEXT_DIRECTORY,
+            }
+        )
+        templar_env: dict = c.LooseDict(os.environ)
+        return cls(
+            metadata=templar_metadata,
+            environment=templar_env,
+            # Aliases
+            meta=templar_metadata,
+            env=templar_env,
+        )
 
     def render(self, value: str) -> str:
         """Process string data, replacing all @{} occurrences."""

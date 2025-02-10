@@ -5,7 +5,6 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
-import os
 import pathlib
 import typing as t
 
@@ -55,7 +54,7 @@ class RC:
         """Load from file"""
         # pylint: disable=import-outside-toplevel,cyclic-import
         from . import C
-        from ...rendering import CommonTemplar, containers as c
+        from ...rendering import CommonTemplar
 
         rc_file_path: pathlib.Path = C.RC_FILE
         if not rc_file_path.is_file():
@@ -64,19 +63,6 @@ class RC:
         logger.info(f"Loading RC file: {str(rc_file_path)!r}")
         with rc_file_path.open() as f:
             config_data: dict = t.cast(dict, yaml.load(f, ExpressionYAMLLoader))  # nosec
-        templar_metadata: dict = c.LooseDict(
-            {
-                "here": rc_file_path.parent,
-                "cwd": C.CONTEXT_DIRECTORY,
-            }
-        )
-        templar_env: dict = c.LooseDict(os.environ)
-        templar = CommonTemplar(
-            metadata=templar_metadata,
-            environment=templar_env,
-            # Aliases
-            meta=templar_metadata,
-            env=templar_env,
-        )
+        templar: CommonTemplar = CommonTemplar.from_path(rc_file_path)
         rendered_data: t.Dict[str, t.Any] = templar.recursive_render(config_data)
         return from_dict(RC, rendered_data)
