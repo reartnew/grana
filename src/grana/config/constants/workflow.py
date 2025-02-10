@@ -1,16 +1,17 @@
 """Workflow-based configuration values"""
 
 import contextlib
-import contextvars
 import dataclasses
 import typing as t
+
+from ...tools.context import ContextManagerVar
 
 __all__ = [
     "WorkflowConfiguration",
     "CONTEXT_HOLDER",
 ]
 
-CONTEXT_HOLDER: contextvars.ContextVar[dict[str, t.Any]] = contextvars.ContextVar("CONTEXT_HOLDER", default={})
+CONTEXT_HOLDER: ContextManagerVar[dict[str, t.Any]] = ContextManagerVar(default={})
 
 
 class ConfigSentinel:
@@ -32,8 +33,5 @@ class WorkflowConfiguration:
         cfg_dict: t.Dict[str, t.Any] = {
             k: v for k, v in dataclasses.asdict(self).items() if not isinstance(v, ConfigSentinel)
         }
-        token: contextvars.Token = CONTEXT_HOLDER.set(cfg_dict)
-        try:
+        with CONTEXT_HOLDER.set(cfg_dict):
             yield
-        finally:
-            CONTEXT_HOLDER.reset(token)
