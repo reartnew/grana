@@ -72,13 +72,11 @@ class RC:
         )
         templar_env: dict = c.LooseDict(os.environ)
         templar = CommonTemplar(
-            {
-                "metadata": templar_metadata,
-                "environment": templar_env,
-                # Aliases
-                "meta": templar_metadata,
-                "env": templar_env,
-            }
+            metadata=templar_metadata,
+            environment=templar_env,
+            # Aliases
+            meta=templar_metadata,
+            env=templar_env,
         )
         rendered_data: t.Dict[str, t.Any] = templar.recursive_render(config_data)
         return from_dict(RC, rendered_data)

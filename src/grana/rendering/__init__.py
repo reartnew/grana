@@ -21,7 +21,7 @@ class CommonTemplar(WithLogger):
 
     DISABLED_GLOBALS: list[str] = ["exec", "eval", "compile", "setattr", "delattr"]
 
-    def __init__(self, args: dict[str, t.Any]) -> None:
+    def __init__(self, **args: dict[str, t.Any]) -> None:
         self._locals: dict[str, t.Any] = args
         self._globals: dict[str, t.Any] = {f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS}
         self._depth: int = 0
@@ -117,18 +117,16 @@ class WorkflowTemplar(CommonTemplar):
         if metadata is not None:
             metadata_container.update(metadata)
         super().__init__(
-            {
-                # Full names
-                "outcomes": outcomes_container,
-                "context": context_container,
-                "environment": environment_container,
-                "metadata": metadata_container,
-                # Aliases
-                "out": outcomes_container,
-                "ctx": context_container,
-                "env": environment_container,
-                "meta": metadata_container,
-            }
+            # Full names
+            outcomes=outcomes_container,
+            context=context_container,
+            environment=environment_container,
+            metadata=metadata_container,
+            # Aliases
+            out=outcomes_container,
+            ctx=context_container,
+            env=environment_container,
+            meta=metadata_container,
         )
 
     def _evaluate_context_object_expression(self, expression: str) -> t.Any:
