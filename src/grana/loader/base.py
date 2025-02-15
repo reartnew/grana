@@ -12,8 +12,9 @@ from ..actions.base import WorkflowActionExecution, ActionBase, ActionDependency
 from ..config.constants.workflow import WorkflowConfiguration
 from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
-from ..rendering import WorkflowTemplar
+from ..rendering import WorkflowTemplar, CommonTemplar
 from ..tools.classloader import from_dict
+from ..tools.context import ContextManagerVar
 from ..workflow import Workflow
 
 __all__ = [
@@ -23,6 +24,8 @@ __all__ = [
 
 class AbstractBaseWorkflowLoader(WithLogger):
     """Loaders base class"""
+
+    LOADED_FILE_NAME: ContextManagerVar[t.Optional[Path]] = ContextManagerVar(default=None)
 
     def __init__(self) -> None:
         self._executions: dict[str, WorkflowActionExecution] = {}
@@ -60,7 +63,8 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Load workflow partially from file (can be called recursively).
         :param source_file: either Path or string object pointing at a file"""
         with self._read_file(source_file) as file_data:
-            self._internal_loads(file_data)
+            with self.LOADED_FILE_NAME.set(Path(source_file)):
+                self._internal_loads(file_data)
 
     def _get_context(self) -> Path:
         """Return active context directory for relative path resolution"""
@@ -222,7 +226,14 @@ class AbstractBaseWorkflowLoader(WithLogger):
         for unrecognized_cfg_key in sorted(set(configuration_dict) - allowed_cfg_keys):
             self.logger.warning(f"Unrecognized configuration key: {unrecognized_cfg_key!r}")
             configuration_dict.pop(unrecognized_cfg_key)
-        self._loaded_config = from_dict(WorkflowConfiguration, configuration_dict)
+        current_loaded_file: t.Optional[Path] = self.LOADED_FILE_NAME.get()
+        templar: CommonTemplar
+        if current_loaded_file is not None:
+            templar = CommonTemplar.from_source_file(path=current_loaded_file)
+        else:
+            templar = CommonTemplar.from_context_directory()
+        rendered_configuration_dict: dict[str, t.Any] = templar.recursive_render(configuration_dict)
+        self._loaded_config = from_dict(WorkflowConfiguration, rendered_configuration_dict)
 
     def _get_workflow_templar(self) -> WorkflowTemplar:
         return self.workflow.get_templar()

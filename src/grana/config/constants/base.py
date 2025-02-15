@@ -83,7 +83,10 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         raise Inapplicable
 
     def _get_local(self) -> VT:
-        return self.from_workflow_configuration()
+        source: ConstantSource = ConstantSource.WORKFLOW
+        result: VT = self.from_workflow_configuration()
+        self.logger.debug(f"Effective local value for {self._name!r} is {result!r} (from {source.value})")
+        return result
 
     def __get__(self, instance: t.Any, owner: type) -> VT:
         try:

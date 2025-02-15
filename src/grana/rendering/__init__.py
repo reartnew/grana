@@ -30,25 +30,42 @@ class CommonTemplar(WithLogger):
         self._depth: int = 0
 
     @classmethod
-    def from_path(cls, path: pathlib.Path) -> CommonTemplar:
+    def _make_base_templar_with_meta_and_env(cls, extra_meta: t.Optional[dict[str, t.Any]] = None) -> CommonTemplar:
+        # pylint: disable=import-outside-toplevel,cyclic-import
+        from ..config.constants import C
+
+        meta_dict: dict = c.LooseDict(cwd=C.CONTEXT_DIRECTORY)
+        if extra_meta is not None:
+            meta_dict.update(extra_meta)
+        env_dict: dict = c.LooseDict(os.environ)
+        return cls(
+            metadata=meta_dict,
+            environment=env_dict,
+            # Aliases
+            meta=meta_dict,
+            env=env_dict,
+        )
+
+    @classmethod
+    def from_source_file(cls, path: pathlib.Path) -> CommonTemplar:
+        """Construct a base templar from the source file path"""
+        return cls._make_base_templar_with_meta_and_env(
+            extra_meta={
+                "source_file": path,
+                "here": path.parent,
+            }
+        )
+
+    @classmethod
+    def from_context_directory(cls) -> CommonTemplar:
         """Construct a base templar from the source file path"""
         # pylint: disable=import-outside-toplevel,cyclic-import
         from ..config.constants import C
 
-        templar_metadata: dict = c.LooseDict(
-            {
-                "source_file": path,
-                "here": path.parent,
-                "cwd": C.CONTEXT_DIRECTORY,
+        return cls._make_base_templar_with_meta_and_env(
+            extra_meta={
+                "here": C.CONTEXT_DIRECTORY,
             }
-        )
-        templar_env: dict = c.LooseDict(os.environ)
-        return cls(
-            metadata=templar_metadata,
-            environment=templar_env,
-            # Aliases
-            meta=templar_metadata,
-            env=templar_env,
         )
 
     def render(self, value: str) -> str:
