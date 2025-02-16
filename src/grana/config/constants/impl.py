@@ -162,6 +162,7 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_STRATEGY_NAME"
     COMMAND_LINE_OPTION_NAME = "strategy"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "strategy"
     RC_PARAMETER_NAME = "strategy"
 
     def cast(self, value: str) -> StrategyClassType:
@@ -171,10 +172,6 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
             return KNOWN_STRATEGIES[value]
         except KeyError:
             raise ValueError(f"Invalid strategy name: {value!r} (allowed: {sorted(KNOWN_STRATEGIES)})") from None
-
-    def from_workflow_configuration(self) -> StrategyClassType:
-        strategy_name: str = self._get_wf_config_value("strategy")
-        return self.cast(strategy_name)
 
     def default(self) -> StrategyClassType:
         from ...strategy import ExplicitStrategy

@@ -60,6 +60,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     ENVIRONMENT_VARIABLE_NAME: str = constant_sentinel
     COMMAND_LINE_OPTION_NAME: str = constant_sentinel
     RC_PARAMETER_NAME: str = constant_sentinel
+    WORKFLOW_CONFIG_PARAMETER_NAME: str = constant_sentinel
     DEFAULT: t.Any = constant_sentinel
 
     @classmethod
@@ -111,14 +112,6 @@ class ConstantBase(WithLogger, t.Generic[VT]):
             pass
         raise NotImplementedError
 
-    def _get_wf_config_value(self, name: str) -> t.Any:
-        ctx_values_map: dict[str, t.Any] = workflow.CONTEXT_HOLDER.get()
-        if name not in ctx_values_map:
-            raise Inapplicable
-        value: t.Any = ctx_values_map[name]
-        self.logger.debug(f"Defined workflow configuration value {name!r} is accessed by {self._name!r}")
-        return value
-
     @classmethod
     def _string_to_bool(cls, value: str) -> bool:
         """Converts a string value to a boolean"""
@@ -140,7 +133,15 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def from_workflow_configuration(self) -> VT:
         """Try to load the value from loaded workflow configuration variables"""
-        raise Inapplicable
+        wf_cfg_param_name: str = self.WORKFLOW_CONFIG_PARAMETER_NAME
+        if wf_cfg_param_name is constant_sentinel:
+            raise Inapplicable
+        ctx_values_map: dict[str, t.Any] = workflow.CONTEXT_HOLDER.get()
+        if wf_cfg_param_name not in ctx_values_map:
+            raise Inapplicable
+        workflow_config_parameter_value: t.Any = ctx_values_map[wf_cfg_param_name]
+        self.logger.debug(f"Defined workflow configuration value {wf_cfg_param_name!r} is accessed by {self._name!r}")
+        return self.cast(workflow_config_parameter_value)
 
     def from_cli_option(self) -> VT:
         """Try to load the value from CLI options"""
