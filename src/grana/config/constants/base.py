@@ -47,8 +47,18 @@ class ConstantValueInfo(t.NamedTuple):
     effective_source: ConstantSource
 
 
+class ConstantSentinelType(str):
+    """Sentinel value type for ConstantBase"""
+
+
+constant_sentinel = ConstantSentinelType()
+
+
 class ConstantBase(WithLogger, t.Generic[VT]):
     """Constants used in grana runtime"""
+
+    ENVIRONMENT_VARIABLE_NAME: str = constant_sentinel
+    DEFAULT: t.Any = constant_sentinel
 
     @classmethod
     def cache_clear(cls) -> None:
@@ -141,6 +151,10 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     def _string_to_path_list(cls, value: str) -> list[Path]:
         return [Path(item.strip()) for item in value.split(":") if item]
 
+    def cast(self, value: t.Any) -> VT:
+        """Transform a value into the desired type"""
+        return t.cast(VT, value)
+
     def from_workflow_configuration(self) -> VT:
         """Try to load the value from loaded workflow configuration variables"""
         raise Inapplicable
@@ -151,7 +165,10 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def from_env(self) -> VT:
         """Try to load the value from environment variables"""
-        raise Inapplicable
+        if isinstance(self.ENVIRONMENT_VARIABLE_NAME, ConstantSentinelType):
+            raise Inapplicable
+        env_value: str = self._get_env(self.ENVIRONMENT_VARIABLE_NAME)
+        return self.cast(env_value)
 
     def from_rc_file(self) -> VT:
         """Try to load the value from the RC file"""
@@ -159,4 +176,6 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def default(self) -> VT:
         """Default value to be applied after every other source has been tested"""
-        raise Inapplicable
+        if isinstance(self.DEFAULT, ConstantSentinelType):
+            raise Inapplicable
+        return self.DEFAULT
