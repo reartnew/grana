@@ -59,6 +59,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     ENVIRONMENT_VARIABLE_NAME: str = constant_sentinel
     COMMAND_LINE_OPTION_NAME: str = constant_sentinel
+    RC_PARAMETER_NAME: str = constant_sentinel
     DEFAULT: t.Any = constant_sentinel
 
     @classmethod
@@ -109,13 +110,6 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         except Inapplicable:
             pass
         raise NotImplementedError
-
-    def _get_rc_value(self, name: str) -> t.Any:
-        cfg: RC = RC.build()
-        value: t.Any = getattr(cfg, name)
-        if value is sentinel:
-            raise Inapplicable
-        return value
 
     def _get_wf_config_value(self, name: str) -> t.Any:
         ctx_values_map: dict[str, t.Any] = workflow.CONTEXT_HOLDER.get()
@@ -170,7 +164,14 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def from_rc_file(self) -> VT:
         """Try to load the value from the RC file"""
-        raise Inapplicable
+        rc_param_name: str = self.RC_PARAMETER_NAME
+        if rc_param_name is constant_sentinel:
+            raise Inapplicable
+        cfg: RC = RC.build()
+        rc_param_value: t.Any = getattr(cfg, rc_param_name)
+        if rc_param_value is sentinel:
+            raise Inapplicable
+        return self.cast(rc_param_value)
 
     def default(self) -> VT:
         """Default value to be applied after every other source has been tested"""
