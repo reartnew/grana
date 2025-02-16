@@ -216,27 +216,17 @@ class StrictOutcomesRendering(base.ConstantBool):
     DEFAULT = True
 
 
-class ActionClassDirectories(base.ConstantBase[list[Path]]):
+class ActionClassDirectories(base.ConstantPathList):
     """Action class directories constant"""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY"
     RC_PARAMETER_NAME = "action_classes_directories"
     DEFAULT = []
 
-    def cast(self, value: t.Union[str, list[Path]]) -> list[Path]:
-        if isinstance(value, str):
-            return self._string_to_path_list(value)
-        return value
 
-
-class ExternalPythonModulesPaths(base.ConstantBase[list[Path]]):
+class ExternalPythonModulesPaths(base.ConstantPathList):
     """External python module paths constant"""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_EXTERNAL_MODULES_PATHS"
     RC_PARAMETER_NAME = "external_python_modules_paths"
     DEFAULT = []
-
-    def cast(self, value: t.Union[str, list[Path]]) -> list[Path]:
-        if isinstance(value, str):
-            return self._string_to_path_list(value)
-        return value

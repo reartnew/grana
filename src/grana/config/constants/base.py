@@ -18,6 +18,7 @@ __all__ = [
     "ConstantBase",
     "CONSTANT_GLOBAL_SOURCES",
     "ConstantBool",
+    "ConstantPathList",
 ]
 
 VT = t.TypeVar("VT")
@@ -113,21 +114,6 @@ class ConstantBase(WithLogger, t.Generic[VT]):
             pass
         raise NotImplementedError
 
-    @classmethod
-    def _string_to_bool(cls, value: str) -> bool:
-        """Converts a string value to a boolean"""
-        if value == "Y":
-            return True
-        if value == "N":
-            return False
-        if value == "":
-            raise Inapplicable
-        raise ValueError(f"{value!r} is not a valid value for a boolean variable. Expected one of: 'Y', 'N'.")
-
-    @classmethod
-    def _string_to_path_list(cls, value: str) -> list[Path]:
-        return [Path(item.strip()) for item in value.split(":") if item]
-
     def cast(self, value: t.Any) -> VT:
         """Transform a value into the desired type"""
         return t.cast(VT, value)
@@ -186,6 +172,21 @@ class ConstantBool(ConstantBase[bool]):
     """Base for boolean constants"""
 
     def cast(self, value: t.Union[str, bool]) -> bool:
+        if isinstance(value, bool):
+            return value
+        if value == "Y":
+            return True
+        if value == "N":
+            return False
+        if value == "":
+            raise Inapplicable
+        raise ValueError(f"{value!r} is not a valid value for a boolean variable. Expected one of: 'Y', 'N'.")
+
+
+class ConstantPathList(ConstantBase[list[Path]]):
+    """Base for path list constants"""
+
+    def cast(self, value: t.Union[str, list[Path]]) -> list[Path]:
         if isinstance(value, str):
-            return self._string_to_bool(value)
+            return [Path(item.strip()) for item in value.split(":") if item]
         return value
