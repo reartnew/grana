@@ -17,6 +17,7 @@ __all__ = [
     "ConstantValueInfo",
     "ConstantBase",
     "CONSTANT_GLOBAL_SOURCES",
+    "ConstantBool",
 ]
 
 VT = t.TypeVar("VT")
@@ -179,3 +180,12 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         if self.DEFAULT is constant_sentinel:
             raise Inapplicable
         return self.DEFAULT
+
+
+class ConstantBool(ConstantBase[bool]):
+    """Base for boolean constants"""
+
+    def cast(self, value: t.Union[str, bool]) -> bool:
+        if isinstance(value, str):
+            return self._string_to_bool(value)
+        return value

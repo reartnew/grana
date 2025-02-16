@@ -81,7 +81,7 @@ class ContextDirectory(base.ConstantBase[Path]):
         return Path().resolve()
 
 
-class InteractiveMode(base.ConstantBase[bool]):
+class InteractiveMode(base.ConstantBool):
     """Interactive mode constant"""
 
     COMMAND_LINE_OPTION_NAME = "interactive"
@@ -179,16 +179,11 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
         return ExplicitStrategy
 
 
-class UseColor(base.ConstantBase[bool]):
+class UseColor(base.ConstantBool):
     """Use color constant"""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_FORCE_COLOR"
     RC_PARAMETER_NAME = "force_color"
-
-    def cast(self, value: t.Union[str, bool]) -> bool:
-        if isinstance(value, str):
-            return self._string_to_bool(value)
-        return value
 
     def default(self) -> bool:
         try:
@@ -205,30 +200,20 @@ class DefaultShellExecutable(base.ConstantBase[str]):
     DEFAULT = "/bin/sh"
 
 
-class ShellInjectYieldFunction(base.ConstantBase[bool]):
+class ShellInjectYieldFunction(base.ConstantBool):
     """Shell inject yield function constant"""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_SHELL_INJECT_YIELD_FUNCTION"
     RC_PARAMETER_NAME = "shell_inject_yield_function"
     DEFAULT = True
 
-    def cast(self, value: t.Union[str, bool]) -> bool:
-        if isinstance(value, str):
-            return self._string_to_bool(value)
-        return value
 
-
-class StrictOutcomesRendering(base.ConstantBase[bool]):
+class StrictOutcomesRendering(base.ConstantBool):
     """Strict outcomes rendering constant"""
 
     ENVIRONMENT_VARIABLE_NAME = "STRICT_OUTCOMES_RENDERING"
     RC_PARAMETER_NAME = "strict_outcomes_rendering"
     DEFAULT = True
-
-    def cast(self, value: t.Union[str, bool]) -> bool:
-        if isinstance(value, str):
-            return self._string_to_bool(value)
-        return value
 
 
 class ActionClassDirectories(base.ConstantBase[list[Path]]):
