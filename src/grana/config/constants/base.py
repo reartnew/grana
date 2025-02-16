@@ -117,12 +117,6 @@ class ConstantBase(WithLogger, t.Generic[VT]):
             raise Inapplicable
         return value
 
-    def _get_cli_arg(self, name: str) -> t.Any:
-        if (value := get_cli_option(name)) is None:
-            raise Inapplicable
-        self.logger.debug(f"Defined CLI option {name!r} is accessed by {self._name!r}")
-        return value
-
     def _get_wf_config_value(self, name: str) -> t.Any:
         ctx_values_map: dict[str, t.Any] = workflow.CONTEXT_HOLDER.get()
         if name not in ctx_values_map:

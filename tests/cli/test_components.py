@@ -9,8 +9,8 @@ from grana.display.default import DefaultDisplay
 from grana.strategy import ExplicitStrategy, FreeStrategy
 
 
-def test_invalid_strategy_cli_arg(invalid_strategy_cli_arg: None) -> None:
-    """Check error throw for bad CLI strategy arg value"""
+def test_invalid_strategy_cli_arg(invalid_strategy_cli_opt) -> None:
+    """Check error throw for bad CLI strategy option value"""
     with pytest.raises(ValueError, match="Invalid strategy name"):
         assert C.STRATEGY_CLASS
 

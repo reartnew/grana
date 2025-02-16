@@ -1,4 +1,4 @@
-"""CLI arguments"""
+"""CLI options"""
 
 import functools
 import typing as t
@@ -6,20 +6,20 @@ import typing as t
 import click
 
 __all__ = [
-    "cliargs_receiver",
+    "cli_opts_receiver",
     "get_cli_option",
 ]
 
 _CLI_OPTIONS: dict[str, t.Any] = {}
 
 
-def cliargs_receiver(func):
-    """Store CLI args in the _CLI_PARAMS container for further processing"""
+def cli_opts_receiver(func):
+    """Store CLI options in the _CLI_OPTIONS container for further processing"""
 
     @functools.wraps(func)
     # pylint: disable=unused-argument
     def wrapped(ctx: click.Context, **kwargs):
-        old_cli_params: dict[str, t.Any] = _CLI_OPTIONS.copy()
+        old_cli_options: dict[str, t.Any] = _CLI_OPTIONS.copy()
         current_ctx: t.Optional[click.Context] = ctx
         while current_ctx:
             for k, v in current_ctx.params.items():
@@ -32,7 +32,7 @@ def cliargs_receiver(func):
             # Restore CLI params container
             for k in list(_CLI_OPTIONS):
                 del _CLI_OPTIONS[k]
-            _CLI_OPTIONS.update(old_cli_params)
+            _CLI_OPTIONS.update(old_cli_options)
 
     return click.pass_context(wrapped)
 

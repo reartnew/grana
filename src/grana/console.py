@@ -10,7 +10,7 @@ import click
 from . import logging as grana_logging
 from .config.constants import C, rc
 from .config.constants.base import ConstantSource
-from .config.constants.cli import get_cli_option, cliargs_receiver
+from .config.constants.cli import get_cli_option, cli_opts_receiver
 from .config.constants.environment import ENV_DOC
 from .display.color import Color
 from .display.default import DefaultDisplay
@@ -60,7 +60,7 @@ class WorkflowPositionalArgument(click.Argument):
     "--display",
     help="Display name. Defaults to `prefixes`. Also configurable via the `GRANA_DISPLAY_NAME` environment variable.",
 )
-@cliargs_receiver
+@cli_opts_receiver
 def main() -> None:
     """Open-source command-line declarative automation tool."""
 
@@ -68,7 +68,7 @@ def main() -> None:
 def wrap_cli_command(func):
     """Standard loading and error handling"""
 
-    @cliargs_receiver
+    @cli_opts_receiver
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         grana_logging.configure_logging(
