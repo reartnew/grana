@@ -37,4 +37,4 @@ def test_invalid_strategy_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_default_display(monkeypatch: pytest.MonkeyPatch) -> None:
     """Check that default display is the DefaultDisplay"""
     monkeypatch.delenv("GRANA_DISPLAY_SOURCE_FILE", raising=False)
-    assert C.DISPLAY_CLASS is DefaultDisplay
+    assert C.INTERNAL_DISPLAY_CLASS is DefaultDisplay

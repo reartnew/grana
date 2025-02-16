@@ -130,12 +130,6 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         self.logger.debug(f"Defined workflow configuration value {name!r} is accessed by {self._name!r}")
         return value
 
-    def _get_env(self, name: str) -> str:
-        if (value := os.environ.get(name)) is None:
-            raise Inapplicable
-        self.logger.debug(f"Defined environment variable {name!r} is accessed by {self._name!r}")
-        return value
-
     @classmethod
     def _string_to_bool(cls, value: str) -> bool:
         """Converts a string value to a boolean"""
@@ -165,9 +159,12 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def from_env(self) -> VT:
         """Try to load the value from environment variables"""
-        if isinstance(self.ENVIRONMENT_VARIABLE_NAME, ConstantSentinelType):
+        env_var_name: str = self.ENVIRONMENT_VARIABLE_NAME
+        if isinstance(env_var_name, ConstantSentinelType):
             raise Inapplicable
-        env_value: str = self._get_env(self.ENVIRONMENT_VARIABLE_NAME)
+        if (env_value := os.environ.get(env_var_name)) is None:
+            raise Inapplicable
+        self.logger.debug(f"Defined environment variable {env_var_name!r} is accessed by {self._name!r}")
         return self.cast(env_value)
 
     def from_rc_file(self) -> VT:

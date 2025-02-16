@@ -23,7 +23,8 @@ __all__ = [
     "InteractiveMode",
     "WorkflowSourceFile",
     "WorkflowLoaderClass",
-    "DisplayClass",
+    "InternalDisplayClass",
+    "ExternalDisplayClass",
     "StrategyClass",
     "UseColor",
     "DefaultShellExecutable",
@@ -128,57 +129,52 @@ class WorkflowLoaderClass(base.ConstantBase[t.Optional[LoaderClassType]]):
         return self.cast(self._get_rc_value("workflow_loader_source_file"))
 
 
-class DisplayClass(base.ConstantBase[DisplayClassType]):
+class InternalDisplayClass(base.ConstantBase[DisplayClassType]):
     """Display class constant"""
 
-    @classmethod
-    def _display_class_by_name(cls, name: str) -> DisplayClassType:
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_DISPLAY_NAME"
+
+    def cast(self, value: str) -> DisplayClassType:
         from ...display.default import KNOWN_DISPLAYS
 
         try:
-            return KNOWN_DISPLAYS[name]
+            return KNOWN_DISPLAYS[value]
         except Exception:
-            raise ValueError(f"Display name should be one of: {sorted(KNOWN_DISPLAYS)}. Got {name!r}") from None
+            raise ValueError(f"Display name should be one of: {sorted(KNOWN_DISPLAYS)}. Got {value!r}") from None
 
     def from_cli_arg(self) -> DisplayClassType:
         display_name: str = self._get_cli_arg("display")
-        return self._display_class_by_name(display_name)
+        return self.cast(display_name)
 
-    def _load_from_source_file_or_by_name(
-        self,
-        display_source_file_getter: t.Callable[[], str],
-        display_name_getter: t.Callable[[], str],
-    ) -> DisplayClassType:
-        try:
-            custom_display_source_file: str = display_source_file_getter()
-        except base.Inapplicable:
-            known_display_name: str = display_name_getter()
-            return self._display_class_by_name(known_display_name)
+    def from_rc_file(self) -> DisplayClassType:
+        display_name: str = self._get_rc_value("display_name")
+        return self.cast(display_name)
+
+    def default(self) -> DisplayClassType:
+        from ...display.default import DefaultDisplay
+
+        return DefaultDisplay
+
+
+class ExternalDisplayClass(base.ConstantBase[t.Optional[DisplayClassType]]):
+    """Display class constant"""
+
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_DISPLAY_SOURCE_FILE"
+    DEFAULT = None
+
+    def cast(self, value: str) -> DisplayClassType:
         return t.cast(
             DisplayClassType,
             class_from_module(
-                source_path=Path(custom_display_source_file),
+                source_path=Path(value),
                 class_name="Display",
                 submodule_name="display",
             ),
         )
 
     def from_rc_file(self) -> DisplayClassType:
-        return self._load_from_source_file_or_by_name(
-            display_source_file_getter=lambda: self._get_rc_value("display_source_file"),
-            display_name_getter=lambda: self._get_rc_value("display_name"),
-        )
-
-    def from_env(self) -> DisplayClassType:
-        return self._load_from_source_file_or_by_name(
-            display_source_file_getter=lambda: self._get_env("GRANA_DISPLAY_SOURCE_FILE"),
-            display_name_getter=lambda: self._get_env("GRANA_DISPLAY_NAME"),
-        )
-
-    def default(self) -> DisplayClassType:
-        from ...display.default import DefaultDisplay
-
-        return DefaultDisplay
+        display_name: str = self._get_rc_value("display_source_file")
+        return self.cast(display_name)
 
 
 class StrategyClass(base.ConstantBase[StrategyClassType]):

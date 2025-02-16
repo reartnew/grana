@@ -64,7 +64,7 @@ class Runner:
     @functools.cached_property
     def display(self) -> types.DisplayType:
         """Attached display"""
-        display_class: types.DisplayClassType = C.DISPLAY_CLASS
+        display_class: types.DisplayClassType = C.EXTERNAL_DISPLAY_CLASS or C.INTERNAL_DISPLAY_CLASS
         self.logger.debug(f"Using display class: {display_class}")
         return display_class()
 
