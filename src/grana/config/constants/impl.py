@@ -41,15 +41,19 @@ class LogLevel(base.ConstantBase[str]):
     ENVIRONMENT_VARIABLE_NAME = "GRANA_LOG_LEVEL"
     DEFAULT = "ERROR"
 
+    _LOG_LEVELS_NORMALIZATION_MAP: dict[str, str] = {
+        "0": "ERROR",
+        "1": "WARNING",
+        "2": "INFO",
+        "3": "DEBUG",
+    }
+
+    def cast(self, value: t.Any) -> str:
+        return self._LOG_LEVELS_NORMALIZATION_MAP.get(value, value)
+
     def from_cli_arg(self) -> str:
         raw_log_level: str = self._get_cli_arg("log_level")
-        _log_levels_normalization_map: dict[str, str] = {
-            "0": "ERROR",
-            "1": "WARNING",
-            "2": "INFO",
-            "3": "DEBUG",
-        }
-        return _log_levels_normalization_map.get(raw_log_level, raw_log_level)
+        return self.cast(raw_log_level)
 
     def from_rc_file(self) -> str:
         return self._get_rc_value("log_level")
