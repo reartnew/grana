@@ -3,7 +3,7 @@
 import typing as t
 
 from . import base, impl
-from .cli import get_cli_arg
+from .cli import get_cli_option
 from .helpers import class_from_module
 from ...tools.inspect import get_class_annotations
 

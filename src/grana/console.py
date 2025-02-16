@@ -10,7 +10,7 @@ import click
 from . import logging as grana_logging
 from .config.constants import C, rc
 from .config.constants.base import ConstantSource
-from .config.constants.cli import get_cli_arg, cliargs_receiver
+from .config.constants.cli import get_cli_option, cliargs_receiver
 from .config.constants.environment import ENV_DOC
 from .display.color import Color
 from .display.default import DefaultDisplay
@@ -160,7 +160,7 @@ def runtime() -> None:
 
     section("Configuration")
     for attr_name, attr_value, attr_effective_source in C.info():
-        if attr_effective_source == ConstantSource.DEFAULT and not get_cli_arg("show_defaults"):
+        if attr_effective_source == ConstantSource.DEFAULT and not get_cli_option("show_defaults"):
             continue
         mapping(attr_name)
         kv("Value", attr_value, indent=1)

@@ -7,7 +7,7 @@ import typing as t
 from pathlib import Path
 
 from . import workflow
-from .cli import get_cli_arg
+from .cli import get_cli_option
 from .rc import RC, sentinel
 from ...logging import WithLogger
 
@@ -30,7 +30,7 @@ class ConstantSource(enum.Enum):
     """Enumeration of constant effective value sources"""
 
     WORKFLOW = "workflow configuration"
-    COMMAND = "CLI argument"
+    COMMAND = "CLI option"
     ENVIRONMENT = "environment variable"
     CONFIG = "configuration file"
     DEFAULT = "default value"
@@ -58,6 +58,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     """Constants used in grana runtime"""
 
     ENVIRONMENT_VARIABLE_NAME: str = constant_sentinel
+    COMMAND_LINE_OPTION_NAME: str = constant_sentinel
     DEFAULT: t.Any = constant_sentinel
 
     @classmethod
@@ -77,7 +78,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     @functools.lru_cache(None)
     def _get_global(self) -> VT:
         for source, method in (
-            (ConstantSource.COMMAND, self.from_cli_arg),
+            (ConstantSource.COMMAND, self.from_cli_option),
             (ConstantSource.ENVIRONMENT, self.from_env),
             (ConstantSource.CONFIG, self.from_rc_file),
             (ConstantSource.DEFAULT, self.default),
@@ -117,9 +118,9 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         return value
 
     def _get_cli_arg(self, name: str) -> t.Any:
-        if (value := get_cli_arg(name)) is None:
+        if (value := get_cli_option(name)) is None:
             raise Inapplicable
-        self.logger.debug(f"Defined CLI argument {name!r} is accessed by {self._name!r}")
+        self.logger.debug(f"Defined CLI option {name!r} is accessed by {self._name!r}")
         return value
 
     def _get_wf_config_value(self, name: str) -> t.Any:
@@ -153,19 +154,25 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         """Try to load the value from loaded workflow configuration variables"""
         raise Inapplicable
 
-    def from_cli_arg(self) -> VT:
-        """Try to load the value from CLI args"""
-        raise Inapplicable
+    def from_cli_option(self) -> VT:
+        """Try to load the value from CLI options"""
+        cli_option_name: str = self.COMMAND_LINE_OPTION_NAME
+        if cli_option_name is constant_sentinel:
+            raise Inapplicable
+        if (cli_option_value := get_cli_option(cli_option_name)) is None:
+            raise Inapplicable
+        self.logger.debug(f"Defined CLI option {cli_option_name!r} is accessed by {self._name!r}")
+        return self.cast(cli_option_value)
 
     def from_env(self) -> VT:
         """Try to load the value from environment variables"""
         env_var_name: str = self.ENVIRONMENT_VARIABLE_NAME
-        if isinstance(env_var_name, ConstantSentinelType):
+        if env_var_name is constant_sentinel:
             raise Inapplicable
-        if (env_value := os.environ.get(env_var_name)) is None:
+        if (env_var_value := os.environ.get(env_var_name)) is None:
             raise Inapplicable
         self.logger.debug(f"Defined environment variable {env_var_name!r} is accessed by {self._name!r}")
-        return self.cast(env_value)
+        return self.cast(env_var_value)
 
     def from_rc_file(self) -> VT:
         """Try to load the value from the RC file"""
@@ -173,6 +180,6 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def default(self) -> VT:
         """Default value to be applied after every other source has been tested"""
-        if isinstance(self.DEFAULT, ConstantSentinelType):
+        if self.DEFAULT is constant_sentinel:
             raise Inapplicable
         return self.DEFAULT

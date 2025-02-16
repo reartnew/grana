@@ -39,6 +39,7 @@ class LogLevel(base.ConstantBase[str]):
     """Log level constant"""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_LOG_LEVEL"
+    COMMAND_LINE_OPTION_NAME = "log_level"
     DEFAULT = "ERROR"
 
     _LOG_LEVELS_NORMALIZATION_MAP: dict[str, str] = {
@@ -50,10 +51,6 @@ class LogLevel(base.ConstantBase[str]):
 
     def cast(self, value: t.Any) -> str:
         return self._LOG_LEVELS_NORMALIZATION_MAP.get(value, value)
-
-    def from_cli_arg(self) -> str:
-        raw_log_level: str = self._get_cli_arg("log_level")
-        return self.cast(raw_log_level)
 
     def from_rc_file(self) -> str:
         return self._get_rc_value("log_level")
@@ -91,16 +88,15 @@ class ContextDirectory(base.ConstantBase[Path]):
 class InteractiveMode(base.ConstantBase[bool]):
     """Interactive mode constant"""
 
+    COMMAND_LINE_OPTION_NAME = "interactive"
     DEFAULT = False
-
-    def from_cli_arg(self) -> bool:
-        return self._get_cli_arg("interactive")
 
 
 class WorkflowSourceFile(base.ConstantBase[t.Optional[Path]]):
     """Workflow source file constant"""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_WORKFLOW_FILE"
+    COMMAND_LINE_OPTION_NAME = "workflow_file"
     DEFAULT = None
 
     def cast(self, value: str) -> Path:
@@ -108,9 +104,6 @@ class WorkflowSourceFile(base.ConstantBase[t.Optional[Path]]):
 
     def from_rc_file(self) -> Path:
         return Path(self._get_rc_value("workflow_file"))
-
-    def from_cli_arg(self) -> Path:
-        return Path(self._get_cli_arg("workflow_file"))
 
 
 class WorkflowLoaderClass(base.ConstantBase[t.Optional[LoaderClassType]]):
@@ -137,6 +130,7 @@ class InternalDisplayClass(base.ConstantBase[DisplayClassType]):
     """Display class constant"""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_DISPLAY_NAME"
+    COMMAND_LINE_OPTION_NAME = "display"
 
     def cast(self, value: str) -> DisplayClassType:
         from ...display.default import KNOWN_DISPLAYS
@@ -145,10 +139,6 @@ class InternalDisplayClass(base.ConstantBase[DisplayClassType]):
             return KNOWN_DISPLAYS[value]
         except Exception:
             raise ValueError(f"Display name should be one of: {sorted(KNOWN_DISPLAYS)}. Got {value!r}") from None
-
-    def from_cli_arg(self) -> DisplayClassType:
-        display_name: str = self._get_cli_arg("display")
-        return self.cast(display_name)
 
     def from_rc_file(self) -> DisplayClassType:
         display_name: str = self._get_rc_value("display_name")
@@ -185,6 +175,7 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
     """Strategy class constant"""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_STRATEGY_NAME"
+    COMMAND_LINE_OPTION_NAME = "strategy"
 
     def cast(self, value: str) -> StrategyClassType:
         from ...strategy import KNOWN_STRATEGIES
@@ -193,10 +184,6 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
             return KNOWN_STRATEGIES[value]
         except KeyError:
             raise ValueError(f"Invalid strategy name: {value!r} (allowed: {sorted(KNOWN_STRATEGIES)})") from None
-
-    def from_cli_arg(self) -> StrategyClassType:
-        strategy_name: str = self._get_cli_arg("strategy")
-        return self.cast(strategy_name)
 
     def from_rc_file(self) -> StrategyClassType:
         strategy_name: str = self._get_rc_value("strategy")
