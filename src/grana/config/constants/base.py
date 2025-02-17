@@ -81,10 +81,24 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     def __set_name__(self, owner: type, name: str) -> None:
         self._name = name
 
+    def _wrap_result(self, result: VT, source: ConstantSource) -> VT:
+        """Wrap constant result value into proxy stuff"""
+        return t.cast(
+            VT,
+            LazyProxy(
+                ConstantProxyDescriptor(
+                    name=self._name,
+                    value=result,
+                    definition=self,
+                    effective_source=source,
+                )
+            ),
+        )
+
     # Indefinite cache size, so all constants fit into it
     # pylint: disable=method-cache-max-size-none
     @functools.lru_cache(None)
-    def _get_global(self) -> tuple[ConstantSource, VT]:
+    def _get_global(self) -> VT:
         for source, method in (
             (ConstantSource.COMMAND, self.from_cli_option),
             (ConstantSource.ENVIRONMENT, self.from_env),
@@ -97,28 +111,16 @@ class ConstantBase(WithLogger, t.Generic[VT]):
                 pass
             else:
                 self.logger.debug(f"Effective global value for {self._name!r} is {result!r} (from {source.value})")
-                return source, result
+                return self._wrap_result(result=result, source=source)
         raise Inapplicable
 
-    def _get_local(self) -> tuple[ConstantSource, VT]:
+    def _get_local(self) -> VT:
         source: ConstantSource = ConstantSource.WORKFLOW
         result: VT = self.from_workflow_configuration()
         self.logger.debug(f"Effective local value for {self._name!r} is {result!r} (from {source.value})")
-        return source, result
+        return self._wrap_result(result=result, source=source)
 
     def __get__(self, instance: t.Any, owner: type) -> VT:
-        source, value = self._get_value()
-        proxy = LazyProxy(
-            ConstantProxyDescriptor(
-                name=self._name,
-                value=value,
-                definition=self,
-                effective_source=source,
-            )
-        )
-        return proxy
-
-    def _get_value(self) -> tuple[ConstantSource, VT]:
         try:
             return self._get_local()
         except Inapplicable:
