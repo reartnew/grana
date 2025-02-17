@@ -44,15 +44,14 @@ class LogLevel(base.ConstantBase[str]):
     RC_PARAMETER_NAME = "log_level"
     DEFAULT = "ERROR"
 
-    _LOG_LEVELS_NORMALIZATION_MAP: dict[str, str] = {
-        "0": "ERROR",
-        "1": "WARNING",
-        "2": "INFO",
-        "3": "DEBUG",
-    }
-
     def cast(self, value: t.Any) -> str:
-        return self._LOG_LEVELS_NORMALIZATION_MAP.get(value, value)
+        log_levels_normalization_map: dict[str, str] = {
+            "0": "ERROR",
+            "1": "WARNING",
+            "2": "INFO",
+            "3": "DEBUG",
+        }
+        return log_levels_normalization_map.get(value, value)
 
 
 class LogFile(base.ConstantBase[t.Optional[Path]]):
