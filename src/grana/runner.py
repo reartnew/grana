@@ -120,6 +120,8 @@ class Runner:
         if self._started:
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
+        # Clear constants caches
+        C.cache_clear()
         # Build workflow and display
         workflow: Workflow = self.workflow
         with workflow.configuration.apply():

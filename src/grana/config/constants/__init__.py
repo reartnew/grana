@@ -2,10 +2,9 @@
 
 import typing as t
 
-from . import base, impl
+from . import base, impl, rc
 from .cli import get_cli_option
 from .helpers import class_from_module
-from ...tools.inspect import get_class_annotations
 
 __all__ = [
     "C",
@@ -49,3 +48,9 @@ class C:
             lines.append(f"{const_descriptor.name}:")
             lines.extend(f"    {line.lstrip()}" for line in const_descriptor.definition.__doc__.splitlines())
         return "\n".join(lines)
+
+    @classmethod
+    def cache_clear(cls) -> None:
+        """Reset cache"""
+        base.ConstantBase._get_global.cache_clear()  # pylint: disable=protected-access
+        rc.RC.build.cache_clear()

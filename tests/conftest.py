@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from grana import logging
-from grana.config.constants.base import ConstantBase
+from grana.config.constants import C
 
 
 def pytest_sessionstart():
@@ -25,4 +25,4 @@ def configure_logging() -> None:
 @pytest.fixture(autouse=True, scope="function")
 def reset_constants_cache() -> None:
     """Reset constants cache before each test"""
-    ConstantBase.cache_clear()
+    C.cache_clear()

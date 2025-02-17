@@ -69,12 +69,6 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     WORKFLOW_CONFIG_PARAMETER_NAME: str = constant_sentinel
     DEFAULT: t.Union[VT, ConstantSentinelType] = constant_sentinel
 
-    @classmethod
-    def cache_clear(cls) -> None:
-        """Reset cache"""
-        cls._get_global.cache_clear()
-        RC.build.cache_clear()
-
     def __init__(self) -> None:
         self._name: str = ""
 
