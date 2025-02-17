@@ -54,7 +54,7 @@ class LogLevel(base.ConstantBase[str]):
         return log_levels_normalization_map.get(value, value)
 
 
-class LogFile(base.ConstantBase[t.Optional[Path]]):
+class LogFile(base.ConstantPath[t.Optional[Path]]):
     """Specifies the log file.
     Defaults to the standard error stream."""
 
@@ -196,6 +196,7 @@ class DefaultShellExecutable(base.ConstantBase[str]):
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_DEFAULT_SHELL_EXECUTABLE"
     RC_PARAMETER_NAME = "default_shell_executable"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "default_shell_executable"
     DEFAULT = "/bin/sh"
 
 
@@ -205,6 +206,7 @@ class ShellInjectYieldFunction(base.ConstantBool):
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_SHELL_INJECT_YIELD_FUNCTION"
     RC_PARAMETER_NAME = "shell_inject_yield_function"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "shell_inject_yield_function"
     DEFAULT = True
 
 
@@ -214,6 +216,7 @@ class StrictOutcomesRendering(base.ConstantBool):
 
     ENVIRONMENT_VARIABLE_NAME = "STRICT_OUTCOMES_RENDERING"
     RC_PARAMETER_NAME = "strict_outcomes_rendering"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "strict_outcomes_rendering"
     DEFAULT = True
 
 
@@ -224,6 +227,7 @@ class ActionClassDirectories(base.ConstantPathList):
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY"
     RC_PARAMETER_NAME = "action_classes_directories"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "action_classes_directories"
     DEFAULT = []
 
 
@@ -233,4 +237,5 @@ class ExternalPythonModulesPaths(base.ConstantPathList):
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_EXTERNAL_MODULES_PATHS"
     RC_PARAMETER_NAME = "external_python_modules_paths"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "external_python_modules_paths"
     DEFAULT = []

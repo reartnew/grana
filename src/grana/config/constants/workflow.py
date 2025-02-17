@@ -2,6 +2,7 @@
 
 import contextlib
 import dataclasses
+import pathlib
 import typing as t
 
 from ...tools.context import ContextManagerVar
@@ -26,6 +27,11 @@ class WorkflowConfiguration:
     """Configuration loaded from the workflow"""
 
     strategy: t.Union[str, ConfigSentinel] = sentinel
+    default_shell_executable: t.Union[str, ConfigSentinel] = sentinel
+    shell_inject_yield_function: t.Union[bool, ConfigSentinel] = sentinel
+    strict_outcomes_rendering: t.Union[bool, ConfigSentinel] = sentinel
+    action_classes_directories: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
+    external_python_modules_paths: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
 
     @contextlib.contextmanager
     def apply(self) -> t.Generator[None, None, None]:
