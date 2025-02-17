@@ -105,7 +105,7 @@ def configure_logging(level: str, colorize: bool = False, main_file: t.Optional[
     main_logger.setLevel(level)
     ctx_filter = ContextFilter()
 
-    if main_file is None:
+    if not main_file:
         # Process stdout handler
         stderr_handler = logging.StreamHandler(sys.stderr)
         formatter: logging.Formatter = ColorFormatter() if colorize else MonochromeFormatter()

@@ -15,10 +15,10 @@ def test_constant_with_boolean_env(monkeypatch: MonkeyPatch) -> None:
 
     monkeypatch.setenv("GRANA_SHELL_INJECT_YIELD_FUNCTION", "Y")
     ConstantBase.cache_clear()
-    assert C.SHELL_INJECT_YIELD_FUNCTION is True
+    assert C.SHELL_INJECT_YIELD_FUNCTION
     monkeypatch.setenv("GRANA_SHELL_INJECT_YIELD_FUNCTION", "N")
     ConstantBase.cache_clear()
-    assert C.SHELL_INJECT_YIELD_FUNCTION is False
+    assert not C.SHELL_INJECT_YIELD_FUNCTION
     monkeypatch.setenv("GRANA_SHELL_INJECT_YIELD_FUNCTION", "foo")
     ConstantBase.cache_clear()
     with pytest.raises(ValueError):
@@ -37,10 +37,10 @@ def test_constant_with_ternary_env(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setattr(os, "isatty", isatty)
     monkeypatch.setenv("GRANA_FORCE_COLOR", "Y")
     ConstantBase.cache_clear()
-    assert C.USE_COLOR is True
+    assert C.USE_COLOR
     monkeypatch.setenv("GRANA_FORCE_COLOR", "N")
     ConstantBase.cache_clear()
-    assert C.USE_COLOR is False
+    assert not C.USE_COLOR
     monkeypatch.setenv("GRANA_FORCE_COLOR", "")
     ConstantBase.cache_clear()
     with pytest.raises(TTYException):

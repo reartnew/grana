@@ -33,13 +33,19 @@ class C:
     EXTERNAL_PYTHON_MODULES_PATHS: base.ConstantBase = impl.ExternalPythonModulesPaths()
 
     @classmethod
-    def runtime_info(cls) -> list[base.ConstantValueInfo]:
+    def constants_info(cls) -> t.Iterable[base.ConstantProxyDescriptor]:
         """Return set of info for all constants"""
-        result: list[base.ConstantValueInfo] = []
-        for attr_name, attr_type in sorted(get_class_annotations(cls).items()):
-            if not isinstance(attr_type, type) or not issubclass(attr_type, base.ConstantBase):
-                continue
-            attr_value: t.Any = getattr(C, attr_name)
-            attr_effective_source = base.CONSTANT_GLOBAL_SOURCES[attr_name]
-            result.append(base.ConstantValueInfo(attr_name, attr_value, attr_effective_source))
-        return result
+        for attr_name in sorted(dir(cls)):
+            attr_value: t.Any = getattr(cls, attr_name)
+            attr_value_origin: t.Any = getattr(attr_value, "__factory__", None)
+            if isinstance(attr_value_origin, base.ConstantProxyDescriptor):
+                yield attr_value_origin
+
+    @classmethod
+    def env_doc(cls) -> str:
+        """Returns the info on the environment variables usage"""
+        lines: list[str] = []
+        for const_descriptor in cls.constants_info():
+            lines.append(f"{const_descriptor.name}:")
+            lines.extend(f"    {line.lstrip()}" for line in const_descriptor.definition.__doc__.splitlines())
+        return "\n".join(lines)

@@ -1,5 +1,6 @@
 """Lazy-loaded constants base machinery"""
 
+import dataclasses
 import enum
 import functools
 import os
@@ -10,13 +11,13 @@ from . import workflow
 from .cli import get_cli_option
 from .rc import RC, sentinel
 from ...logging import WithLogger
+from ...rendering.containers import LazyProxy
 
 __all__ = [
     "Inapplicable",
     "ConstantSource",
-    "ConstantValueInfo",
     "ConstantBase",
-    "CONSTANT_GLOBAL_SOURCES",
+    "ConstantProxyDescriptor",
     "ConstantBool",
     "ConstantPathList",
     "ConstantPath",
@@ -39,15 +40,17 @@ class ConstantSource(enum.Enum):
     DEFAULT = "default value"
 
 
-CONSTANT_GLOBAL_SOURCES: dict[str, ConstantSource] = {}
-
-
-class ConstantValueInfo(t.NamedTuple):
-    """Constants value information"""
+@dataclasses.dataclass
+class ConstantProxyDescriptor:
+    """Descriptor for constant values"""
 
     name: str
-    value: str
+    value: t.Any
+    definition: t.Any
     effective_source: ConstantSource
+
+    def __call__(self) -> t.Any:
+        return self.value
 
 
 class ConstantSentinelType(str):
@@ -81,7 +84,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     # Indefinite cache size, so all constants fit into it
     # pylint: disable=method-cache-max-size-none
     @functools.lru_cache(None)
-    def _get_global(self) -> VT:
+    def _get_global(self) -> tuple[ConstantSource, VT]:
         for source, method in (
             (ConstantSource.COMMAND, self.from_cli_option),
             (ConstantSource.ENVIRONMENT, self.from_env),
@@ -94,17 +97,28 @@ class ConstantBase(WithLogger, t.Generic[VT]):
                 pass
             else:
                 self.logger.debug(f"Effective global value for {self._name!r} is {result!r} (from {source.value})")
-                CONSTANT_GLOBAL_SOURCES[self._name] = source
-                return result
+                return source, result
         raise Inapplicable
 
-    def _get_local(self) -> VT:
+    def _get_local(self) -> tuple[ConstantSource, VT]:
         source: ConstantSource = ConstantSource.WORKFLOW
         result: VT = self.from_workflow_configuration()
         self.logger.debug(f"Effective local value for {self._name!r} is {result!r} (from {source.value})")
-        return result
+        return source, result
 
     def __get__(self, instance: t.Any, owner: type) -> VT:
+        source, value = self._get_value()
+        proxy = LazyProxy(
+            ConstantProxyDescriptor(
+                name=self._name,
+                value=value,
+                definition=self,
+                effective_source=source,
+            )
+        )
+        return proxy
+
+    def _get_value(self) -> tuple[ConstantSource, VT]:
         try:
             return self._get_local()
         except Inapplicable:

@@ -45,7 +45,7 @@ class Runner:
     def loader(self) -> types.LoaderType:
         """Workflow loader"""
         loader_class: types.LoaderClassType
-        if C.WORKFLOW_LOADER_CLASS is not None:
+        if C.WORKFLOW_LOADER_CLASS:
             loader_class = C.WORKFLOW_LOADER_CLASS
         else:
             loader_class = get_default_loader_class_for_source(self._workflow_source)
@@ -74,8 +74,7 @@ class Runner:
             if isinstance(explicit_source, IOType):
                 return explicit_source
             return Path(explicit_source)
-        if C.WORKFLOW_SOURCE_FILE is not None:
-            source_file: Path = C.WORKFLOW_SOURCE_FILE
+        if source_file := C.WORKFLOW_SOURCE_FILE:
             if str(source_file) == "-":
                 cls.logger.info("Using stdin as workflow source")
                 return t.cast(IOType, sys.stdin)

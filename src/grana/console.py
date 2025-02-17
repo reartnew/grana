@@ -11,7 +11,6 @@ from . import logging as grana_logging
 from .config.constants import C, rc
 from .config.constants.base import ConstantSource
 from .config.constants.cli import get_cli_option, cli_opts_receiver
-from .config.constants.environment import ENV_DOC
 from .display.color import Color
 from .display.default import DefaultDisplay
 from .exceptions import BaseError, ExecutionFailed
@@ -135,7 +134,7 @@ def info() -> None:
 @info.command
 def env_vars() -> None:
     """Shows environment variables names that are taken into account."""
-    print(ENV_DOC)
+    print(C.env_doc())
 
 
 @info.command
@@ -159,12 +158,12 @@ def runtime() -> None:
     kv("Executable", sys.executable)
 
     section("Configuration")
-    for attr_name, attr_value, attr_effective_source in C.runtime_info():
-        if attr_effective_source == ConstantSource.DEFAULT and not get_cli_option("show_defaults"):
+    for const_descriptor in C.constants_info():
+        if const_descriptor.effective_source == ConstantSource.DEFAULT and not get_cli_option("show_defaults"):
             continue
-        mapping(attr_name)
-        kv("Value", attr_value, indent=1)
-        kv("Source", attr_effective_source.name.lower(), indent=1)
+        mapping(const_descriptor.name)
+        kv("Value", const_descriptor.value, indent=1)
+        kv("Source", const_descriptor.effective_source.name.lower(), indent=1)
 
     section("Actions")
     for actions_name, (action_class, action_source) in sorted(
