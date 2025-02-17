@@ -62,19 +62,16 @@ class LogFile(base.ConstantBase[t.Optional[Path]]):
     DEFAULT = None
 
 
-class RcFile(base.ConstantBase[Path]):
+class RcFile(base.ConstantPath[Path]):
     """Runtime configuration file constant"""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_RC_FILE"
-
-    def cast(self, value: str) -> Path:
-        return Path(value)
 
     def default(self) -> Path:
         return Path().resolve() / ".granarc"
 
 
-class ContextDirectory(base.ConstantBase[Path]):
+class ContextDirectory(base.ConstantPath[Path]):
     """Context directory constant"""
 
     def default(self) -> Path:
@@ -88,16 +85,13 @@ class InteractiveMode(base.ConstantBool):
     DEFAULT = False
 
 
-class WorkflowSourceFile(base.ConstantBase[t.Optional[Path]]):
+class WorkflowSourceFile(base.ConstantPath[t.Optional[Path]]):
     """Workflow source file constant"""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_WORKFLOW_FILE"
     COMMAND_LINE_OPTION_NAME = "workflow_file"
     RC_PARAMETER_NAME = "workflow_file"
     DEFAULT = None
-
-    def cast(self, value: str) -> Path:
-        return Path(value)
 
 
 class WorkflowLoaderClass(base.ConstantBase[t.Optional[LoaderClassType]]):

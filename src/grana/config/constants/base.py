@@ -19,6 +19,7 @@ __all__ = [
     "CONSTANT_GLOBAL_SOURCES",
     "ConstantBool",
     "ConstantPathList",
+    "ConstantPath",
 ]
 
 VT = t.TypeVar("VT")
@@ -63,7 +64,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     COMMAND_LINE_OPTION_NAME: str = constant_sentinel
     RC_PARAMETER_NAME: str = constant_sentinel
     WORKFLOW_CONFIG_PARAMETER_NAME: str = constant_sentinel
-    DEFAULT: t.Any = constant_sentinel
+    DEFAULT: t.Union[VT, ConstantSentinelType] = constant_sentinel
 
     @classmethod
     def cache_clear(cls) -> None:
@@ -163,7 +164,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def default(self) -> VT:
         """Default value to be applied after every other source has been tested"""
-        if self.DEFAULT is constant_sentinel:
+        if isinstance(self.DEFAULT, ConstantSentinelType):
             raise Inapplicable
         return self.DEFAULT
 
@@ -190,3 +191,10 @@ class ConstantPathList(ConstantBase[list[Path]]):
         if isinstance(value, str):
             return [Path(item.strip()) for item in value.split(":") if item]
         return value
+
+
+class ConstantPath(ConstantBase, t.Generic[VT]):
+    """Base class for path constants"""
+
+    def cast(self, value: t.Union[str, Path]) -> Path:
+        return Path(value)
