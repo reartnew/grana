@@ -71,6 +71,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def __init__(self) -> None:
         self._name: str = ""
+        self._result: t.Union[VT, ConstantSentinelType] = constant_sentinel
 
     def __set_name__(self, owner: type, name: str) -> None:
         self._name = name
@@ -89,30 +90,32 @@ class ConstantBase(WithLogger, t.Generic[VT]):
             ),
         )
 
+    def _try_from_sources(self, *sources: tuple[ConstantSource, t.Callable[[], VT]]) -> VT:
+        for source, method in sources:
+            try:
+                self._result = method()
+            except Inapplicable:
+                pass
+            else:
+                self.logger.debug(f"Effective value for {self._name!r} is {self._result!r} (from {source.value})")
+                return self._wrap_result(result=self._result, source=source)
+        raise Inapplicable
+
     # Indefinite cache size, so all constants fit into it
     # pylint: disable=method-cache-max-size-none
     @functools.lru_cache(None)
     def _get_global(self) -> VT:
-        for source, method in (
+        return self._try_from_sources(
             (ConstantSource.COMMAND, self.from_cli_option),
             (ConstantSource.ENVIRONMENT, self.from_env),
             (ConstantSource.CONFIG, self.from_rc_file),
             (ConstantSource.DEFAULT, self.default),
-        ):
-            try:
-                result = method()
-            except Inapplicable:
-                pass
-            else:
-                self.logger.debug(f"Effective global value for {self._name!r} is {result!r} (from {source.value})")
-                return self._wrap_result(result=result, source=source)
-        raise Inapplicable
+        )
 
     def _get_local(self) -> VT:
-        source: ConstantSource = ConstantSource.WORKFLOW
-        result: VT = self.from_workflow_configuration()
-        self.logger.debug(f"Effective local value for {self._name!r} is {result!r} (from {source.value})")
-        return self._wrap_result(result=result, source=source)
+        return self._try_from_sources(
+            (ConstantSource.WORKFLOW, self.from_workflow_configuration),
+        )
 
     def __get__(self, instance: t.Any, owner: type) -> VT:
         try:
