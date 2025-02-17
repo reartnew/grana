@@ -33,7 +33,7 @@ class C:
     EXTERNAL_PYTHON_MODULES_PATHS: base.ConstantBase = impl.ExternalPythonModulesPaths()
 
     @classmethod
-    def info(cls) -> list[base.ConstantValueInfo]:
+    def runtime_info(cls) -> list[base.ConstantValueInfo]:
         """Return set of info for all constants"""
         result: list[base.ConstantValueInfo] = []
         for attr_name, attr_type in sorted(get_class_annotations(cls).items()):

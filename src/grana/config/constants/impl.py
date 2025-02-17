@@ -36,7 +36,8 @@ __all__ = [
 
 
 class LogLevel(base.ConstantBase[str]):
-    """Log level constant"""
+    """Specifies the log level.
+    Default is ERROR."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_LOG_LEVEL"
     COMMAND_LINE_OPTION_NAME = "log_level"
@@ -55,7 +56,8 @@ class LogLevel(base.ConstantBase[str]):
 
 
 class LogFile(base.ConstantBase[t.Optional[Path]]):
-    """Log file constant"""
+    """Specifies the log file.
+    Defaults to the standard error stream."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_LOG_FILE"
     RC_PARAMETER_NAME = "log_file"
@@ -86,7 +88,8 @@ class InteractiveMode(base.ConstantBool):
 
 
 class WorkflowSourceFile(base.ConstantPath[t.Optional[Path]]):
-    """Workflow source file constant"""
+    """Workflow file to use.
+    Default behaviour is to check the current working directory for a `grana.y[a]ml` file."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_WORKFLOW_FILE"
     COMMAND_LINE_OPTION_NAME = "workflow_file"
@@ -95,7 +98,8 @@ class WorkflowSourceFile(base.ConstantPath[t.Optional[Path]]):
 
 
 class WorkflowLoaderClass(base.ConstantBase[t.Optional[LoaderClassType]]):
-    """Workflow loader class constant"""
+    """May point to a file containing a WorkflowLoader class definition,
+    which will replace the default implementation."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_WORKFLOW_LOADER_SOURCE_FILE"
     RC_PARAMETER_NAME = "workflow_loader_source_file"
@@ -113,7 +117,7 @@ class WorkflowLoaderClass(base.ConstantBase[t.Optional[LoaderClassType]]):
 
 
 class InternalDisplayClass(base.ConstantBase[DisplayClassType]):
-    """Display class constant"""
+    """Select the display by name from the bundled list."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_DISPLAY_NAME"
     RC_PARAMETER_NAME = "display_name"
@@ -134,7 +138,7 @@ class InternalDisplayClass(base.ConstantBase[DisplayClassType]):
 
 
 class ExternalDisplayClass(base.ConstantBase[t.Optional[DisplayClassType]]):
-    """Display class constant"""
+    """May point to a file containing a Display class definition, which will replace the default implementation."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_DISPLAY_SOURCE_FILE"
     RC_PARAMETER_NAME = "display_source_file"
@@ -152,7 +156,8 @@ class ExternalDisplayClass(base.ConstantBase[t.Optional[DisplayClassType]]):
 
 
 class StrategyClass(base.ConstantBase[StrategyClassType]):
-    """Strategy class constant"""
+    """Specifies the execution strategy.
+    Default is 'explicit'."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_STRATEGY_NAME"
     COMMAND_LINE_OPTION_NAME = "strategy"
@@ -174,7 +179,7 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
 
 
 class UseColor(base.ConstantBool):
-    """Use color constant"""
+    """When specified, this will force the colored or non-colored output, according to the setting."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_FORCE_COLOR"
     RC_PARAMETER_NAME = "force_color"
@@ -187,7 +192,8 @@ class UseColor(base.ConstantBool):
 
 
 class DefaultShellExecutable(base.ConstantBase[str]):
-    """Default shell executable constant"""
+    """Specifies which shell executable should be used by the shell action by default.
+    Default is /bin/sh."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_DEFAULT_SHELL_EXECUTABLE"
     RC_PARAMETER_NAME = "default_shell_executable"
@@ -195,7 +201,8 @@ class DefaultShellExecutable(base.ConstantBase[str]):
 
 
 class ShellInjectYieldFunction(base.ConstantBool):
-    """Shell inject yield function constant"""
+    """When set to True, all shell-related actions will inject the yield_outcome function definition.
+    Default is True."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_SHELL_INJECT_YIELD_FUNCTION"
     RC_PARAMETER_NAME = "shell_inject_yield_function"
@@ -203,7 +210,8 @@ class ShellInjectYieldFunction(base.ConstantBool):
 
 
 class StrictOutcomesRendering(base.ConstantBool):
-    """Strict outcomes rendering constant"""
+    """When set to True, rendering a missing outcome key will result in an error instead of an empty string.
+    Default is False."""
 
     ENVIRONMENT_VARIABLE_NAME = "STRICT_OUTCOMES_RENDERING"
     RC_PARAMETER_NAME = "strict_outcomes_rendering"
@@ -211,7 +219,9 @@ class StrictOutcomesRendering(base.ConstantBool):
 
 
 class ActionClassDirectories(base.ConstantPathList):
-    """Action class directories constant"""
+    """A list of local directories, from which all `*.py` files will be considered action definitions.
+    Each loaded definition is named after the filename stem and must contain an `Action` class.
+    e.g. foo-bar.py may be referenced in a YAML workflow as `type: foo-bar`."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY"
     RC_PARAMETER_NAME = "action_classes_directories"
@@ -219,7 +229,8 @@ class ActionClassDirectories(base.ConstantPathList):
 
 
 class ExternalPythonModulesPaths(base.ConstantPathList):
-    """External python module paths constant"""
+    """A list of local directories, which are added to the sys.path while loading any external modules.
+    Default is an empty list."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_EXTERNAL_MODULES_PATHS"
     RC_PARAMETER_NAME = "external_python_modules_paths"

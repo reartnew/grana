@@ -24,7 +24,7 @@ def test_workflow_load_over_sample(
         loader.load(workflow_path)
         with loader.workflow.configuration.apply():
             # Check constants
-            C.info()
+            C.runtime_info()
 
     # Check good workflow
     if maybe_exception is None:

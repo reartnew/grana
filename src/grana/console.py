@@ -159,7 +159,7 @@ def runtime() -> None:
     kv("Executable", sys.executable)
 
     section("Configuration")
-    for attr_name, attr_value, attr_effective_source in C.info():
+    for attr_name, attr_value, attr_effective_source in C.runtime_info():
         if attr_effective_source == ConstantSource.DEFAULT and not get_cli_option("show_defaults"):
             continue
         mapping(attr_name)
