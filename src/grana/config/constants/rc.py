@@ -55,14 +55,19 @@ class RC:
         # pylint: disable=import-outside-toplevel,cyclic-import
         from . import C
         from ...rendering import CommonTemplar
+        from .cache import RC_CACHE
 
-        rc_file_path: pathlib.Path = C.RC_FILE
-        if not rc_file_path.is_file():
-            logger.debug(f"No RC file found at {str(rc_file_path)!r}")
-            return RC()
-        logger.info(f"Loading RC file: {str(rc_file_path)!r}")
-        with rc_file_path.open() as f:
-            config_data: dict = t.cast(dict, yaml.load(f, ExpressionYAMLLoader))  # nosec
-        templar: CommonTemplar = CommonTemplar.from_source_file(rc_file_path)
-        rendered_data: t.Dict[str, t.Any] = templar.recursive_render(config_data)
-        return from_dict(RC, rendered_data)
+        rc_cache: list[RC] = RC_CACHE.get()
+        if not rc_cache:
+            rc_file_path: pathlib.Path = C.RC_FILE
+            if not rc_file_path.is_file():
+                logger.debug(f"No RC file found at {str(rc_file_path)!r}")
+                return RC()
+            logger.info(f"Loading RC file: {str(rc_file_path)!r}")
+            with rc_file_path.open() as f:
+                config_data: dict = t.cast(dict, yaml.load(f, ExpressionYAMLLoader))  # nosec
+            templar: CommonTemplar = CommonTemplar.from_source_file(rc_file_path)
+            rendered_data: t.Dict[str, t.Any] = templar.recursive_render(config_data)
+            result: RC = from_dict(RC, rendered_data)
+            rc_cache.append(result)
+        return rc_cache[0]

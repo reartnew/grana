@@ -9,12 +9,11 @@ import typing as t
 from pathlib import Path
 
 from . import workflow
-
-# from .cache import CONSTANTS_CACHE
+from .cache import CONSTANTS_CACHE
 from .cli import get_cli_option
 from .rc import RC, sentinel
 from ...logging import WithLogger
-from ...rendering.containers import LazyProxy
+from ...rendering.containers import LazyProxy  # pylint: disable=cyclic-import
 
 __all__ = [
     "Inapplicable",
@@ -85,11 +84,10 @@ class ConstantBase(WithLogger, t.Generic[VT]):
             self._result_and_source = result, source
 
     def __get__(self, instance: t.Any, owner: type) -> VT:
-        return self.get()
-        # constant_cache: dict[ConstantBase, t.Any] = CONSTANTS_CACHE.get()
-        # if self not in constant_cache:
-        #     constant_cache[self] = self.get()
-        # return constant_cache[self]
+        constant_cache: dict[ConstantBase, t.Any] = CONSTANTS_CACHE.get()
+        if self not in constant_cache:
+            constant_cache[self] = self.get()
+        return constant_cache[self]
 
     def get(self) -> VT:
         """To be cached in the context"""
