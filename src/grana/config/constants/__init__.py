@@ -4,6 +4,7 @@ import contextlib
 import typing as t
 
 from . import base, impl, rc, cache
+from .cache import CACHE
 from .cli import get_cli_option
 from .helpers import class_from_module
 
@@ -54,11 +55,5 @@ class C:
     @contextlib.contextmanager
     def enable_context_cache(cls) -> t.Generator[None, None, None]:
         """Enable context cache for all constants"""
-        with cache.CONSTANTS_CACHE.set({}), cache.RC_CACHE.set([]):
+        with CACHE.mount():
             yield
-
-    @classmethod
-    def cache_clear(cls) -> None:
-        """Reset cache"""
-        cache.CONSTANTS_CACHE.get().clear()
-        cache.RC_CACHE.get().clear()

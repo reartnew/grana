@@ -9,7 +9,7 @@ import typing as t
 from pathlib import Path
 
 from . import workflow
-from .cache import CONSTANTS_CACHE
+from .cache import CACHE
 from .cli import get_cli_option
 from .rc import RC, sentinel
 from ...logging import WithLogger
@@ -84,11 +84,9 @@ class ConstantBase(WithLogger, t.Generic[VT]):
             self._result_and_source = result, source
 
     def __get__(self, instance: t.Any, owner: type) -> VT:
-        constant_cache: dict[ConstantBase, t.Any] = CONSTANTS_CACHE.get()
-        if self not in constant_cache:
-            constant_cache[self] = self.get()
-        return constant_cache[self]
+        return self.get()
 
+    @CACHE.wrap
     def get(self) -> VT:
         """To be cached in the context"""
         self._result_and_source = constant_sentinel
@@ -103,12 +101,11 @@ class ConstantBase(WithLogger, t.Generic[VT]):
                 result = method()
             except Inapplicable:
                 continue
-
             self._register_result(result=result, source=source)
         if isinstance(self._result_and_source, ConstantSentinelType):
             raise NotImplementedError
         effective_result, effective_source = self._result_and_source
-        self.logger.info(f"Effective value for {self._name!r} is {effective_result!r} (from {effective_source})")
+        self.logger.info(f"Effective value for {self._name!r} is {effective_result!r} (from {effective_source.value})")
         return t.cast(
             VT,
             LazyProxy(

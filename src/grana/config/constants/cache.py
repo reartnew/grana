@@ -1,11 +1,9 @@
 """Constants cache"""
 
-from ...tools.context import ContextManagerVar
+from ...tools.context import ContextCache
 
 __all__ = [
-    "CONSTANTS_CACHE",
-    "RC_CACHE",
+    "CACHE",
 ]
 
-CONSTANTS_CACHE: ContextManagerVar[dict] = ContextManagerVar(default={})
-RC_CACHE: ContextManagerVar[list] = ContextManagerVar(default=[])
+CACHE = ContextCache()
