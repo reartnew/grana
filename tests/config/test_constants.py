@@ -33,18 +33,18 @@ def test_constant_with_ternary_env(monkeypatch: MonkeyPatch) -> None:
     def isatty(*args, **kwargs):
         raise TTYException
 
-    monkeypatch.setattr(os, "isatty", isatty)
     monkeypatch.setenv("GRANA_FORCE_COLOR", "Y")
     C.cache_clear()
     assert C.USE_COLOR
     monkeypatch.setenv("GRANA_FORCE_COLOR", "N")
     C.cache_clear()
     assert not C.USE_COLOR
-    monkeypatch.setenv("GRANA_FORCE_COLOR", "")
-    C.cache_clear()
-    with pytest.raises(TTYException):
-        assert C.USE_COLOR
     monkeypatch.setenv("GRANA_FORCE_COLOR", "foo")
     C.cache_clear()
     with pytest.raises(ValueError):
+        assert C.USE_COLOR
+    monkeypatch.setattr(os, "isatty", isatty)
+    monkeypatch.setenv("GRANA_FORCE_COLOR", "")
+    C.cache_clear()
+    with pytest.raises(TTYException):
         assert C.USE_COLOR

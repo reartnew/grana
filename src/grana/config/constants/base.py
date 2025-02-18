@@ -1,13 +1,16 @@
 """Lazy-loaded constants base machinery"""
 
+from __future__ import annotations
+
 import dataclasses
 import enum
-import functools
 import os
 import typing as t
 from pathlib import Path
 
 from . import workflow
+
+# from .cache import CONSTANTS_CACHE
 from .cli import get_cli_option
 from .rc import RC, sentinel
 from ...logging import WithLogger
@@ -71,62 +74,54 @@ class ConstantBase(WithLogger, t.Generic[VT]):
 
     def __init__(self) -> None:
         self._name: str = ""
-        self._result: t.Union[VT, ConstantSentinelType] = constant_sentinel
+        self._result_and_source: t.Union[tuple[VT, ConstantSource], ConstantSentinelType] = constant_sentinel
 
     def __set_name__(self, owner: type, name: str) -> None:
         self._name = name
 
-    def _wrap_result(self, result: VT, source: ConstantSource) -> VT:
-        """Wrap constant result value into proxy stuff"""
+    def _register_result(self, result: VT, source: ConstantSource) -> None:
+        if self._result_and_source is constant_sentinel:
+            self.logger.debug(f"{self._name} is accepted from {source}")
+            self._result_and_source = result, source
+
+    def __get__(self, instance: t.Any, owner: type) -> VT:
+        return self.get()
+        # constant_cache: dict[ConstantBase, t.Any] = CONSTANTS_CACHE.get()
+        # if self not in constant_cache:
+        #     constant_cache[self] = self.get()
+        # return constant_cache[self]
+
+    def get(self) -> VT:
+        """To be cached in the context"""
+        self._result_and_source = constant_sentinel
+        for source, method in (
+            (ConstantSource.WORKFLOW, self.from_workflow_configuration),
+            (ConstantSource.COMMAND, self.from_cli_option),
+            (ConstantSource.ENVIRONMENT, self.from_env),
+            (ConstantSource.CONFIG, self.from_rc_file),
+            (ConstantSource.DEFAULT, self.default),
+        ):
+            try:
+                result = method()
+            except Inapplicable:
+                continue
+
+            self._register_result(result=result, source=source)
+        if isinstance(self._result_and_source, ConstantSentinelType):
+            raise NotImplementedError
+        effective_result, effective_source = self._result_and_source
+        self.logger.info(f"Effective value for {self._name!r} is {effective_result!r} (from {effective_source})")
         return t.cast(
             VT,
             LazyProxy(
                 ConstantProxyDescriptor(
                     name=self._name,
-                    value=result,
+                    value=effective_result,
                     definition=self,
-                    effective_source=source,
+                    effective_source=effective_source,
                 )
             ),
         )
-
-    def _try_from_sources(self, *sources: tuple[ConstantSource, t.Callable[[], VT]]) -> VT:
-        for source, method in sources:
-            try:
-                self._result = method()
-            except Inapplicable:
-                pass
-            else:
-                self.logger.debug(f"Effective value for {self._name!r} is {self._result!r} (from {source.value})")
-                return self._wrap_result(result=self._result, source=source)
-        raise Inapplicable
-
-    # Indefinite cache size, so all constants fit into it
-    # pylint: disable=method-cache-max-size-none
-    @functools.lru_cache(None)
-    def _get_global(self) -> VT:
-        return self._try_from_sources(
-            (ConstantSource.COMMAND, self.from_cli_option),
-            (ConstantSource.ENVIRONMENT, self.from_env),
-            (ConstantSource.CONFIG, self.from_rc_file),
-            (ConstantSource.DEFAULT, self.default),
-        )
-
-    def _get_local(self) -> VT:
-        return self._try_from_sources(
-            (ConstantSource.WORKFLOW, self.from_workflow_configuration),
-        )
-
-    def __get__(self, instance: t.Any, owner: type) -> VT:
-        try:
-            return self._get_local()
-        except Inapplicable:
-            pass
-        try:
-            return self._get_global()
-        except Inapplicable:
-            pass
-        raise NotImplementedError
 
     def cast(self, value: t.Any) -> VT:
         """Transform a value into the desired type"""
