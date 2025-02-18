@@ -70,26 +70,28 @@ def wrap_cli_command(func):
     @cli_opts_receiver
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        grana_logging.configure_logging(
-            main_file=C.LOG_FILE,
-            level=C.LOG_LEVEL,
-            colorize=C.USE_COLOR and not C.LOG_FILE,
-        )
-        logger.uncork()
-        rc.logger.uncork()
-        try:
-            return func(*args, **kwargs)
-        except BaseError as e:
-            logger.debug("", exc_info=True)
-            sys.stderr.write(f"! {e}\n")
-            sys.exit(e.CODE)
-        except ExecutionFailed:
-            logger.debug("Some steps failed")
-            sys.exit(1)
-        except Exception as e:
-            logger.debug("", exc_info=True)
-            sys.stderr.write(f"! UNHANDLED EXCEPTION: {e!r}\n")
-            sys.exit(2)
+        # Enable constants caches
+        with C.enable_context_cache():
+            grana_logging.configure_logging(
+                main_file=C.LOG_FILE,
+                level=C.LOG_LEVEL,
+                colorize=C.USE_COLOR and not C.LOG_FILE,
+            )
+            logger.uncork()
+            rc.logger.uncork()
+            try:
+                return func(*args, **kwargs)
+            except BaseError as e:
+                logger.debug("", exc_info=True)
+                sys.stderr.write(f"! {e}\n")
+                sys.exit(e.CODE)
+            except ExecutionFailed:
+                logger.debug("Some steps failed")
+                sys.exit(1)
+            except Exception as e:
+                logger.debug("", exc_info=True)
+                sys.stderr.write(f"! UNHANDLED EXCEPTION: {e!r}\n")
+                sys.exit(2)
 
     return wrapped
 
