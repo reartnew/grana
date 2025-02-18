@@ -34,7 +34,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
         self._gathered_context: dict[str, t.Any] = {}
         self._action_type_counters: dict[str, int] = collections.defaultdict(int)
         self._loaded_workflow: t.Optional[Workflow] = None
-        self._loaded_config: t.Optional[WorkflowConfiguration] = None
+        self._loaded_config: WorkflowConfiguration = WorkflowConfiguration()
 
     @property
     def workflow(self) -> Workflow:

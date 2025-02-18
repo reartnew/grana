@@ -40,6 +40,7 @@ class ConstantSource(enum.Enum):
     ENVIRONMENT = "environment variable"
     CONFIG = "configuration file"
     DEFAULT = "default value"
+    MULTIPLE = "multiple sources"
 
 
 @dataclasses.dataclass
@@ -189,6 +190,14 @@ class ConstantBool(ConstantBase[bool]):
 
 class ConstantPathList(ConstantBase[list[Path]]):
     """Base for path list constants"""
+
+    def _register_result(self, result: list[Path], source: ConstantSource) -> None:
+        """Cumulative constant processing"""
+        if self._result_and_source is not constant_sentinel:
+            prev_result, _ = self._result_and_source
+            result += prev_result  # type: ignore[arg-type]
+            source = ConstantSource.MULTIPLE
+        self._result_and_source = result, source
 
     def cast(self, value: t.Union[str, list[Path]]) -> list[Path]:
         if isinstance(value, str):
