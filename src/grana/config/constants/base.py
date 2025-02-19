@@ -8,10 +8,9 @@ import os
 import typing as t
 from pathlib import Path
 
-from . import workflow
+from . import workflow, rc
 from .cache import CACHE
 from .cli import get_cli_option
-from .rc import RC, sentinel
 from ...logging import WithLogger
 from ...rendering.containers import LazyProxy  # pylint: disable=cyclic-import
 
@@ -60,27 +59,27 @@ class ConstantSentinelType(str):
     """Sentinel value type for ConstantBase"""
 
 
-constant_sentinel = ConstantSentinelType()
+sentinel = ConstantSentinelType()
 
 
 class ConstantBase(WithLogger, t.Generic[VT]):
     """Constants used in grana runtime"""
 
-    ENVIRONMENT_VARIABLE_NAME: str = constant_sentinel
-    COMMAND_LINE_OPTION_NAME: str = constant_sentinel
-    RC_PARAMETER_NAME: str = constant_sentinel
-    WORKFLOW_CONFIG_PARAMETER_NAME: str = constant_sentinel
-    DEFAULT: t.Union[VT, ConstantSentinelType] = constant_sentinel
+    ENVIRONMENT_VARIABLE_NAME: str = sentinel
+    COMMAND_LINE_OPTION_NAME: str = sentinel
+    RC_PARAMETER_NAME: str = sentinel
+    WORKFLOW_CONFIG_PARAMETER_NAME: str = sentinel
+    DEFAULT: t.Union[VT, ConstantSentinelType] = sentinel
 
     def __init__(self) -> None:
         self._name: str = ""
-        self._result_and_source: t.Union[tuple[VT, ConstantSource], ConstantSentinelType] = constant_sentinel
+        self._result_and_source: t.Union[tuple[VT, ConstantSource], ConstantSentinelType] = sentinel
 
     def __set_name__(self, owner: type, name: str) -> None:
         self._name = name
 
     def _register_result(self, result: VT, source: ConstantSource) -> None:
-        if self._result_and_source is constant_sentinel:
+        if self._result_and_source is sentinel:
             self.logger.debug(f"{self._name} is accepted from {source}")
             self._result_and_source = result, source
 
@@ -90,7 +89,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     @CACHE.wrap
     def get(self) -> VT:
         """To be cached in the context"""
-        self._result_and_source = constant_sentinel
+        self._result_and_source = sentinel
         for source, method in (
             (ConstantSource.WORKFLOW, self.from_workflow_configuration),
             (ConstantSource.COMMAND, self.from_cli_option),
@@ -126,7 +125,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     def from_workflow_configuration(self) -> VT:
         """Try to load the value from loaded workflow configuration variables"""
         wf_cfg_param_name: str = self.WORKFLOW_CONFIG_PARAMETER_NAME
-        if wf_cfg_param_name is constant_sentinel:
+        if wf_cfg_param_name is sentinel:
             raise Inapplicable
         ctx_values_map: dict[str, t.Any] = workflow.CONTEXT_HOLDER.get()
         if wf_cfg_param_name not in ctx_values_map:
@@ -138,7 +137,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     def from_cli_option(self) -> VT:
         """Try to load the value from CLI options"""
         cli_option_name: str = self.COMMAND_LINE_OPTION_NAME
-        if cli_option_name is constant_sentinel:
+        if cli_option_name is sentinel:
             raise Inapplicable
         if (cli_option_value := get_cli_option(cli_option_name)) is None:
             raise Inapplicable
@@ -148,7 +147,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     def from_env(self) -> VT:
         """Try to load the value from environment variables"""
         env_var_name: str = self.ENVIRONMENT_VARIABLE_NAME
-        if env_var_name is constant_sentinel:
+        if env_var_name is sentinel:
             raise Inapplicable
         if (env_var_value := os.environ.get(env_var_name)) is None:
             raise Inapplicable
@@ -158,11 +157,11 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     def from_rc_file(self) -> VT:
         """Try to load the value from the RC file"""
         rc_param_name: str = self.RC_PARAMETER_NAME
-        if rc_param_name is constant_sentinel:
+        if rc_param_name is sentinel:
             raise Inapplicable
-        cfg: RC = RC.build()
+        cfg: rc.RC = rc.RC.build()
         rc_param_value: t.Any = getattr(cfg, rc_param_name)
-        if rc_param_value is sentinel:
+        if rc_param_value is rc.sentinel:
             raise Inapplicable
         return self.cast(rc_param_value)
 
@@ -193,7 +192,7 @@ class ConstantPathList(ConstantBase[list[Path]]):
 
     def _register_result(self, result: list[Path], source: ConstantSource) -> None:
         """Cumulative constant processing"""
-        if self._result_and_source is not constant_sentinel:
+        if self._result_and_source is not sentinel:
             prev_result, _ = self._result_and_source
             result += prev_result  # type: ignore[arg-type]
             source = ConstantSource.MULTIPLE
