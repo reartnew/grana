@@ -52,12 +52,14 @@ class ContextCache:
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
             try:
-                local_context_cache: dict = self._cache.get()
+                local_context_cache_dict: dict = self._cache.get()
             except LookupError:
+                # Cache is not mounted
                 return f(*args, **kwargs)
+            # Prepare the signature to store result
             key = functools._make_key((f,) + args, kwargs, False)  # pylint: disable=protected-access
-            if key not in local_context_cache:
-                local_context_cache[key] = f(*args, **kwargs)
-            return local_context_cache[key]
+            if key not in local_context_cache_dict:
+                local_context_cache_dict[key] = f(*args, **kwargs)
+            return local_context_cache_dict[key]
 
         return wrapped
