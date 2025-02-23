@@ -101,6 +101,9 @@ class ConstantBase(WithLogger, t.Generic[VT]):
                 result = method()
             except Inapplicable:
                 continue
+            except Exception as e:
+                self.logger.warning(f"Evaluating {self._name!r} from {source.value} failed: {e!r}")
+                raise
             self._register_result(result=result, source=source)
         if isinstance(self._result_and_source, ConstantSentinelType):
             raise NotImplementedError

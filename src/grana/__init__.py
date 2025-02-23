@@ -10,11 +10,9 @@ from .config.constants import C
 from .display.default import DefaultDisplay
 from .loader.default import DefaultYAMLWorkflowLoader
 from .runner import Runner
-from .strategy import (
+from .strategy.impl import (
     FreeStrategy,
     SequentialStrategy,
     ExplicitStrategy,
-    StrictStrategy,
-    StrictSequentialStrategy,
 )
 from .version import __version__

@@ -1,57 +1,21 @@
-"""
-A strategy is an async-iterable object,
-emitting actions one by one for further scheduling.
-"""
+"""Available execution strategies"""
 
 from __future__ import annotations
 
 import asyncio
 import typing as t
 
-from .actions.base import WorkflowActionExecution
-from .actions.types import ActionStatus
-from .logging import WithLogger
-from .workflow import Workflow
-
-ST = t.TypeVar("ST", bound="BaseStrategy")
+from .base import BaseStrategy
+from ..actions.base import WorkflowActionExecution
+from ..actions.types import ActionStatus
+from ..config.constants import C
+from ..workflow import Workflow
 
 __all__ = [
-    "BaseStrategy",
     "FreeStrategy",
     "SequentialStrategy",
     "ExplicitStrategy",
-    "StrictStrategy",
-    "StrictSequentialStrategy",
-    "KNOWN_STRATEGIES",
 ]
-
-KNOWN_STRATEGIES: dict[str, type[BaseStrategy]] = {}
-
-
-class BaseStrategy(WithLogger, t.AsyncIterable[WorkflowActionExecution]):
-    """Strategy abstract base"""
-
-    NAME: str = ""
-    STRICT: bool = False
-
-    def __init__(self, workflow: Workflow) -> None:
-        self._workflow = workflow
-
-    def __aiter__(self: ST) -> ST:
-        return self
-
-    async def __anext__(self) -> WorkflowActionExecution:
-        raise NotImplementedError
-
-    def __init_subclass__(cls, **kwargs):
-        if KNOWN_STRATEGIES.setdefault(cls.NAME, cls) is not cls:
-            raise NameError(
-                f"Strategy named {cls.NAME!r} already exists. "
-                f"Please specify another name for the {cls.__module__}.{cls.__name__}."
-            )
-
-    def _skip_action(self, action: WorkflowActionExecution) -> None:
-        action.skip_execution()
 
 
 class FreeStrategy(BaseStrategy):
@@ -83,7 +47,7 @@ class SequentialStrategy(FreeStrategy):
             try:
                 await self._current.future
             except Exception:
-                if self.STRICT:
+                if C.DEPENDENCY_DEFAULT_STRICTNESS:
                     while True:
                         next_action = await super().__anext__()
                         self._skip_action(next_action)
@@ -128,8 +92,9 @@ class ExplicitStrategy(BaseStrategy):
             self.logger.debug(f"The next action is: {next_action}")
             for ancestor_name, ancestor_dependency in next_action.ancestors.items():
                 ancestor: WorkflowActionExecution = self._workflow[ancestor_name]
-                if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED, ActionStatus.WARNING) and (
-                    ancestor_dependency.strict or self.STRICT
+                if (
+                    ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED, ActionStatus.WARNING)
+                    and ancestor_dependency.strict
                 ):
                     self.logger.debug(f"Action {next_action} is qualified as skipped due to strict failure: {ancestor}")
                     self._skip_action(next_action)
@@ -156,17 +121,3 @@ class ExplicitStrategy(BaseStrategy):
             if maybe_next_action := self._get_maybe_next_action():
                 return maybe_next_action
         raise StopAsyncIteration
-
-
-class StrictStrategy(ExplicitStrategy):
-    """Respect all dependencies, but force them strict"""
-
-    STRICT = True
-    NAME = "strict"
-
-
-class StrictSequentialStrategy(SequentialStrategy):
-    """Linear execution until first failure"""
-
-    STRICT = True
-    NAME = "strict-sequential"

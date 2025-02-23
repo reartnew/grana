@@ -9,6 +9,7 @@ from pathlib import Path
 
 from . import base
 from .helpers import class_from_module
+from ...strategy.base import BaseStrategy
 from ...types import (
     LoaderClassType,
     StrategyClassType,
@@ -174,15 +175,10 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
     RC_PARAMETER_NAME = "strategy"
 
     def cast(self, value: str) -> StrategyClassType:
-        from ...strategy import KNOWN_STRATEGIES
-
-        try:
-            return KNOWN_STRATEGIES[value]
-        except KeyError:
-            raise ValueError(f"Invalid strategy name: {value!r} (allowed: {sorted(KNOWN_STRATEGIES)})") from None
+        return BaseStrategy.get_strategy_class_by_name(value)
 
     def default(self) -> StrategyClassType:
-        from ...strategy import ExplicitStrategy
+        from ...strategy.impl import ExplicitStrategy
 
         return ExplicitStrategy
 

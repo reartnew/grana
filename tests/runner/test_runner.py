@@ -14,7 +14,7 @@ import grana
 from grana import exceptions
 from grana.actions.base import ActionStatus
 from grana.config.constants import C
-from grana.strategy import BaseStrategy
+from grana.strategy.base import BaseStrategy
 from .types import RunFactoryType, CtxFactoryType
 
 
@@ -107,8 +107,6 @@ def test_unrecognized_workflow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         grana.FreeStrategy,
         grana.SequentialStrategy,
         grana.ExplicitStrategy,
-        grana.StrictStrategy,
-        grana.StrictSequentialStrategy,
     ],
 )
 def test_strategy_runner_call(
@@ -613,7 +611,7 @@ def test_set_strategy(
 ) -> None:
     """Check explicit strategy from workflow"""
 
-    monkeypatch.setenv("GRANA_STRATEGY_NAME", "strict")
+    monkeypatch.setenv("GRANA_STRATEGY_NAME", "free")
     with pytest.raises(exceptions.ExecutionFailed):
         run_text(
             """
@@ -695,7 +693,8 @@ actions:
     subflow_file.write_text(
         """---
 configuration:
-  strategy: strict-sequential
+  strategy: sequential
+  strict: yes
 context:
     vars:
         foo: Foo

@@ -6,7 +6,7 @@ import pytest
 
 from grana.config.constants import C
 from grana.display.default import DefaultDisplay
-from grana.strategy import ExplicitStrategy, FreeStrategy
+from grana.strategy.impl import ExplicitStrategy, FreeStrategy
 
 
 def test_invalid_strategy_cli_arg(invalid_strategy_cli_opt) -> None:
