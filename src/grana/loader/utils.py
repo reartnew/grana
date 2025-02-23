@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import yaml
 
-from ..actions.types import Expression, Import
+from ..actions.types import Expression
 from ..exceptions import YAMLStructureError
 
 __all__ = [
@@ -33,6 +33,3 @@ ExpressionYAMLLoader.add_string_constructor("!@", Expression)
 
 class DefaultYAMLLoader(ExpressionYAMLLoader):
     """Parser for default workflow loader"""
-
-
-DefaultYAMLLoader.add_string_constructor("!import", Import)

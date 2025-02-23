@@ -9,7 +9,6 @@ __all__ = [
     "NamedMessageSource",
     "RenamedMessageSource",
     "Stderr",
-    "Import",
     "Expression",
     "qualify_string_as_potentially_renderable",
     "ActionStatus",
@@ -72,13 +71,6 @@ class RenamedMessageSource:
 
 class Stderr(str):
     """Strings related to standard error stream"""
-
-
-@dataclasses.dataclass
-class Import:
-    """Import clause"""
-
-    path: str
 
 
 @dataclasses.dataclass

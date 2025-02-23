@@ -17,7 +17,6 @@ from ..actions.bundled import (
     SubflowAction,
     DockerShellAction,
 )
-from ..actions.types import Import
 from ..config.constants import C
 from ..config.constants.helpers import class_from_module
 
@@ -80,27 +79,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 dynamic_bases_map[action_type] = (action_class, str(class_file))
         return dynamic_bases_map
 
-    def _parse_import(self, tag: Import, allowed_root_keys: set[str]) -> None:
-        path: str = tag.path
-        if not path:
-            self._throw(f"Empty import: {path!r}")
-        with self._read_file(path) as file_data:
-            self._internal_loads_with_filter(
-                data=file_data,
-                allowed_root_keys=allowed_root_keys,
-            )
-
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
-        self._internal_loads_with_filter(
-            data=data,
-            allowed_root_keys=self.ALLOWED_ROOT_TAGS,
-        )
-
-    def _internal_loads_with_filter(
-        self,
-        data: t.Union[str, bytes],
-        allowed_root_keys: set[str],
-    ) -> None:
         if isinstance(data, bytes):
             data = data.decode()
         root_node: dict = yaml.load(data, DefaultYAMLLoader)  # nosec
@@ -114,7 +93,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 f"Unrecognized root keys: {sorted(unrecognized_keys)} "
                 f"(expected some of: {', '.join(sorted(self.ALLOWED_ROOT_TAGS))}"
             )
-        processable_keys: set[str] = set(root_node) & allowed_root_keys
+        processable_keys: set[str] = set(root_node) & self.ALLOWED_ROOT_TAGS
         if "configuration" in processable_keys:
             self.load_configuration_from_dict(root_node["configuration"])
         with self._loaded_config.apply():
@@ -123,28 +102,15 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 if not isinstance(actions, list):
                     self._throw(f"'actions' contents should be a list (got {type(actions)!r})")
                 for child_node in actions:
-                    if isinstance(child_node, dict):
-                        action: WorkflowActionExecution = self.build_action_from_dict_data(child_node)
-                        self._register_action(action)
-                    else:
+                    if not isinstance(child_node, dict):
                         self._throw(f"Unrecognized node type: {type(child_node)!r}")
+                    action: WorkflowActionExecution = self.build_action_from_dict_data(child_node)
+                    self._register_action(action)
             if "context" in processable_keys:
-                context: t.Union[dict[str, str], list[t.Union[dict[str, str], Import]]] = root_node["context"]
-                if isinstance(context, dict):
-                    self._loads_contexts_dict(data=context)
-                elif isinstance(context, list):
-                    for num, item in enumerate(context):
-                        if isinstance(item, dict):
-                            self._loads_contexts_dict(data=item)
-                        elif isinstance(item, Import):
-                            self._parse_import(
-                                tag=item,
-                                allowed_root_keys={"context"},
-                            )
-                        else:
-                            self._throw(f"Context item #{num + 1} is not a dict nor an '!import' (got {type(item)!r})")
-                else:
-                    self._throw(f"'context' contents should be a dict or a list (got {type(context)!r})")
+                context: dict[str, t.Any] = root_node["context"]
+                if not isinstance(context, dict):
+                    self._throw(f"'context' contents should be a dict (got {type(context)!r})")
+                self._loads_contexts_dict(data=context)
 
     def _loads_contexts_dict(self, data: dict[str, t.Any]) -> None:
         for context_key, context_value in data.items():
