@@ -65,23 +65,19 @@ class Workflow(dict[str, WorkflowActionExecution], WithLogger):
         return metadata
 
     def _establish_descendants(self) -> None:
-        missing_non_external_deps: set[str] = set()
+        missing_deps: set[str] = set()
         for action_execution in self.values():  # type: WorkflowActionExecution
             for dependency_action_name, dependency in list(action_execution.ancestors.items()):
                 if dependency_action_name not in self:
-                    if dependency.external:
-                        # Get rid of missing external deps
-                        action_execution.ancestors.pop(dependency_action_name)
-                    else:
-                        missing_non_external_deps.add(dependency_action_name)
+                    missing_deps.add(dependency_action_name)
                     continue
                 # Register symmetric descendant connection for further simplicity
                 self._descendants_map[dependency_action_name][action_execution.name] = dependency
             # Check if there are any dependencies after removal at all
             if not action_execution.ancestors:
                 self._entrypoints.add(action_execution.name)
-        if missing_non_external_deps:
-            raise IntegrityError(f"Missing actions among dependencies: {sorted(missing_non_external_deps)}")
+        if missing_deps:
+            raise IntegrityError(f"Missing actions among dependencies: {sorted(missing_deps)}")
         # Check entrypoints presence
         if not self._entrypoints:
             raise IntegrityError("No entrypoints for the workflow")

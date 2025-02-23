@@ -74,7 +74,6 @@ class ActionDependency:
     """Dependency info holder"""
 
     strict: bool = field(default_factory=strict_default_factory)
-    external: bool = False
 
 
 class ArgsMeta(type):

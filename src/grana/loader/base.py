@@ -147,11 +147,6 @@ class AbstractBaseWorkflowLoader(WithLogger):
             if not isinstance(strict, bool):
                 self._throw(f"Unrecognized 'strict' attribute type: {type(strict)!r} (expected boolean)")
             dep_holder.strict = strict
-            # Dependency 'external' attr
-            external: bool = dep_node.get("external", False)
-            if not isinstance(external, bool):
-                self._throw(f"Unrecognized 'external' attribute type: {type(external)!r} (expected boolean)")
-            dep_holder.external = external
             return dep_name, dep_holder
         self._throw(f"Unrecognized dependency node structure: {type(dep_node)!r} (expected a string or a dict)")
 

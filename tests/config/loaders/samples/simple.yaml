@@ -19,5 +19,3 @@ actions:
     expects:
       - name: RunSomeTool
         strict: Yes
-      - name: MissingExternal
-        external: Yes
