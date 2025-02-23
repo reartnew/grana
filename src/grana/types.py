@@ -4,7 +4,7 @@ Common types.
 
 from .display.base import BaseDisplay
 from .loader.base import AbstractBaseWorkflowLoader
-from .strategy import BaseStrategy
+from .strategy.base import BaseStrategy
 
 LoaderClassType = type[AbstractBaseWorkflowLoader]
 StrategyClassType = type[BaseStrategy]

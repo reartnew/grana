@@ -21,6 +21,7 @@ class C:
     RC_FILE: base.ConstantBase = impl.RcFile()
     CONTEXT_DIRECTORY: base.ConstantBase = impl.ContextDirectory()
     INTERACTIVE_MODE: base.ConstantBase = impl.InteractiveMode()
+    DEPENDENCY_DEFAULT_STRICTNESS: base.ConstantBase = impl.DependencyDefaultStrictness()
     WORKFLOW_SOURCE_FILE: base.ConstantBase = impl.WorkflowSourceFile()
     WORKFLOW_LOADER_CLASS: base.ConstantBase = impl.WorkflowLoaderClass()
     INTERNAL_DISPLAY_CLASS: base.ConstantBase = impl.InternalDisplayClass()

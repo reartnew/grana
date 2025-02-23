@@ -47,6 +47,7 @@ class RC:
     strict_outcomes_rendering: t.Union[bool, ConfigSentinel] = sentinel
     action_classes_directories: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
     external_python_modules_paths: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
+    strict: t.Union[bool, ConfigSentinel] = sentinel
 
     @classmethod
     @CACHE.wrap
