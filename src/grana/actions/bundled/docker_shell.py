@@ -149,7 +149,7 @@ class DockerShellAction(EmissionScannerActionBase):
             finally:
                 await container.delete(force=True)
 
-    @functools.lru_cache(maxsize=1)
+    @functools.cache
     def _make_auth(self) -> t.Optional[dict[str, str]]:
         if self.args.auth is None:
             return None

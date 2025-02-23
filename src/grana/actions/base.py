@@ -173,7 +173,7 @@ class WorkflowActionExecution(WithLogger):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self.status.value})"
 
-    @functools.lru_cache()
+    @functools.cache
     def compose_nested_source(self, origin: NamedMessageSource) -> NamedMessageSource:
         """Make a nested event"""
         return RenamedMessageSource(name=f"{self.name}/{origin.name}", origin=origin)

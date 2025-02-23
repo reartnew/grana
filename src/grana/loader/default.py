@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import typing as t
-from functools import lru_cache
 from pathlib import Path
 
 import yaml
@@ -18,6 +17,7 @@ from ..actions.bundled import (
     DockerShellAction,
 )
 from ..config.constants import C
+from ..config.constants.cache import CACHE
 from ..config.constants.helpers import class_from_module
 
 __all__ = [
@@ -36,7 +36,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
             **self._load_external_action_factories_mapping(),
         }
 
-    @lru_cache(maxsize=1)
+    @CACHE.wrap
     def _get_static_action_factories_mapping(self) -> dict[str, tuple[type[ActionBase], str]]:
         return {
             name: (klass, "built-in")
@@ -49,7 +49,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
             if klass is not None
         }
 
-    @lru_cache(maxsize=1)
+    @CACHE.wrap
     def _load_external_action_factories_mapping(self) -> dict[str, tuple[type[ActionBase], str]]:
         dynamic_bases_map: dict[str, tuple[type[ActionBase], str]] = {}
         for class_directory in C.ACTION_CLASSES_DIRECTORIES:  # type: str

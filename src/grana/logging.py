@@ -20,7 +20,7 @@ class LoggerProperty:
     """Class-level logger property"""
 
     @staticmethod
-    @functools.lru_cache(None)
+    @functools.cache
     def _prepare(caller_type: type) -> logging.Logger:
         return logging.getLogger(f"{caller_type.__module__}.{caller_type.__name__}")
 
@@ -89,7 +89,7 @@ class ColorFormatter(logging.Formatter):
         return super().format(record)
 
     @classmethod
-    @functools.lru_cache(10)
+    @functools.cache
     def _colorize_level_name(cls, name: str) -> str:
         code: int = COLOR_CODE_MAP.get(name, DEFAULT_COLOR_CODE)
         return cls._colorize_string_by_code(name, code)
