@@ -1,3 +1,0 @@
----
-actions:
-  - !import ./simple.yaml

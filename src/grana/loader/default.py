@@ -119,18 +119,13 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
             self.load_configuration_from_dict(root_node["configuration"])
         with self._loaded_config.apply():
             if "actions" in processable_keys:
-                actions: list[t.Union[dict, Import]] = root_node["actions"]
+                actions: list[dict] = root_node["actions"]
                 if not isinstance(actions, list):
                     self._throw(f"'actions' contents should be a list (got {type(actions)!r})")
                 for child_node in actions:
                     if isinstance(child_node, dict):
                         action: WorkflowActionExecution = self.build_action_from_dict_data(child_node)
                         self._register_action(action)
-                    elif isinstance(child_node, Import):
-                        self._parse_import(
-                            tag=child_node,
-                            allowed_root_keys={"actions"},
-                        )
                     else:
                         self._throw(f"Unrecognized node type: {type(child_node)!r}")
             if "context" in processable_keys:

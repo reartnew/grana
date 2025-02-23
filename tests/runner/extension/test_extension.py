@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 import grana
-from grana.exceptions import SourceError, LoadError, ExecutionFailed
+from grana.exceptions import SourceError, LoadError
 
 MODULES_DIR: Path = Path(__file__).parent / "modules"
 
@@ -70,16 +70,3 @@ def test_ext_loader_return_string(
     assert display_collector == [
         "✓ SUCCESS: Foo",
     ]
-
-
-def test_imports_context_isolation(
-    context_keys_isolation_context: None,
-    monkeypatch: pytest.MonkeyPatch,
-    display_collector: list[str],
-) -> None:
-    """Check that 'context' fields are not being imported"""
-    monkeypatch.setenv("GRANA_WORKFLOW_LOADER_SOURCE_FILE", str(MODULES_DIR / "good_loader.py"))
-    monkeypatch.setenv("GRANA_EXTERNAL_MODULES_PATHS", str(MODULES_DIR))
-    with pytest.raises(ExecutionFailed):
-        grana.Runner().run_sync()
-    assert "[Foo] !| Action 'Foo' rendering failed: Context key not found: 'imported_key'" in display_collector

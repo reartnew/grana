@@ -1,5 +1,0 @@
-# exception: LoadError
-# match: Empty import
----
-actions:
-  - !import ""

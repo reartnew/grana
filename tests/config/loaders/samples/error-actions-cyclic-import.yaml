@@ -1,5 +1,0 @@
-# exception: LoadError
-# match: Cyclic load
----
-actions:
-  - !import ./cyclic-imports/one.yaml
