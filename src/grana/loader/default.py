@@ -115,40 +115,41 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 f"(expected some of: {', '.join(sorted(self.ALLOWED_ROOT_TAGS))}"
             )
         processable_keys: set[str] = set(root_node) & allowed_root_keys
-        if "actions" in processable_keys:
-            actions: list[t.Union[dict, Import]] = root_node["actions"]
-            if not isinstance(actions, list):
-                self._throw(f"'actions' contents should be a list (got {type(actions)!r})")
-            for child_node in actions:
-                if isinstance(child_node, dict):
-                    action: WorkflowActionExecution = self.build_action_from_dict_data(child_node)
-                    self._register_action(action)
-                elif isinstance(child_node, Import):
-                    self._parse_import(
-                        tag=child_node,
-                        allowed_root_keys={"actions"},
-                    )
-                else:
-                    self._throw(f"Unrecognized node type: {type(child_node)!r}")
-        if "context" in processable_keys:
-            context: t.Union[dict[str, str], list[t.Union[dict[str, str], Import]]] = root_node["context"]
-            if isinstance(context, dict):
-                self._loads_contexts_dict(data=context)
-            elif isinstance(context, list):
-                for num, item in enumerate(context):
-                    if isinstance(item, dict):
-                        self._loads_contexts_dict(data=item)
-                    elif isinstance(item, Import):
-                        self._parse_import(
-                            tag=item,
-                            allowed_root_keys={"context"},
-                        )
-                    else:
-                        self._throw(f"Context item #{num + 1} is not a dict nor an '!import' (got {type(item)!r})")
-            else:
-                self._throw(f"'context' contents should be a dict or a list (got {type(context)!r})")
         if "configuration" in processable_keys:
             self.load_configuration_from_dict(root_node["configuration"])
+        with self._loaded_config.apply():
+            if "actions" in processable_keys:
+                actions: list[t.Union[dict, Import]] = root_node["actions"]
+                if not isinstance(actions, list):
+                    self._throw(f"'actions' contents should be a list (got {type(actions)!r})")
+                for child_node in actions:
+                    if isinstance(child_node, dict):
+                        action: WorkflowActionExecution = self.build_action_from_dict_data(child_node)
+                        self._register_action(action)
+                    elif isinstance(child_node, Import):
+                        self._parse_import(
+                            tag=child_node,
+                            allowed_root_keys={"actions"},
+                        )
+                    else:
+                        self._throw(f"Unrecognized node type: {type(child_node)!r}")
+            if "context" in processable_keys:
+                context: t.Union[dict[str, str], list[t.Union[dict[str, str], Import]]] = root_node["context"]
+                if isinstance(context, dict):
+                    self._loads_contexts_dict(data=context)
+                elif isinstance(context, list):
+                    for num, item in enumerate(context):
+                        if isinstance(item, dict):
+                            self._loads_contexts_dict(data=item)
+                        elif isinstance(item, Import):
+                            self._parse_import(
+                                tag=item,
+                                allowed_root_keys={"context"},
+                            )
+                        else:
+                            self._throw(f"Context item #{num + 1} is not a dict nor an '!import' (got {type(item)!r})")
+                else:
+                    self._throw(f"'context' contents should be a dict or a list (got {type(context)!r})")
 
     def _loads_contexts_dict(self, data: dict[str, t.Any]) -> None:
         for context_key, context_value in data.items():

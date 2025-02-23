@@ -23,7 +23,8 @@ __all__ = [
     "InteractiveMode",
     "WorkflowSourceFile",
     "WorkflowLoaderClass",
-    "DisplayClass",
+    "InternalDisplayClass",
+    "ExternalDisplayClass",
     "StrategyClass",
     "UseColor",
     "DefaultShellExecutable",
@@ -35,154 +36,99 @@ __all__ = [
 
 
 class LogLevel(base.ConstantBase[str]):
-    """Log level constant"""
+    """Specifies the log level.
+    Default is ERROR."""
 
-    def from_cli_arg(self) -> str:
-        raw_log_level: str = self._get_cli_arg("log_level")
-        _log_levels_normalization_map: dict[str, str] = {
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_LOG_LEVEL"
+    COMMAND_LINE_OPTION_NAME = "log_level"
+    RC_PARAMETER_NAME = "log_level"
+    DEFAULT = "ERROR"
+
+    def cast(self, value: t.Any) -> str:
+        log_levels_normalization_map: dict[str, str] = {
             "0": "ERROR",
             "1": "WARNING",
             "2": "INFO",
             "3": "DEBUG",
         }
-        return _log_levels_normalization_map.get(raw_log_level, raw_log_level)
-
-    def from_env(self) -> str:
-        return self._get_env("GRANA_LOG_LEVEL")
-
-    def from_rc_file(self) -> str:
-        return self._get_rc_value("log_level")
-
-    def default(self) -> str:
-        return "ERROR"
+        return log_levels_normalization_map.get(value, value)
 
 
-class LogFile(base.ConstantBase[t.Optional[Path]]):
-    """Log file constant"""
+class LogFile(base.ConstantPath[t.Optional[Path]]):
+    """Specifies the log file.
+    Defaults to the standard error stream."""
 
-    def from_env(self) -> Path:
-        return Path(self._get_env("GRANA_LOG_FILE"))
-
-    def from_rc_file(self) -> Path:
-        return Path(self._get_rc_value("log_file"))
-
-    def default(self) -> None:
-        return None
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_LOG_FILE"
+    RC_PARAMETER_NAME = "log_file"
+    DEFAULT = None
 
 
-class RcFile(base.ConstantBase[Path]):
+class RcFile(base.ConstantPath[Path]):
     """Runtime configuration file constant"""
 
-    def from_env(self) -> Path:
-        return Path(self._get_env("GRANA_RC_FILE"))
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_RC_FILE"
 
     def default(self) -> Path:
         return Path().resolve() / ".granarc"
 
 
-class ContextDirectory(base.ConstantBase[Path]):
+class ContextDirectory(base.ConstantPath[Path]):
     """Context directory constant"""
 
     def default(self) -> Path:
         return Path().resolve()
 
 
-class InteractiveMode(base.ConstantBase[bool]):
+class InteractiveMode(base.ConstantBool):
     """Interactive mode constant"""
 
-    def from_cli_arg(self) -> bool:
-        return self._get_cli_arg("interactive")
-
-    def default(self) -> bool:
-        return False
+    COMMAND_LINE_OPTION_NAME = "interactive"
+    DEFAULT = False
 
 
-class WorkflowSourceFile(base.ConstantBase[t.Optional[Path]]):
-    """Workflow source file constant"""
+class WorkflowSourceFile(base.ConstantPath[t.Optional[Path]]):
+    """Workflow file to use.
+    Default behaviour is to check the current working directory for a `grana.y[a]ml` file."""
 
-    def from_env(self) -> Path:
-        return Path(self._get_env("GRANA_WORKFLOW_FILE"))
-
-    def from_rc_file(self) -> Path:
-        return Path(self._get_rc_value("workflow_file"))
-
-    def from_cli_arg(self) -> Path:
-        return Path(self._get_cli_arg("workflow_file"))
-
-    def default(self) -> None:
-        return None
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_WORKFLOW_FILE"
+    COMMAND_LINE_OPTION_NAME = "workflow_file"
+    RC_PARAMETER_NAME = "workflow_file"
+    DEFAULT = None
 
 
 class WorkflowLoaderClass(base.ConstantBase[t.Optional[LoaderClassType]]):
-    """Workflow loader class constant"""
+    """May point to a file containing a WorkflowLoader class definition,
+    which will replace the default implementation."""
 
-    @classmethod
-    def _file_name_to_loader_class(cls, file_name: str) -> LoaderClassType:
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_WORKFLOW_LOADER_SOURCE_FILE"
+    RC_PARAMETER_NAME = "workflow_loader_source_file"
+    DEFAULT = None
+
+    def cast(self, value: str) -> LoaderClassType:
         return t.cast(
             LoaderClassType,
             class_from_module(
-                source_path=Path(file_name),
+                source_path=Path(value),
                 class_name="WorkflowLoader",
                 submodule_name="workflow.loader",
             ),
         )
 
-    def from_env(self) -> LoaderClassType:
-        return self._file_name_to_loader_class(self._get_env("GRANA_WORKFLOW_LOADER_SOURCE_FILE"))
 
-    def from_rc_file(self) -> LoaderClassType:
-        return self._file_name_to_loader_class(self._get_rc_value("workflow_loader_source_file"))
+class InternalDisplayClass(base.ConstantBase[DisplayClassType]):
+    """Select the display by name from the bundled list."""
 
-    def default(self) -> None:
-        return None
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_DISPLAY_NAME"
+    RC_PARAMETER_NAME = "display_name"
+    COMMAND_LINE_OPTION_NAME = "display"
 
-
-class DisplayClass(base.ConstantBase[DisplayClassType]):
-    """Display class constant"""
-
-    @classmethod
-    def _display_class_by_name(cls, name: str) -> DisplayClassType:
+    def cast(self, value: str) -> DisplayClassType:
         from ...display.default import KNOWN_DISPLAYS
 
         try:
-            return KNOWN_DISPLAYS[name]
+            return KNOWN_DISPLAYS[value]
         except Exception:
-            raise ValueError(f"Display name should be one of: {sorted(KNOWN_DISPLAYS)}. Got {name!r}") from None
-
-    def from_cli_arg(self) -> DisplayClassType:
-        display_name: str = self._get_cli_arg("display")
-        return self._display_class_by_name(display_name)
-
-    def _load_from_source_file_or_by_name(
-        self,
-        display_source_file_getter: t.Callable[[], str],
-        display_name_getter: t.Callable[[], str],
-    ) -> DisplayClassType:
-        try:
-            custom_display_source_file: str = display_source_file_getter()
-        except base.Inapplicable:
-            known_display_name: str = display_name_getter()
-            return self._display_class_by_name(known_display_name)
-        return t.cast(
-            DisplayClassType,
-            class_from_module(
-                source_path=Path(custom_display_source_file),
-                class_name="Display",
-                submodule_name="display",
-            ),
-        )
-
-    def from_rc_file(self) -> DisplayClassType:
-        return self._load_from_source_file_or_by_name(
-            display_source_file_getter=lambda: self._get_rc_value("display_source_file"),
-            display_name_getter=lambda: self._get_rc_value("display_name"),
-        )
-
-    def from_env(self) -> DisplayClassType:
-        return self._load_from_source_file_or_by_name(
-            display_source_file_getter=lambda: self._get_env("GRANA_DISPLAY_SOURCE_FILE"),
-            display_name_getter=lambda: self._get_env("GRANA_DISPLAY_NAME"),
-        )
+            raise ValueError(f"Display name should be one of: {sorted(KNOWN_DISPLAYS)}. Got {value!r}") from None
 
     def default(self) -> DisplayClassType:
         from ...display.default import DefaultDisplay
@@ -190,29 +136,40 @@ class DisplayClass(base.ConstantBase[DisplayClassType]):
         return DefaultDisplay
 
 
-class StrategyClass(base.ConstantBase[StrategyClassType]):
-    """Strategy class constant"""
+class ExternalDisplayClass(base.ConstantBase[t.Optional[DisplayClassType]]):
+    """May point to a file containing a Display class definition, which will replace the default implementation."""
 
-    @classmethod
-    def _strategy_class_by_name(cls, name: str) -> StrategyClassType:
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_DISPLAY_SOURCE_FILE"
+    RC_PARAMETER_NAME = "display_source_file"
+    DEFAULT = None
+
+    def cast(self, value: str) -> DisplayClassType:
+        return t.cast(
+            DisplayClassType,
+            class_from_module(
+                source_path=Path(value),
+                class_name="Display",
+                submodule_name="display",
+            ),
+        )
+
+
+class StrategyClass(base.ConstantBase[StrategyClassType]):
+    """Specifies the execution strategy.
+    Default is 'explicit'."""
+
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_STRATEGY_NAME"
+    COMMAND_LINE_OPTION_NAME = "strategy"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "strategy"
+    RC_PARAMETER_NAME = "strategy"
+
+    def cast(self, value: str) -> StrategyClassType:
         from ...strategy import KNOWN_STRATEGIES
 
         try:
-            return KNOWN_STRATEGIES[name]
+            return KNOWN_STRATEGIES[value]
         except KeyError:
-            raise ValueError(f"Invalid strategy name: {name!r} (allowed: {sorted(KNOWN_STRATEGIES)})") from None
-
-    def from_cli_arg(self) -> StrategyClassType:
-        strategy_name: str = self._get_cli_arg("strategy")
-        return self._strategy_class_by_name(strategy_name)
-
-    def from_rc_file(self) -> StrategyClassType:
-        strategy_name: str = self._get_rc_value("strategy_name")
-        return self._strategy_class_by_name(strategy_name)
-
-    def from_env(self) -> StrategyClassType:
-        strategy_name: str = self._get_env("GRANA_STRATEGY_NAME")
-        return self._strategy_class_by_name(strategy_name)
+            raise ValueError(f"Invalid strategy name: {value!r} (allowed: {sorted(KNOWN_STRATEGIES)})") from None
 
     def default(self) -> StrategyClassType:
         from ...strategy import ExplicitStrategy
@@ -220,15 +177,11 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
         return ExplicitStrategy
 
 
-class UseColor(base.ConstantBase[bool]):
-    """Use color constant"""
+class UseColor(base.ConstantBool):
+    """When specified, this will force the colored or non-colored output, according to the setting."""
 
-    def from_env(self) -> bool:
-        force_color: str = self._get_env("GRANA_FORCE_COLOR")
-        return self._string_to_bool(force_color)
-
-    def from_rc_file(self) -> bool:
-        return self._get_rc_value("force_color")
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_FORCE_COLOR"
+    RC_PARAMETER_NAME = "force_color"
 
     def default(self) -> bool:
         try:
@@ -238,65 +191,51 @@ class UseColor(base.ConstantBase[bool]):
 
 
 class DefaultShellExecutable(base.ConstantBase[str]):
-    """Default shell executable constant"""
+    """Specifies which shell executable should be used by the shell action by default.
+    Default is /bin/sh."""
 
-    def from_env(self) -> str:
-        return self._get_env("GRANA_DEFAULT_SHELL_EXECUTABLE")
-
-    def from_rc_file(self) -> str:
-        return self._get_rc_value("default_shell_executable")
-
-    def default(self) -> str:
-        return "/bin/sh"
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_DEFAULT_SHELL_EXECUTABLE"
+    RC_PARAMETER_NAME = "default_shell_executable"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "default_shell_executable"
+    DEFAULT = "/bin/sh"
 
 
-class ShellInjectYieldFunction(base.ConstantBase[bool]):
-    """Shell inject yield function constant"""
+class ShellInjectYieldFunction(base.ConstantBool):
+    """When set to True, all shell-related actions will inject the yield_outcome function definition.
+    Default is True."""
 
-    def from_env(self) -> bool:
-        return self._string_to_bool(self._get_env("GRANA_SHELL_INJECT_YIELD_FUNCTION"))
-
-    def from_rc_file(self) -> bool:
-        return self._get_rc_value("shell_inject_yield_function")
-
-    def default(self) -> bool:
-        return True
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_SHELL_INJECT_YIELD_FUNCTION"
+    RC_PARAMETER_NAME = "shell_inject_yield_function"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "shell_inject_yield_function"
+    DEFAULT = True
 
 
-class StrictOutcomesRendering(base.ConstantBase[bool]):
-    """Strict outcomes rendering constant"""
+class StrictOutcomesRendering(base.ConstantBool):
+    """When set to True, rendering a missing outcome key will result in an error instead of an empty string.
+    Default is False."""
 
-    def from_env(self) -> bool:
-        return self._string_to_bool(self._get_env("STRICT_OUTCOMES_RENDERING"))
-
-    def from_rc_file(self) -> bool:
-        return self._get_rc_value("strict_outcomes_rendering")
-
-    def default(self) -> bool:
-        return True
+    ENVIRONMENT_VARIABLE_NAME = "STRICT_OUTCOMES_RENDERING"
+    RC_PARAMETER_NAME = "strict_outcomes_rendering"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "strict_outcomes_rendering"
+    DEFAULT = True
 
 
-class ActionClassDirectories(base.ConstantBase[list[Path]]):
-    """Action class directories constant"""
+class ActionClassDirectories(base.ConstantPathList):
+    """A list of local directories, from which all `*.py` files will be considered action definitions.
+    Each loaded definition is named after the filename stem and must contain an `Action` class.
+    e.g. foo-bar.py may be referenced in a YAML workflow as `type: foo-bar`."""
 
-    def from_env(self) -> list[Path]:
-        return self._string_to_path_list(self._get_env("GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY"))
-
-    def from_rc_file(self) -> list[Path]:
-        return self._get_rc_value("action_classes_directories")
-
-    def default(self) -> list[Path]:
-        return []
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY"
+    RC_PARAMETER_NAME = "action_classes_directories"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "action_classes_directories"
+    DEFAULT = []
 
 
-class ExternalPythonModulesPaths(base.ConstantBase[list[Path]]):
-    """External python module paths constant"""
+class ExternalPythonModulesPaths(base.ConstantPathList):
+    """A list of local directories, which are added to the sys.path while loading any external modules.
+    Default is an empty list."""
 
-    def from_env(self) -> list[Path]:
-        return self._string_to_path_list(self._get_env("GRANA_EXTERNAL_MODULES_PATHS"))
-
-    def from_rc_file(self) -> list[Path]:
-        return self._get_rc_value("external_python_modules_paths")
-
-    def default(self) -> list[Path]:
-        return []
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_EXTERNAL_MODULES_PATHS"
+    RC_PARAMETER_NAME = "external_python_modules_paths"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "external_python_modules_paths"
+    DEFAULT = []

@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import dataclasses
-import functools
 import logging
-import os
 import pathlib
 import typing as t
 
 import yaml
 
+from .cache import CACHE
 from ...loader.utils import ExpressionYAMLLoader
 from ...tools.classloader import from_dict
 from ...tools.proxy import DeferredCallsProxy
@@ -25,7 +24,7 @@ __all__ = [
 
 
 class ConfigSentinel:
-    """Sentinel type for configuration parameters"""
+    """Sentinel type for runtime configuration parameters"""
 
 
 sentinel = ConfigSentinel()
@@ -41,7 +40,7 @@ class RC:
     workflow_loader_source_file: t.Union[pathlib.Path, ConfigSentinel] = sentinel
     display_source_file: t.Union[pathlib.Path, ConfigSentinel] = sentinel
     display_name: t.Union[str, ConfigSentinel] = sentinel
-    strategy_name: t.Union[str, ConfigSentinel] = sentinel
+    strategy: t.Union[str, ConfigSentinel] = sentinel
     force_color: t.Union[bool, ConfigSentinel] = sentinel
     default_shell_executable: t.Union[str, ConfigSentinel] = sentinel
     shell_inject_yield_function: t.Union[bool, ConfigSentinel] = sentinel
@@ -50,12 +49,12 @@ class RC:
     external_python_modules_paths: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
 
     @classmethod
-    @functools.lru_cache(maxsize=1)
+    @CACHE.wrap
     def build(cls) -> RC:
         """Load from file"""
         # pylint: disable=import-outside-toplevel,cyclic-import
         from . import C
-        from ...rendering import CommonTemplar, containers as c
+        from ...rendering import CommonTemplar
 
         rc_file_path: pathlib.Path = C.RC_FILE
         if not rc_file_path.is_file():
@@ -64,21 +63,6 @@ class RC:
         logger.info(f"Loading RC file: {str(rc_file_path)!r}")
         with rc_file_path.open() as f:
             config_data: dict = t.cast(dict, yaml.load(f, ExpressionYAMLLoader))  # nosec
-        templar_metadata: dict = c.LooseDict(
-            {
-                "here": rc_file_path.parent,
-                "cwd": C.CONTEXT_DIRECTORY,
-            }
-        )
-        templar_env: dict = c.LooseDict(os.environ)
-        templar = CommonTemplar(
-            {
-                "metadata": templar_metadata,
-                "environment": templar_env,
-                # Aliases
-                "meta": templar_metadata,
-                "env": templar_env,
-            }
-        )
+        templar: CommonTemplar = CommonTemplar.from_source_file(rc_file_path)
         rendered_data: t.Dict[str, t.Any] = templar.recursive_render(config_data)
         return from_dict(RC, rendered_data)

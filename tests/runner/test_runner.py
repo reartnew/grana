@@ -60,7 +60,7 @@ def test_yield_multiline_call(ctx_from_text: CtxFactoryType) -> None:
     )
     runner = grana.Runner()
     runner.run_sync()
-    assert not runner.workflow["Foo"].outcomes["foo"] == much_data
+    assert runner.workflow["Foo"].outcomes["foo"].rstrip() == much_data
 
 
 def test_runner_multiple_run(runner_good_context: None) -> None:

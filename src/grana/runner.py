@@ -45,7 +45,7 @@ class Runner:
     def loader(self) -> types.LoaderType:
         """Workflow loader"""
         loader_class: types.LoaderClassType
-        if C.WORKFLOW_LOADER_CLASS is not None:
+        if C.WORKFLOW_LOADER_CLASS:
             loader_class = C.WORKFLOW_LOADER_CLASS
         else:
             loader_class = get_default_loader_class_for_source(self._workflow_source)
@@ -64,20 +64,9 @@ class Runner:
     @functools.cached_property
     def display(self) -> types.DisplayType:
         """Attached display"""
-        display_class: types.DisplayClassType = C.DISPLAY_CLASS
+        display_class: types.DisplayClassType = C.EXTERNAL_DISPLAY_CLASS or C.INTERNAL_DISPLAY_CLASS
         self.logger.debug(f"Using display class: {display_class}")
         return display_class()
-
-    @functools.cached_property
-    def strategy(self) -> types.StrategyType:
-        """Strategy iterator"""
-        if self.loader.strategy_class is not None:
-            strategy_class: types.StrategyClassType = self.loader.strategy_class
-            self.logger.debug(f"Using strategy class from the loaded workflow: {strategy_class}")
-        else:
-            strategy_class = C.STRATEGY_CLASS
-            self.logger.debug(f"Using globally-set strategy class: {strategy_class}")
-        return strategy_class(workflow=self.workflow)
 
     @classmethod
     def _detect_workflow_source(cls, explicit_source: t.Union[str, Path, IOType, None] = None) -> t.Union[Path, IOType]:
@@ -85,8 +74,7 @@ class Runner:
             if isinstance(explicit_source, IOType):
                 return explicit_source
             return Path(explicit_source)
-        if C.WORKFLOW_SOURCE_FILE is not None:
-            source_file: Path = C.WORKFLOW_SOURCE_FILE
+        if source_file := C.WORKFLOW_SOURCE_FILE:
             if str(source_file) == "-":
                 cls.logger.info("Using stdin as workflow source")
                 return t.cast(IOType, sys.stdin)
@@ -134,26 +122,29 @@ class Runner:
         self._started = True
         # Build workflow and display
         workflow: Workflow = self.workflow
-        display: types.DisplayType = self.display
-        display.logger.debug("Starting events processing")
-        display_events_flow_processing_task: asyncio.Task = asyncio.create_task(self._process_display_events())
-        try:
-            await self._send_display_event(
-                DisplayEventName.ON_RUNNER_START,
-                children=workflow.iterate_actions(),
-            )
-            if C.INTERACTIVE_MODE:
-                await self._send_display_event(DisplayEventName.ON_PLAN_INTERACTION, workflow=workflow)
-            await self._run_all_actions()
-            await self._send_display_event(DisplayEventName.ON_RUNNER_FINISH)
-            if self._execution_failed:
-                raise ExecutionFailed
-        finally:
-            display_events_flow_processing_task.cancel()
+        with workflow.configuration.apply():
+            display: types.DisplayType = self.display
+            display.logger.debug("Starting events processing")
+            display_events_flow_processing_task: asyncio.Task = asyncio.create_task(self._process_display_events())
+            try:
+                await self._send_display_event(
+                    DisplayEventName.ON_RUNNER_START,
+                    children=workflow.iterate_actions(),
+                )
+                if C.INTERACTIVE_MODE:
+                    await self._send_display_event(DisplayEventName.ON_PLAN_INTERACTION, workflow=workflow)
+                await self._run_all_actions()
+                await self._send_display_event(DisplayEventName.ON_RUNNER_FINISH)
+                if self._execution_failed:
+                    raise ExecutionFailed
+            finally:
+                display_events_flow_processing_task.cancel()
 
     async def _run_all_actions(self) -> None:
         action_runners: dict[WorkflowActionExecution, asyncio.Task] = {}
-        async for action in self.strategy:  # type: WorkflowActionExecution
+        strategy_class: types.StrategyClassType = C.STRATEGY_CLASS
+        strategy: types.StrategyType = strategy_class(workflow=self.workflow)
+        async for action in strategy:  # type: WorkflowActionExecution
             # Finalize all actions that have been done already
             for maybe_finished_action, corresponding_runner_task in list(action_runners.items()):
                 if maybe_finished_action.future.done():

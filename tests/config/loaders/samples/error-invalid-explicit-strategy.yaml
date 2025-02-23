@@ -1,5 +1,5 @@
-# exception: LoadError
-# match: Unexpected strategy
+# exception: ValueError
+# match: Invalid strategy name
 ---
 configuration:
   strategy: foobar

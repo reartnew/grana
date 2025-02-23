@@ -10,14 +10,12 @@ import click
 from . import logging as grana_logging
 from .config.constants import C, rc
 from .config.constants.base import ConstantSource
-from .config.constants.cli import get_cli_arg, cliargs_receiver
-from .config.constants.environment import ENV_DOC
+from .config.constants.cli import get_cli_option, cli_opts_receiver
 from .display.color import Color
 from .display.default import DefaultDisplay
 from .exceptions import BaseError, ExecutionFailed
 from .loader.default import DefaultYAMLWorkflowLoader
 from .runner import Runner
-from .strategy import KNOWN_STRATEGIES
 from .tools.proxy import DeferredCallsProxy
 from .version import __version__
 
@@ -61,7 +59,7 @@ class WorkflowPositionalArgument(click.Argument):
     "--display",
     help="Display name. Defaults to `prefixes`. Also configurable via the `GRANA_DISPLAY_NAME` environment variable.",
 )
-@cliargs_receiver
+@cli_opts_receiver
 def main() -> None:
     """Open-source command-line declarative automation tool."""
 
@@ -69,29 +67,31 @@ def main() -> None:
 def wrap_cli_command(func):
     """Standard loading and error handling"""
 
-    @cliargs_receiver
+    @cli_opts_receiver
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        grana_logging.configure_logging(
-            main_file=C.LOG_FILE,
-            level=C.LOG_LEVEL,
-            colorize=C.USE_COLOR and not C.LOG_FILE,
-        )
-        logger.uncork()
-        rc.logger.uncork()
-        try:
-            return func(*args, **kwargs)
-        except BaseError as e:
-            logger.debug("", exc_info=True)
-            sys.stderr.write(f"! {e}\n")
-            sys.exit(e.CODE)
-        except ExecutionFailed:
-            logger.debug("Some steps failed")
-            sys.exit(1)
-        except Exception as e:
-            logger.debug("", exc_info=True)
-            sys.stderr.write(f"! UNHANDLED EXCEPTION: {e!r}\n")
-            sys.exit(2)
+        # Enable constants caches
+        with C.enable_context_cache():
+            grana_logging.configure_logging(
+                main_file=C.LOG_FILE,
+                level=C.LOG_LEVEL,
+                colorize=C.USE_COLOR and not C.LOG_FILE,
+            )
+            logger.uncork()
+            rc.logger.uncork()
+            try:
+                return func(*args, **kwargs)
+            except BaseError as e:
+                logger.debug("", exc_info=True)
+                sys.stderr.write(f"! {e}\n")
+                sys.exit(e.CODE)
+            except ExecutionFailed:
+                logger.debug("Some steps failed")
+                sys.exit(1)
+            except Exception as e:
+                logger.debug("", exc_info=True)
+                sys.stderr.write(f"! UNHANDLED EXCEPTION: {e!r}\n")
+                sys.exit(2)
 
     return wrapped
 
@@ -103,7 +103,6 @@ def wrap_cli_command(func):
     "--strategy",
     help="Execution strategy. Defaults to `explicit`. "
     "Also configurable via the `GRANA_STRATEGY_NAME` environment variable.",
-    type=click.Choice(list(KNOWN_STRATEGIES)),
 )
 @click.option("-i", "--interactive", help="Run in dialog mode.", is_flag=True, default=False)
 @click.argument("workflow_file", cls=WorkflowPositionalArgument, help="azaza")
@@ -137,7 +136,7 @@ def info() -> None:
 @info.command
 def env_vars() -> None:
     """Shows environment variables names that are taken into account."""
-    print(ENV_DOC)
+    print(C.env_doc())
 
 
 @info.command
@@ -161,12 +160,12 @@ def runtime() -> None:
     kv("Executable", sys.executable)
 
     section("Configuration")
-    for attr_name, attr_value, attr_effective_source in C.info():
-        if attr_effective_source == ConstantSource.DEFAULT and not get_cli_arg("show_defaults"):
+    for const_descriptor in C.constants_info():
+        if const_descriptor.effective_source == ConstantSource.DEFAULT and not get_cli_option("show_defaults"):
             continue
-        mapping(attr_name)
-        kv("Value", attr_value, indent=1)
-        kv("Source", attr_effective_source.name.lower(), indent=1)
+        mapping(const_descriptor.name)
+        kv("Value", const_descriptor.value, indent=1)
+        kv("Source", const_descriptor.effective_source.name.lower(), indent=1)
 
     section("Actions")
     for actions_name, (action_class, action_source) in sorted(

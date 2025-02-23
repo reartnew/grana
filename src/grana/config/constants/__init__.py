@@ -1,11 +1,12 @@
 """Lazy-loaded constants"""
 
+import contextlib
 import typing as t
 
-from . import base, impl
-from .cli import get_cli_arg
+from . import base, impl, rc, cache
+from .cache import CACHE
+from .cli import get_cli_option
 from .helpers import class_from_module
-from ...tools.inspect import get_class_annotations
 
 __all__ = [
     "C",
@@ -22,7 +23,8 @@ class C:
     INTERACTIVE_MODE: base.ConstantBase = impl.InteractiveMode()
     WORKFLOW_SOURCE_FILE: base.ConstantBase = impl.WorkflowSourceFile()
     WORKFLOW_LOADER_CLASS: base.ConstantBase = impl.WorkflowLoaderClass()
-    DISPLAY_CLASS: base.ConstantBase = impl.DisplayClass()
+    INTERNAL_DISPLAY_CLASS: base.ConstantBase = impl.InternalDisplayClass()
+    EXTERNAL_DISPLAY_CLASS: base.ConstantBase = impl.ExternalDisplayClass()
     STRATEGY_CLASS: base.ConstantBase = impl.StrategyClass()
     USE_COLOR: base.ConstantBase = impl.UseColor()
     DEFAULT_SHELL_EXECUTABLE: base.ConstantBase = impl.DefaultShellExecutable()
@@ -32,13 +34,26 @@ class C:
     EXTERNAL_PYTHON_MODULES_PATHS: base.ConstantBase = impl.ExternalPythonModulesPaths()
 
     @classmethod
-    def info(cls) -> list[base.ConstantValueInfo]:
+    def constants_info(cls) -> t.Iterable[base.ConstantProxyDescriptor]:
         """Return set of info for all constants"""
-        result: list[base.ConstantValueInfo] = []
-        for attr_name, attr_type in sorted(get_class_annotations(cls).items()):
-            if not isinstance(attr_type, type) or not issubclass(attr_type, base.ConstantBase):
-                continue
-            attr_value: t.Any = getattr(C, attr_name)
-            attr_effective_source = base.CONSTANT_SOURCES[attr_name]
-            result.append(base.ConstantValueInfo(attr_name, attr_value, attr_effective_source))
-        return result
+        for attr_name in sorted(dir(cls)):
+            attr_value: t.Any = getattr(cls, attr_name)
+            attr_value_origin: t.Any = getattr(attr_value, "__factory__", None)
+            if isinstance(attr_value_origin, base.ConstantProxyDescriptor):
+                yield attr_value_origin
+
+    @classmethod
+    def env_doc(cls) -> str:
+        """Returns the info on the environment variables usage"""
+        lines: list[str] = []
+        for const_descriptor in cls.constants_info():
+            lines.append(f"{const_descriptor.name}:")
+            lines.extend(f"    {line.lstrip()}" for line in const_descriptor.definition.__doc__.splitlines())
+        return "\n".join(lines)
+
+    @classmethod
+    @contextlib.contextmanager
+    def enable_context_cache(cls) -> t.Generator[None, None, None]:
+        """Enable context cache for all constants"""
+        with CACHE.mount():
+            yield

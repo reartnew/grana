@@ -1,13 +1,13 @@
 """It's all about logging."""
 
-import contextlib
-import contextvars
 import functools
 import logging
 import logging.config
 import pathlib
 import sys
 import typing as t
+
+from .tools.context import ContextManagerVar
 
 __all__ = [
     "WithLogger",
@@ -47,7 +47,7 @@ COLOR_CODE_MAP: dict[str, int] = {
 }
 DEFAULT_COLOR_CODE: int = 37
 
-LOG_CONTEXT_DATA: contextvars.ContextVar[dict] = contextvars.ContextVar("LOG_CONTEXT_DATA", default={})
+LOG_CONTEXT_DATA: ContextManagerVar[dict[str, t.Any]] = ContextManagerVar(default={})
 
 
 class ContextFilter(logging.Filter):
@@ -62,12 +62,9 @@ class ContextFilter(logging.Filter):
         return True
 
 
-@contextlib.contextmanager
-def context(**kwargs) -> t.Generator[None, None, None]:
+def context(**kwargs):
     """Manager for log record context data"""
-    token = LOG_CONTEXT_DATA.set(kwargs)
-    yield
-    LOG_CONTEXT_DATA.reset(token)
+    return LOG_CONTEXT_DATA.set(kwargs)
 
 
 class MonochromeFormatter(logging.Formatter):
@@ -108,7 +105,7 @@ def configure_logging(level: str, colorize: bool = False, main_file: t.Optional[
     main_logger.setLevel(level)
     ctx_filter = ContextFilter()
 
-    if main_file is None:
+    if not main_file:
         # Process stdout handler
         stderr_handler = logging.StreamHandler(sys.stderr)
         formatter: logging.Formatter = ColorFormatter() if colorize else MonochromeFormatter()

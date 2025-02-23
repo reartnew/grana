@@ -32,7 +32,7 @@ def test_bad_display(monkeypatch: pytest.MonkeyPatch) -> None:
             command: baz
         """
     )
-    monkeypatch.setattr(C, "DISPLAY_CLASS", BadDisplay)
+    monkeypatch.setattr(C, "INTERNAL_DISPLAY_CLASS", BadDisplay)
     runner = Runner(source=source)
     with pytest.raises(RuntimeError):
         runner.run_sync()
@@ -42,7 +42,7 @@ def test_bad_display(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_prologue_displays_init(display_name: str, monkeypatch: pytest.MonkeyPatch) -> None:
     """Check bundled displays"""
     monkeypatch.setenv("GRANA_DISPLAY_NAME", display_name)
-    display_class = t.cast(PrologueDisplay, C.DISPLAY_CLASS)
+    display_class = t.cast(PrologueDisplay, C.INTERNAL_DISPLAY_CLASS)
     assert display_class.NAME == display_name
 
 
@@ -50,14 +50,14 @@ def test_invalid_display_init(monkeypatch: pytest.MonkeyPatch) -> None:
     """Check display name validation"""
     monkeypatch.setenv("GRANA_DISPLAY_NAME", "unknown")
     with pytest.raises(ValueError, match="Display name should be one of"):
-        assert C.DISPLAY_CLASS
+        assert C.INTERNAL_DISPLAY_CLASS
 
 
 def test_headers_display(monkeypatch: pytest.MonkeyPatch) -> None:
     """Check headers display"""
     display_data: list[str] = []
     monkeypatch.setattr(HeaderDisplay, "display", display_data.append)
-    monkeypatch.setattr(C, "DISPLAY_CLASS", HeaderDisplay)
+    monkeypatch.setattr(C, "INTERNAL_DISPLAY_CLASS", HeaderDisplay)
     runner = Runner(
         source=io.StringIO(
             """---

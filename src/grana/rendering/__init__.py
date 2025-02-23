@@ -1,6 +1,9 @@
 """All the templating stuff."""
 
+from __future__ import annotations
+
 import os
+import pathlib
 import typing as t
 
 from . import containers as c
@@ -21,10 +24,49 @@ class CommonTemplar(WithLogger):
 
     DISABLED_GLOBALS: list[str] = ["exec", "eval", "compile", "setattr", "delattr"]
 
-    def __init__(self, args: dict[str, t.Any]) -> None:
+    def __init__(self, **args: dict[str, t.Any]) -> None:
         self._locals: dict[str, t.Any] = args
         self._globals: dict[str, t.Any] = {f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS}
         self._depth: int = 0
+
+    @classmethod
+    def _make_base_templar_with_meta_and_env(cls, extra_meta: t.Optional[dict[str, t.Any]] = None) -> CommonTemplar:
+        # pylint: disable=import-outside-toplevel,cyclic-import
+        from ..config.constants import C
+
+        meta_dict: dict = c.LooseDict(cwd=C.CONTEXT_DIRECTORY)
+        if extra_meta is not None:
+            meta_dict.update(extra_meta)
+        env_dict: dict = c.LooseDict(os.environ)
+        return cls(
+            metadata=meta_dict,
+            environment=env_dict,
+            # Aliases
+            meta=meta_dict,
+            env=env_dict,
+        )
+
+    @classmethod
+    def from_source_file(cls, path: pathlib.Path) -> CommonTemplar:
+        """Construct a base templar from the source file path"""
+        return cls._make_base_templar_with_meta_and_env(
+            extra_meta={
+                "source_file": path,
+                "here": path.parent,
+            }
+        )
+
+    @classmethod
+    def from_context_directory(cls) -> CommonTemplar:
+        """Construct a base templar from the source file path"""
+        # pylint: disable=import-outside-toplevel,cyclic-import
+        from ..config.constants import C
+
+        return cls._make_base_templar_with_meta_and_env(
+            extra_meta={
+                "here": C.CONTEXT_DIRECTORY,
+            }
+        )
 
     def render(self, value: str) -> str:
         """Process string data, replacing all @{} occurrences."""
@@ -117,18 +159,16 @@ class WorkflowTemplar(CommonTemplar):
         if metadata is not None:
             metadata_container.update(metadata)
         super().__init__(
-            {
-                # Full names
-                "outcomes": outcomes_container,
-                "context": context_container,
-                "environment": environment_container,
-                "metadata": metadata_container,
-                # Aliases
-                "out": outcomes_container,
-                "ctx": context_container,
-                "env": environment_container,
-                "meta": metadata_container,
-            }
+            # Full names
+            outcomes=outcomes_container,
+            context=context_container,
+            environment=environment_container,
+            metadata=metadata_container,
+            # Aliases
+            out=outcomes_container,
+            ctx=context_container,
+            env=environment_container,
+            meta=metadata_container,
         )
 
     def _evaluate_context_object_expression(self, expression: str) -> t.Any:

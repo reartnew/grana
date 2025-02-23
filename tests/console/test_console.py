@@ -7,7 +7,6 @@ import pytest
 from click.testing import CliRunner
 
 from grana import console, version, logging
-from grana.config.constants.environment import ENV_DOC
 
 OptsType = t.Optional[list[str]]
 
@@ -105,8 +104,29 @@ def test_cli_validate(validate_cmd: RunnerType) -> None:
 
 
 def test_cli_env_vars() -> None:
-    """Check env vars command"""
-    assert _invoke(console.main, ["info", "env-vars"]) == ENV_DOC.rstrip().splitlines()
+    """Check env-vars command and some known environment variable names"""
+    env_vars_info: list[str] = _invoke(console.main, ["info", "env-vars"])
+    assert all(
+        f"{env_var_name}:" in env_vars_info
+        for env_var_name in [
+            "ACTION_CLASSES_DIRECTORIES",
+            "CONTEXT_DIRECTORY",
+            "DEFAULT_SHELL_EXECUTABLE",
+            "EXTERNAL_DISPLAY_CLASS",
+            "EXTERNAL_PYTHON_MODULES_PATHS",
+            "INTERACTIVE_MODE",
+            "INTERNAL_DISPLAY_CLASS",
+            "LOG_FILE",
+            "LOG_LEVEL",
+            "RC_FILE",
+            "SHELL_INJECT_YIELD_FUNCTION",
+            "STRATEGY_CLASS",
+            "STRICT_OUTCOMES_RENDERING",
+            "USE_COLOR",
+            "WORKFLOW_LOADER_CLASS",
+            "WORKFLOW_SOURCE_FILE",
+        ]
+    )
 
 
 def test_cli_run(run_cmd: RunnerType) -> None:
@@ -178,7 +198,7 @@ def test_cli_multiple_positional_args(run_cmd: RunnerType) -> None:
 
 
 @pytest.mark.parametrize("opts", [[], ["--show-defaults"]], ids=["without-defaults", "with-defaults"])
-def test_me(runtime_info_cmd: RunnerType, opts: list[str]) -> None:
+def test_info_runtime(runtime_info_cmd: RunnerType, opts: list[str]) -> None:
     """Check `grana info runtime` command"""
     info: list[str] = runtime_info_cmd(opts=opts)
     assert "Python" in info
