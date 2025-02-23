@@ -61,11 +61,17 @@ class ActionSeverity(enum.Enum):
     NORMAL = "normal"
 
 
+def strict_default_factory() -> bool:
+    from ..config.constants import C
+
+    return C.DEPENDENCY_DEFAULT_STRICTNESS
+
+
 @dataclass
 class ActionDependency:
     """Dependency info holder"""
 
-    strict: bool = False
+    strict: bool = field(default_factory=strict_default_factory)
     external: bool = False
 
 

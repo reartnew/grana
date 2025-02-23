@@ -21,6 +21,7 @@ __all__ = [
     "RcFile",
     "ContextDirectory",
     "InteractiveMode",
+    "DependencyDefaultStrictness",
     "WorkflowSourceFile",
     "WorkflowLoaderClass",
     "InternalDisplayClass",
@@ -83,6 +84,15 @@ class InteractiveMode(base.ConstantBool):
     """Interactive mode constant"""
 
     COMMAND_LINE_OPTION_NAME = "interactive"
+    DEFAULT = False
+
+
+class DependencyDefaultStrictness(base.ConstantBool):
+    """Dependencies strictness constant"""
+
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_STRICT_DEPENDENCIES"
+    RC_PARAMETER_NAME = "strict"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "strict"
     DEFAULT = False
 
 
