@@ -116,8 +116,5 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
         for context_key, context_value in data.items():
             if not isinstance(context_key, str):
                 self._throw(f"Context keys should be strings (got {type(context_key)!r} for {context_key!r})")
-            if context_key in self._gathered_context:
-                self.logger.debug(f"Context key redefined: {context_key}")
-            else:
-                self.logger.debug(f"Context key added: {context_key}")
+            self.logger.debug(f"Context key defined: {context_key}")
             self._gathered_context[context_key] = context_value
