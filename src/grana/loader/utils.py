@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import pathlib
+
 import yaml
 
+from .context import LOADED_FILE
 from ..actions.types import Expression
 from ..exceptions import YAMLStructureError
+from ..rendering import CommonTemplar
 
 __all__ = [
     "ExpressionYAMLLoader",
@@ -33,3 +37,14 @@ ExpressionYAMLLoader.add_string_constructor("!@", Expression)
 
 class DefaultYAMLLoader(ExpressionYAMLLoader):
     """Parser for default workflow loader"""
+
+    @staticmethod
+    def parse_load(loader: DefaultYAMLLoader, data: yaml.ScalarNode):
+        """Process `!load` tag in parse-time to load external files"""
+        templar: CommonTemplar = LOADED_FILE.create_associated_templar()
+        file_path: pathlib.Path = pathlib.Path(templar.render(data.value))
+        with file_path.open("rb") as f, LOADED_FILE.set(file_path):
+            return yaml.load(f, loader.__class__)
+
+
+DefaultYAMLLoader.add_constructor("!load", DefaultYAMLLoader.parse_load)
