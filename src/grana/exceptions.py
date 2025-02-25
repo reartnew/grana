@@ -14,6 +14,7 @@ __all__ = [
     "InteractionError",
     "ActionArgumentsLoadError",
     "YAMLStructureError",
+    "AutoStrategyCycleError",
 ]
 
 
@@ -31,6 +32,10 @@ class PendingActionUnresolvedOutcomeError(ActionRenderError):
     def __init__(self, action_name: str):
         self.action_name: str = action_name
         super().__init__(f"Action {action_name!r} has not finished yet, therefore its outcomes are unresolved")
+
+
+class AutoStrategyCycleError(Exception):
+    """Automatic strategy discovered cyclic dependencies"""
 
 
 class ActionArgumentsLoadError(Exception):

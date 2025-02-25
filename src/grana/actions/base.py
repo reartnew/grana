@@ -251,7 +251,7 @@ class WorkflowActionExecution(WithLogger):
         try:
             run_result = await self._run_with_log_context()  # type: ignore[func-returns-value]
         except ActionSkip:
-            self.skip_execution()
+            self.skip()
         except Exception as e:
             self.status = ActionStatus.FAILURE if self.severity == ActionSeverity.NORMAL else ActionStatus.WARNING
             self.logger.info(f"Action {self.name!r} failed: {repr(e)}")
@@ -263,13 +263,13 @@ class WorkflowActionExecution(WithLogger):
             self.status = ActionStatus.SUCCESS
             self.future.set_result(True)
 
-    def skip_execution(self) -> None:
+    def skip(self) -> None:
         """Skipping the action properly"""
         self.status = ActionStatus.SKIPPED
         self.future.set_result(True)
         self.logger.info(f"Action {self.name!r} skipped")
 
-    def omit_execution(self) -> None:
+    def omit(self) -> None:
         """Omitting the action properly"""
         self.status = ActionStatus.OMITTED
         self.future.set_result(True)
@@ -296,6 +296,18 @@ class WorkflowActionExecution(WithLogger):
                     except asyncio.QueueEmpty:
                         break
                 return
+
+    def is_pending(self) -> bool:
+        """Check if the action is pending"""
+        return self.status == ActionStatus.PENDING
+
+    def is_running(self) -> bool:
+        """Check if the action is running"""
+        return self.status == ActionStatus.RUNNING
+
+    def is_finished(self) -> bool:
+        """Check if the action is running"""
+        return self.future.done()
 
 
 # pylint: disable=abstract-method
