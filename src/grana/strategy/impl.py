@@ -62,7 +62,9 @@ class ExplicitStrategy(BaseStrategy):
         # Actions that have been emitted by the strategy and not finished yet
         self._active_actions_map: dict[str, WorkflowActionExecution] = {}
         # Just a structured mutable copy of the dependency map
-        self._action_blockers: dict[str, set[str]] = {name: set(workflow[name].ancestors) for name in workflow}
+        self._action_blockers: dict[str, set[str]] = {
+            name: {ancestor.name for ancestor in workflow[name].ancestors} for name in workflow
+        }
 
     def _skip_action(self, action: WorkflowActionExecution) -> None:
         super()._skip_action(action)
@@ -87,11 +89,11 @@ class ExplicitStrategy(BaseStrategy):
             # Get an action and check whether to emit or to skip it
             next_action: WorkflowActionExecution = await self._next_action()
             self.logger.debug(f"The next action is: {next_action}")
-            for ancestor_name, ancestor_dependency in next_action.ancestors.items():
-                ancestor: WorkflowActionExecution = self._workflow[ancestor_name]
+            for dependency in next_action.ancestors:
+                ancestor: WorkflowActionExecution = self._workflow[dependency.name]
                 if (
                     ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED, ActionStatus.WARNING)
-                    and ancestor_dependency.strict
+                    and dependency.strict
                 ):
                     self.logger.debug(f"Action {next_action} is qualified as skipped due to strict failure: {ancestor}")
                     self._skip_action(next_action)

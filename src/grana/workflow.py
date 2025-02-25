@@ -67,12 +67,12 @@ class Workflow(dict[str, WorkflowActionExecution], WithLogger):
     def _establish_descendants(self) -> None:
         missing_deps: set[str] = set()
         for action_execution in self.values():  # type: WorkflowActionExecution
-            for dependency_action_name, dependency in list(action_execution.ancestors.items()):
-                if dependency_action_name not in self:
-                    missing_deps.add(dependency_action_name)
+            for dependency in action_execution.ancestors:
+                if dependency.name not in self:
+                    missing_deps.add(dependency.name)
                     continue
                 # Register symmetric descendant connection for further simplicity
-                self._descendants_map[dependency_action_name][action_execution.name] = dependency
+                self._descendants_map[dependency.name][action_execution.name] = dependency
             # Check if there are any dependencies after removal at all
             if not action_execution.ancestors:
                 self._entrypoints.add(action_execution.name)

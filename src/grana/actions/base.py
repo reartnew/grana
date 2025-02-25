@@ -73,6 +73,7 @@ def strict_default_factory() -> bool:
 class ActionDependency:
     """Dependency info holder"""
 
+    name: str
     strict: bool = field(default_factory=strict_default_factory)
 
 
@@ -130,7 +131,7 @@ class WorkflowActionExecution(WithLogger):
     action_class: type[ActionBase]
     name: str
     raw_args: dict
-    ancestors: dict[str, ActionDependency] = field(default_factory=dict)
+    ancestors: list[ActionDependency] = field(default_factory=list)
     description: t.Optional[str] = None
     selectable: bool = True
     severity: ActionSeverity = ActionSeverity.NORMAL
