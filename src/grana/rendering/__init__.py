@@ -31,7 +31,6 @@ class CommonTemplar(WithLogger):
 
     @classmethod
     def _make_base_templar_with_meta_and_env(cls, extra_meta: t.Optional[dict[str, t.Any]] = None) -> CommonTemplar:
-        # pylint: disable=import-outside-toplevel,cyclic-import
         from ..config.constants import C
 
         meta_dict: dict = c.LooseDict(cwd=C.CONTEXT_DIRECTORY)
@@ -59,7 +58,6 @@ class CommonTemplar(WithLogger):
     @classmethod
     def from_context_directory(cls) -> CommonTemplar:
         """Construct a base templar from the source file path"""
-        # pylint: disable=import-outside-toplevel,cyclic-import
         from ..config.constants import C
 
         return cls._make_base_templar_with_meta_and_env(

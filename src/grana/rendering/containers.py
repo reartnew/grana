@@ -46,7 +46,7 @@ class OutcomeDict(AttrDict):
         try:
             return super().__getitem__(item)
         except KeyError as e:
-            from ..config.constants import C  # pylint: disable=import-outside-toplevel
+            from ..config.constants import C
 
             if C.STRICT_OUTCOMES_RENDERING:
                 raise ActionRenderError(f"Outcome key {e} not found") from e

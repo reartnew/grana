@@ -50,7 +50,7 @@ class Workflow(dict[str, WorkflowActionExecution], WithLogger):
 
     def get_metadata(self) -> dict[str, t.Any]:
         """Obtain workflow metadata for further use in templating"""
-        from .config.constants import C  # pylint: disable=import-outside-toplevel
+        from .config.constants import C
 
         metadata: dict[str, t.Any] = {
             "cwd": C.CONTEXT_DIRECTORY,

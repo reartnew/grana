@@ -30,7 +30,7 @@ class SubflowAction(ActionBase):
     args: SubflowArgs
 
     async def run(self) -> None:
-        from ...runner import Runner  # pylint: disable=import-outside-toplevel,cyclic-import
+        from ...runner import Runner
 
         action: SubflowAction = self
 

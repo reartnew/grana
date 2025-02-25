@@ -61,7 +61,6 @@ class ActionSeverity(enum.Enum):
     NORMAL = "normal"
 
 
-# pylint: disable=import-outside-toplevel
 def strict_default_factory() -> bool:
     """Get default strictness value"""
     from ..config.constants import C

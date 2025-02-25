@@ -12,7 +12,7 @@ from . import workflow, rc
 from .cache import CACHE
 from .cli import get_cli_option
 from ...logging import WithLogger
-from ...rendering.containers import LazyProxy  # pylint: disable=cyclic-import
+from ...rendering.containers import LazyProxy
 
 __all__ = [
     "Inapplicable",

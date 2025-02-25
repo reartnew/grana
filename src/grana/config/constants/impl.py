@@ -1,4 +1,3 @@
-# pylint: disable=import-outside-toplevel,cyclic-import
 """Lazy-loaded constants implementations"""
 
 import os
