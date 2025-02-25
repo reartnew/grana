@@ -106,7 +106,7 @@ class AutoStrategy(ExplicitStrategy):
                     self.logger.info(f"Adding an automatic dependency of {execution.name!r} on {e.action_name!r}")
                     execution.ancestors.append(ActionDependency(name=e.action_name))
                     continue
-                except Exception:
+                except Exception:  # nosec
                     # All other rendering exceptions are not important at this point
                     pass
                 return execution
