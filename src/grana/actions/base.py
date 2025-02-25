@@ -254,24 +254,24 @@ class WorkflowActionExecution(WithLogger):
         except Exception as e:
             self.status = ActionStatus.FAILURE if self.severity == ActionSeverity.NORMAL else ActionStatus.WARNING
             self.logger.info(f"Action {self.name!r} failed: {repr(e)}")
-            self.future.set_exception(e)
+            self.future.set_result(False)
             raise
         else:
             if run_result is not None:
                 self.logger.warning(f"Action {self.name!r} return type is {type(run_result)} (not NoneType)")
             self.status = ActionStatus.SUCCESS
-            self.future.set_result(None)
+            self.future.set_result(True)
 
     def skip_execution(self) -> None:
         """Skipping the action properly"""
         self.status = ActionStatus.SKIPPED
-        self.future.set_result(None)
+        self.future.set_result(True)
         self.logger.info(f"Action {self.name!r} skipped")
 
     def omit_execution(self) -> None:
         """Omitting the action properly"""
         self.status = ActionStatus.OMITTED
-        self.future.set_result(None)
+        self.future.set_result(True)
         self.logger.info(f"Action {self.name!r} omitted")
 
     async def read_messages(self) -> t.AsyncGenerator[DisplayEvent, None]:

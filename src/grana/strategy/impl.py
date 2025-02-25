@@ -43,14 +43,11 @@ class SequentialStrategy(FreeStrategy):
         self._current: t.Optional[WorkflowActionExecution] = None
 
     async def __anext__(self) -> WorkflowActionExecution:
-        if self._current is not None:
-            try:
-                await self._current.future
-            except Exception:
-                if C.DEPENDENCY_DEFAULT_STRICTNESS:
-                    while True:
-                        next_action = await super().__anext__()
-                        self._skip_action(next_action)
+        # If current execution is a failure and the mode is strict, then skip further actions
+        if self._current is not None and not await self._current.future and C.DEPENDENCY_DEFAULT_STRICTNESS:
+            while True:
+                next_action = await super().__anext__()
+                self._skip_action(next_action)
         self._current = await super().__anext__()
         return self._current
 
@@ -106,8 +103,6 @@ class ExplicitStrategy(BaseStrategy):
         # Do we have anything pending already?
         if maybe_next_action := self._get_maybe_next_action():
             return maybe_next_action
-        # Await for any actions finished. Can't directly apply asyncio.wait to Action objects
-        # since python 3.11's implementation requires too many methods from an awaitable object.
         while active_actions := list(self._active_actions_map.values()):
             await asyncio.wait(
                 [action.future for action in active_actions],
