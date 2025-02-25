@@ -105,8 +105,11 @@ class AutoStrategy(ExplicitStrategy):
                 except PendingActionUnresolvedOutcomeError as e:
                     self.logger.info(f"Adding an automatic dependency of {execution.name!r} on {e.action_name!r}")
                     execution.ancestors.append(ActionDependency(name=e.action_name))
-                else:
-                    return execution
+                    continue
+                except Exception:
+                    # All other rendering exceptions are not important at this point
+                    pass
+                return execution
         except StopAsyncIteration:
             if self._pending:
                 raise AutoStrategyCycleError(",".join(sorted(execution.name for execution in self._pending))) from None
