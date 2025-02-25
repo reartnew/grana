@@ -332,7 +332,9 @@ class EmissionScannerActionBase(ActionBase):
               _pipe()(
                 encodedKey="$1"
                 while read -r data; do
-                  echo "##grana[yield-outcome-b64-chunk $encodedKey $data]##"
+                  if [ "$data" != "" ]; then
+                    echo "##grana[yield-outcome-b64-chunk $encodedKey $data]##"
+                  fi
                 done
                 echo "##grana[yield-outcome-b64-end $encodedKey]##"
               )
@@ -369,7 +371,7 @@ class EmissionScannerActionBase(ActionBase):
                 self._outcomes_base64_chunks[key].append(value)
             elif expression_type == "yield-outcome-b64-end":
                 (encoded_key,) = encoded_args
-                encoded_outcome_value: str = "".join(self._outcomes_base64_chunks.pop(encoded_key))
+                encoded_outcome_value: str = "".join(self._outcomes_base64_chunks.pop(encoded_key, []))
                 self.yield_outcome(
                     key=self._decode_base64_string(encoded_key),
                     value=self._decode_base64_string(encoded_outcome_value),
