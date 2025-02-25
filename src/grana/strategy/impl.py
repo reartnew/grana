@@ -87,7 +87,7 @@ class SequentialStrategy(FreeStrategy):
         for num, execution in enumerate(executions):
             if num > 0:
                 ancestor_name: str = executions[num - 1].name
-                self.logger.debug(f"Adding an implicit dependency to {execution}: {ancestor_name!r}")
+                self.logger.debug(f"Adding an implicit dependency of {execution.name!r} on {ancestor_name!r}")
                 execution.ancestors.append(ActionDependency(name=ancestor_name))
 
 
@@ -103,7 +103,7 @@ class AutoStrategy(ExplicitStrategy):
                 try:
                     execution.render_action_args()
                 except PendingActionUnresolvedOutcomeError as e:
-                    self.logger.info(f"Adding an automatic dependency to {execution}: {e.action_name!r}")
+                    self.logger.info(f"Adding an automatic dependency of {execution.name!r} on {e.action_name!r}")
                     execution.ancestors.append(ActionDependency(name=e.action_name))
                 else:
                     return execution
