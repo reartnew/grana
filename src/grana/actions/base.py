@@ -61,7 +61,6 @@ class ActionSeverity(enum.Enum):
     NORMAL = "normal"
 
 
-# pylint: disable=import-outside-toplevel
 def strict_default_factory() -> bool:
     """Get default strictness value"""
     from ..config.constants import C
@@ -73,6 +72,7 @@ def strict_default_factory() -> bool:
 class ActionDependency:
     """Dependency info holder"""
 
+    name: str
     strict: bool = field(default_factory=strict_default_factory)
 
 
@@ -130,7 +130,7 @@ class WorkflowActionExecution(WithLogger):
     action_class: type[ActionBase]
     name: str
     raw_args: dict
-    ancestors: dict[str, ActionDependency] = field(default_factory=dict)
+    ancestors: list[ActionDependency] = field(default_factory=list)
     description: t.Optional[str] = None
     selectable: bool = True
     severity: ActionSeverity = ActionSeverity.NORMAL
@@ -250,28 +250,28 @@ class WorkflowActionExecution(WithLogger):
         try:
             run_result = await self._run_with_log_context()  # type: ignore[func-returns-value]
         except ActionSkip:
-            self.skip_execution()
+            self.skip()
         except Exception as e:
             self.status = ActionStatus.FAILURE if self.severity == ActionSeverity.NORMAL else ActionStatus.WARNING
             self.logger.info(f"Action {self.name!r} failed: {repr(e)}")
-            self.future.set_exception(e)
+            self.future.set_result(False)
             raise
         else:
             if run_result is not None:
                 self.logger.warning(f"Action {self.name!r} return type is {type(run_result)} (not NoneType)")
             self.status = ActionStatus.SUCCESS
-            self.future.set_result(None)
+            self.future.set_result(True)
 
-    def skip_execution(self) -> None:
+    def skip(self) -> None:
         """Skipping the action properly"""
         self.status = ActionStatus.SKIPPED
-        self.future.set_result(None)
+        self.future.set_result(True)
         self.logger.info(f"Action {self.name!r} skipped")
 
-    def omit_execution(self) -> None:
+    def omit(self) -> None:
         """Omitting the action properly"""
         self.status = ActionStatus.OMITTED
-        self.future.set_result(None)
+        self.future.set_result(True)
         self.logger.info(f"Action {self.name!r} omitted")
 
     async def read_messages(self) -> t.AsyncGenerator[DisplayEvent, None]:
@@ -296,6 +296,18 @@ class WorkflowActionExecution(WithLogger):
                         break
                 return
 
+    def is_pending(self) -> bool:
+        """Check if the action is pending"""
+        return self.status == ActionStatus.PENDING
+
+    def is_running(self) -> bool:
+        """Check if the action is running"""
+        return self.status == ActionStatus.RUNNING
+
+    def is_finished(self) -> bool:
+        """Check if the action is running"""
+        return self.future.done()
+
 
 # pylint: disable=abstract-method
 class EmissionScannerActionBase(ActionBase):
@@ -319,7 +331,9 @@ class EmissionScannerActionBase(ActionBase):
               _pipe()(
                 encodedKey="$1"
                 while read -r data; do
-                  echo "##grana[yield-outcome-b64-chunk $encodedKey $data]##"
+                  if [ "$data" != "" ]; then
+                    echo "##grana[yield-outcome-b64-chunk $encodedKey $data]##"
+                  fi
                 done
                 echo "##grana[yield-outcome-b64-end $encodedKey]##"
               )
@@ -356,7 +370,7 @@ class EmissionScannerActionBase(ActionBase):
                 self._outcomes_base64_chunks[key].append(value)
             elif expression_type == "yield-outcome-b64-end":
                 (encoded_key,) = encoded_args
-                encoded_outcome_value: str = "".join(self._outcomes_base64_chunks.pop(encoded_key))
+                encoded_outcome_value: str = "".join(self._outcomes_base64_chunks.pop(encoded_key, []))
                 self.yield_outcome(
                     key=self._decode_base64_string(encoded_key),
                     value=self._decode_base64_string(encoded_outcome_value),

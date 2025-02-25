@@ -123,30 +123,30 @@ class AbstractBaseWorkflowLoader(WithLogger):
         )
         return self.workflow
 
-    def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> t.Tuple[str, ActionDependency]:
+    def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> ActionDependency:
         """Unified method to process transform dependency source data"""
-        dep_holder: ActionDependency = ActionDependency()
         if isinstance(dep_node, str):
-            return dep_node, dep_holder
-        if isinstance(dep_node, dict):
-            unexpected_dep_keys: set[str] = set(dep_node) - {"name", "strict", "external"}
-            if unexpected_dep_keys:
-                self._throw(f"Unrecognized dependency node keys: {sorted(unexpected_dep_keys)}")
-            # Dependency name
-            if "name" not in dep_node:
-                self._throw(f"Name not specified for the dependency: {sorted(dep_node.items())}")
-            dep_name: str = dep_node["name"]
-            if not isinstance(dep_name, str):
-                self._throw(f"Unrecognized dependency name type: {type(dep_name)!r} (expected a string)")
-            if not dep_name:
-                self._throw("Empty dependency name met")
-            # Dependency 'strict' attr
-            strict: bool = dep_node.get("strict", False)
-            if not isinstance(strict, bool):
-                self._throw(f"Unrecognized 'strict' attribute type: {type(strict)!r} (expected boolean)")
-            dep_holder.strict = strict
-            return dep_name, dep_holder
-        self._throw(f"Unrecognized dependency node structure: {type(dep_node)!r} (expected a string or a dict)")
+            return ActionDependency(name=dep_node)
+        if not isinstance(dep_node, dict):
+            self._throw(f"Unrecognized dependency node structure: {type(dep_node)!r} (expected a string or a dict)")
+        unexpected_dep_keys: set[str] = set(dep_node) - {"name", "strict", "external"}
+        if unexpected_dep_keys:
+            self._throw(f"Unrecognized dependency node keys: {sorted(unexpected_dep_keys)}")
+        # Dependency name
+        if "name" not in dep_node:
+            self._throw(f"Name not specified for the dependency: {sorted(dep_node.items())}")
+        dep_name: str = dep_node["name"]
+        if not isinstance(dep_name, str):
+            self._throw(f"Unrecognized dependency name type: {type(dep_name)!r} (expected a string)")
+        if not dep_name:
+            self._throw("Empty dependency name met")
+        # Dependency 'strict' attr
+        if "strict" not in dep_node:
+            return ActionDependency(name=dep_name)
+        strict: bool = dep_node["strict"]
+        if not isinstance(strict, bool):
+            self._throw(f"Unrecognized 'strict' attribute type: {type(strict)!r} (expected boolean)")
+        return ActionDependency(name=dep_name, strict=strict)
 
     def build_action_from_dict_data(self, node: dict) -> WorkflowActionExecution:
         """Process a dictionary representing an action"""
@@ -180,9 +180,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
             self._throw(f"Unrecognized 'expects' content type: {type(deps_node)!r} (expected a string or list)")
         if isinstance(deps_node, str):
             deps_node = [deps_node]
-        dependencies: dict[str, ActionDependency] = dict(
-            self.build_dependency_from_node(dep_node) for dep_node in deps_node
-        )
+        dependencies: list[ActionDependency] = [self.build_dependency_from_node(dep_node) for dep_node in deps_node]
         # Selectable
         selectable: bool = node.pop("selectable", True)
         if not isinstance(selectable, bool):

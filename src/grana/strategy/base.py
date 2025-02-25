@@ -49,6 +49,3 @@ class BaseStrategy(WithLogger, t.AsyncIterable[WorkflowActionExecution]):
                 f"Strategy named {cls.NAME!r} already exists. "
                 f"Please specify another name for the {cls.__module__}.{cls.__name__}."
             )
-
-    def _skip_action(self, action: WorkflowActionExecution) -> None:
-        action.skip_execution()

@@ -164,8 +164,17 @@ class Runner:
 
     async def _run_action(self, action: WorkflowActionExecution) -> None:
         if not action.enabled:
-            action.omit_execution()
+            action.omit()
             return None
+        for dependency in action.ancestors:
+            ancestor: WorkflowActionExecution = self.workflow[dependency.name]
+            if (
+                ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED, ActionStatus.WARNING)
+                and dependency.strict
+            ):
+                self.logger.debug(f"Action {action} is qualified as skipped due to strict failure: {ancestor}")
+                action.skip()
+                return None
         self.logger.debug(f"Calling `{DisplayEventName.ON_ACTION_START}` for {action.name!r}")
         await self._send_display_event(DisplayEventName.ON_ACTION_START, source=action)
         self.logger.debug(f"Allocating action dispatcher for {action.name!r}")

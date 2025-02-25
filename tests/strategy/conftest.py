@@ -27,7 +27,7 @@ def _make_chained_workflow(action_class: type[ActionBase]) -> Workflow:
                 name=step_name,
                 action_class=action_class,
                 raw_args={},
-                ancestors={step_names[num - 1]: ActionDependency(strict=True)} if num else {},
+                ancestors=[ActionDependency(name=step_names[num - 1], strict=True)] if num else [],
                 templar_factory=None,
             )
             for num, step_name in enumerate(step_names)

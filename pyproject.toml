@@ -159,6 +159,8 @@ disable = [
     "fixme",
     "logging-fstring-interpolation",
     "method-cache-max-size-none",
+    "cyclic-import",
+    "import-outside-toplevel",
 ]
 enable = ["unused-wildcard-import"]
 

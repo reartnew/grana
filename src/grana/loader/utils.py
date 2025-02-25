@@ -44,7 +44,7 @@ class DefaultYAMLLoader(ExpressionYAMLLoader):
         templar: CommonTemplar = LOADED_FILE.create_associated_templar()
         file_path: pathlib.Path = pathlib.Path(templar.render(data.value))
         with file_path.open("rb") as f, LOADED_FILE.set(file_path):
-            return yaml.load(f, loader.__class__)
+            return yaml.load(f, loader.__class__)  # nosec
 
 
 DefaultYAMLLoader.add_constructor("!load", DefaultYAMLLoader.parse_load)

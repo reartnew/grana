@@ -2,7 +2,7 @@ Strategy
 ========
 
 A `strategy` is an iterator that is responsible for controlling actions execution order.
-Default is [](#explicit).
+Default is [](#auto).
 
 :::{contents} On this page:
 :depth: 2
@@ -27,4 +27,9 @@ All actions are started immediately. All dependencies are ignored.
 
 ### `sequential`
 
-Actions run one-by-one in the same order they are specified in the workflow.
+Actions run one-by-one in the same order they are specified in the workflow. All dependencies are ignored.
+
+### `auto`
+
+Same as [](#explicit), but in case of referring to some action's outcome,\
+an implicit dependency is added so the outcome could be resolved.

@@ -4,7 +4,7 @@ import typing as t
 
 import lazy_object_proxy  # type: ignore
 
-from ..exceptions import ActionRenderError
+from ..exceptions import ActionRenderError, PendingActionUnresolvedOutcomeError
 
 __all__ = [
     "AttrDict",
@@ -46,7 +46,7 @@ class OutcomeDict(AttrDict):
         try:
             return super().__getitem__(item)
         except KeyError as e:
-            from ..config.constants import C  # pylint: disable=import-outside-toplevel
+            from ..config.constants import C
 
             if C.STRICT_OUTCOMES_RENDERING:
                 raise ActionRenderError(f"Outcome key {e} not found") from e
@@ -61,6 +61,15 @@ class ActionContainingDict(AttrDict):
             return super().__getitem__(item)
         except KeyError as e:
             raise ActionRenderError(f"Action not found: {e}") from e
+
+
+class ActionOutcomeAggregateDict(ActionContainingDict):
+    """Anything with action names as keys"""
+
+    def __getitem__(self, item: str):
+        if (result := super().__getitem__(item)) is not None:
+            return result
+        raise PendingActionUnresolvedOutcomeError(item)
 
 
 class ContextDict(AttrDict):

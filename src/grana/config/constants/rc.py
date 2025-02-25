@@ -53,7 +53,6 @@ class RC:
     @CACHE.wrap
     def build(cls) -> RC:
         """Load from file"""
-        # pylint: disable=import-outside-toplevel,cyclic-import
         from . import C
         from ...rendering import CommonTemplar
 

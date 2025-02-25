@@ -40,7 +40,6 @@ def add_sys_paths(*paths: Path) -> t.Iterator[None]:
 
 def load_external_module(source: Path, submodule_name: t.Optional[str] = None) -> ModuleType:
     """Load an external module"""
-    # pylint: disable=import-outside-toplevel,cyclic-import
     from ..constants import C
 
     if not source.is_file():

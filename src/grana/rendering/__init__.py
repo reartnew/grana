@@ -9,7 +9,7 @@ import typing as t
 from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
 from .tokenizing import TemplarStringLexer
-from ..actions.types import Expression, qualify_string_as_potentially_renderable
+from ..actions.types import Expression, qualify_string_as_potentially_renderable, ActionStatus
 from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
 from ..logging import WithLogger
 
@@ -31,7 +31,6 @@ class CommonTemplar(WithLogger):
 
     @classmethod
     def _make_base_templar_with_meta_and_env(cls, extra_meta: t.Optional[dict[str, t.Any]] = None) -> CommonTemplar:
-        # pylint: disable=import-outside-toplevel,cyclic-import
         from ..config.constants import C
 
         meta_dict: dict = c.LooseDict(cwd=C.CONTEXT_DIRECTORY)
@@ -59,7 +58,6 @@ class CommonTemplar(WithLogger):
     @classmethod
     def from_context_directory(cls) -> CommonTemplar:
         """Construct a base templar from the source file path"""
-        # pylint: disable=import-outside-toplevel,cyclic-import
         from ..config.constants import C
 
         return cls._make_base_templar_with_meta_and_env(
@@ -149,9 +147,12 @@ class WorkflowTemplar(CommonTemplar):
         context_map: t.Mapping[str, t.Any],
         metadata: t.Optional[t.Mapping[str, t.Any]] = None,
     ) -> None:
-        outcomes_container: c.AttrDict = c.ActionContainingDict(
-            {name: c.OutcomeDict(outcomes_map.get(name, {})) for name in action_states}
-        )
+        outcomes_container: c.AttrDict = c.ActionOutcomeAggregateDict()
+        for name, status_str in action_states.items():
+            action_outcomes: t.Optional[dict] = None
+            if status_str not in (ActionStatus.PENDING.value, ActionStatus.RUNNING.value):
+                action_outcomes = c.OutcomeDict(outcomes_map.get(name, {}))
+            outcomes_container[name] = action_outcomes
         status_container: c.AttrDict = c.ActionContainingDict(action_states)
         context_container: c.AttrDict = c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
         environment_container: c.AttrDict = c.LooseDict(os.environ)

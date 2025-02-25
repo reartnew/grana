@@ -1,4 +1,3 @@
-# pylint: disable=import-outside-toplevel,cyclic-import
 """Lazy-loaded constants implementations"""
 
 import os
@@ -167,7 +166,7 @@ class ExternalDisplayClass(base.ConstantBase[t.Optional[DisplayClassType]]):
 
 class StrategyClass(base.ConstantBase[StrategyClassType]):
     """Specifies the execution strategy.
-    Default is 'explicit'."""
+    Default is 'auto'."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_STRATEGY_NAME"
     COMMAND_LINE_OPTION_NAME = "strategy"
@@ -178,9 +177,9 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
         return BaseStrategy.get_strategy_class_by_name(value)
 
     def default(self) -> StrategyClassType:
-        from ...strategy.impl import ExplicitStrategy
+        from ...strategy.impl import AutoStrategy
 
-        return ExplicitStrategy
+        return AutoStrategy
 
 
 class UseColor(base.ConstantBool):
