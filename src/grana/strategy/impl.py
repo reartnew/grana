@@ -31,11 +31,11 @@ class ExplicitStrategy(BaseStrategy):
     def _find_schedulable_execution(self) -> t.Optional[WorkflowActionExecution]:
         """Completely non-optimal (always scan all actions), but readable yet"""
         for execution in self._pending | self._running:
-            if execution.is_finished():
+            if execution.future.done():
                 self._running.discard(execution)
                 continue
             if execution in self._pending and all(
-                self._workflow[dependency.name].is_finished() for dependency in execution.ancestors
+                self._workflow[dependency.name].future.done() for dependency in execution.ancestors
             ):
                 self.logger.debug(f"Action {execution.name!r} is ready for scheduling")
                 return execution

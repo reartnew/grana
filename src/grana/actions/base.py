@@ -200,7 +200,7 @@ class WorkflowActionExecution(WithLogger):
                 elif event.name not in (
                     DisplayEventName.ON_RUNNER_FINISH,
                     DisplayEventName.ON_PLAN_INTERACTION,
-                ):
+                ):  # pragma: no cover
                     # Just in case we add some event types later and not specify behaviour here
                     raise ValueError(f"Unknown event name: {event.name!r}")  # pragma: no cover
                 execution.event_queue.put_nowait(new_event)
@@ -295,18 +295,6 @@ class WorkflowActionExecution(WithLogger):
                     except asyncio.QueueEmpty:
                         break
                 return
-
-    def is_pending(self) -> bool:
-        """Check if the action is pending"""
-        return self.status == ActionStatus.PENDING
-
-    def is_running(self) -> bool:
-        """Check if the action is running"""
-        return self.status == ActionStatus.RUNNING
-
-    def is_finished(self) -> bool:
-        """Check if the action is running"""
-        return self.future.done()
 
 
 # pylint: disable=abstract-method
