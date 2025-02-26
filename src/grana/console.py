@@ -71,7 +71,7 @@ def wrap_cli_command(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         # Enable constants caches
-        with C.enable_context_cache():
+        with C.mount_context_cache():
             grana_logging.configure_logging(
                 main_file=C.LOG_FILE,
                 level=C.LOG_LEVEL,

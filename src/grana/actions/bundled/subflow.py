@@ -30,6 +30,7 @@ class SubflowAction(ActionBase):
     args: SubflowArgs
 
     async def run(self) -> None:
+        from ...config.constants import C
         from ...runner import Runner
 
         action: SubflowAction = self
@@ -80,8 +81,10 @@ class SubflowAction(ActionBase):
                     for sub_action in self.workflow.values():
                         action.yield_outcome(sub_action.name, OutcomeDict(sub_action.outcomes))
 
-        runner = SubflowRunner(source=self.args.path)
-        try:
-            await runner.run_async()
-        except ExecutionFailed:
-            self.fail()
+        # Cache [re]mount is required since the subflow may reconfigure some fields
+        with C.mount_context_cache():
+            runner = SubflowRunner(source=self.args.path)
+            try:
+                await runner.run_async()
+            except ExecutionFailed:
+                self.fail()

@@ -54,7 +54,7 @@ class C:
 
     @classmethod
     @contextlib.contextmanager
-    def enable_context_cache(cls) -> t.Generator[None, None, None]:
+    def mount_context_cache(cls) -> t.Generator[None, None, None]:
         """Enable context cache for all constants"""
         with CACHE.mount():
             yield
