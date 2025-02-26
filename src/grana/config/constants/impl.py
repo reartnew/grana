@@ -233,7 +233,6 @@ class ActionClassDirectories(base.ConstantPathList):
     ENVIRONMENT_VARIABLE_NAME = "GRANA_ACTIONS_CLASS_DEFINITIONS_DIRECTORY"
     RC_PARAMETER_NAME = "action_classes_directories"
     WORKFLOW_CONFIG_PARAMETER_NAME = "action_classes_directories"
-    DEFAULT = []
 
 
 class ExternalPythonModulesPaths(base.ConstantPathList):
@@ -243,4 +242,3 @@ class ExternalPythonModulesPaths(base.ConstantPathList):
     ENVIRONMENT_VARIABLE_NAME = "GRANA_EXTERNAL_MODULES_PATHS"
     RC_PARAMETER_NAME = "external_python_modules_paths"
     WORKFLOW_CONFIG_PARAMETER_NAME = "external_python_modules_paths"
-    DEFAULT = []

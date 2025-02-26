@@ -1,5 +1,6 @@
 """Lazy-loaded constants helpers"""
 
+import functools
 import hashlib
 import sys
 import types
@@ -38,6 +39,7 @@ def add_sys_paths(*paths: Path) -> t.Iterator[None]:
             sys.path.remove(path)
 
 
+@functools.cache
 def load_external_module(source: Path, submodule_name: t.Optional[str] = None) -> ModuleType:
     """Load an external module"""
     from ..constants import C

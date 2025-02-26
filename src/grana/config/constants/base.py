@@ -206,6 +206,9 @@ class ConstantPathList(ConstantBase[list[Path]]):
             return [Path(item.strip()) for item in value.split(":") if item]
         return value
 
+    def default(self) -> list[Path]:
+        return []
+
 
 class ConstantPath(ConstantBase, t.Generic[VT]):
     """Base class for path constants"""

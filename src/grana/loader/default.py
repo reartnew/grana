@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import typing as t
 from pathlib import Path
 
@@ -51,21 +52,26 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
 
     @CACHE.wrap
     def _load_external_action_factories_mapping(self) -> dict[str, tuple[type[ActionBase], str]]:
+        return self._get_action_factories_from_sources_tuple(sources=tuple(C.ACTION_CLASSES_DIRECTORIES))
+
+    @classmethod
+    @functools.lru_cache(1)
+    def _get_action_factories_from_sources_tuple(cls, sources: tuple[Path]) -> dict[str, tuple[type[ActionBase], str]]:
         dynamic_bases_map: dict[str, tuple[type[ActionBase], str]] = {}
-        for class_directory in C.ACTION_CLASSES_DIRECTORIES:  # type: str
-            class_directory_path = Path(class_directory).resolve()
+        for class_directory_path in sources:  # type: Path
+            class_directory_path = class_directory_path.resolve()
             if not class_directory_path.exists():
-                self.logger.warning(f"Given actions classes directory does not exist: {class_directory_path!r}")
+                cls.logger.warning(f"Given actions classes directory does not exist: {class_directory_path!r}")
                 continue
             if not class_directory_path.is_dir():
-                self.logger.warning(f"Given actions classes path is not a directory: {class_directory_path!r}")
+                cls.logger.warning(f"Given actions classes path is not a directory: {class_directory_path!r}")
                 continue
-            self.logger.info(f"Loading external action classes from {str(class_directory_path)!r}")
+            cls.logger.info(f"Loading external action classes from {str(class_directory_path)!r}")
             for class_file in class_directory_path.iterdir():
                 if not class_file.is_file() or not class_file.suffix == ".py":
                     continue
                 action_type: str = class_file.stem
-                self.logger.debug(f"Trying external action class source: {class_file}")
+                cls.logger.debug(f"Trying external action class source: {class_file}")
                 action_class: type[ActionBase] = t.cast(
                     type[ActionBase],
                     class_from_module(
@@ -75,7 +81,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                     ),
                 )
                 if action_type in dynamic_bases_map:
-                    self.logger.warning(f"Class {action_type!r} is already defined: overriding from {class_file}")
+                    cls.logger.warning(f"Class {action_type!r} is already defined: overriding from {class_file}")
                 dynamic_bases_map[action_type] = (action_class, str(class_file))
         return dynamic_bases_map
 
