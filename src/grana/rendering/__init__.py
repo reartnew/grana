@@ -10,7 +10,12 @@ from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
 from .tokenizing import TemplarStringLexer
 from ..actions.types import Expression, qualify_string_as_potentially_renderable, ActionStatus
-from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
+from ..exceptions import (
+    ActionRenderError,
+    RestrictedBuiltinError,
+    ActionRenderRecursionError,
+    PendingActionUnresolvedOutcomeError,
+)
 from ..logging import WithLogger
 
 __all__ = [
@@ -74,6 +79,9 @@ class CommonTemplar(WithLogger):
             # Eliminate ActionRenderRecursionError stack trace on hit
             self.logger.debug(f"Rendering {value!r} failed: {e!r}")
             raise ActionRenderError(e) from None
+        except PendingActionUnresolvedOutcomeError:
+            # Do not trace PendingActionUnresolvedOutcomeError
+            raise
         except ActionRenderError as e:
             self.logger.debug(f"Rendering {value!r} failed: {e!r}", exc_info=True)
             raise
