@@ -58,3 +58,8 @@ class C:
         """Enable context cache for all constants"""
         with CACHE.mount():
             yield
+
+    @classmethod
+    def reset_context_cache(cls) -> None:
+        """Reset context cache for all constants"""
+        CACHE.clear()

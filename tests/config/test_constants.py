@@ -12,10 +12,13 @@ from grana.config.constants import C
 def test_constant_with_boolean_env(monkeypatch: MonkeyPatch) -> None:
     """Check boolean env values"""
 
+    C.reset_context_cache()
     monkeypatch.setenv("GRANA_SHELL_INJECT_YIELD_FUNCTION", "Y")
     assert C.SHELL_INJECT_YIELD_FUNCTION
+    C.reset_context_cache()
     monkeypatch.setenv("GRANA_SHELL_INJECT_YIELD_FUNCTION", "N")
     assert not C.SHELL_INJECT_YIELD_FUNCTION
+    C.reset_context_cache()
     monkeypatch.setenv("GRANA_SHELL_INJECT_YIELD_FUNCTION", "foo")
     with pytest.raises(ValueError):
         assert C.SHELL_INJECT_YIELD_FUNCTION
@@ -30,13 +33,17 @@ def test_constant_with_ternary_env(monkeypatch: MonkeyPatch) -> None:
     def isatty(*args, **kwargs):
         raise TTYException
 
+    C.reset_context_cache()
     monkeypatch.setenv("GRANA_FORCE_COLOR", "Y")
     assert C.USE_COLOR
+    C.reset_context_cache()
     monkeypatch.setenv("GRANA_FORCE_COLOR", "N")
     assert not C.USE_COLOR
+    C.reset_context_cache()
     monkeypatch.setenv("GRANA_FORCE_COLOR", "foo")
     with pytest.raises(ValueError):
         assert C.USE_COLOR
+    C.reset_context_cache()
     monkeypatch.setattr(os, "isatty", isatty)
     monkeypatch.setenv("GRANA_FORCE_COLOR", "")
     with pytest.raises(TTYException):

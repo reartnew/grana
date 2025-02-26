@@ -63,3 +63,7 @@ class ContextCache:
             return local_context_cache_dict[key]
 
         return wrapped
+
+    def clear(self) -> None:
+        """Clears the cache for the active context"""
+        self._cache.get().clear()
