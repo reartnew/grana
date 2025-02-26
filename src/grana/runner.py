@@ -6,7 +6,6 @@ thus placed to a separate module.
 import asyncio
 import functools
 import io
-import logging
 import sys
 import typing as t
 from pathlib import Path
@@ -18,6 +17,7 @@ from .config.constants import C
 from .display.types import DisplayEvent, DisplayEventName
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.helpers import get_default_loader_class_for_source
+from .logging import WithLogger
 from .workflow import Workflow
 
 __all__ = [
@@ -27,10 +27,8 @@ __all__ = [
 IOType = io.TextIOBase
 
 
-class Runner:
+class Runner(WithLogger):
     """Main entry object"""
-
-    logger = logging.getLogger(f"{__name__}.Runner")
 
     def __init__(self, source: t.Union[str, Path, IOType, None] = None) -> None:
         self._workflow_source: t.Union[Path, IOType] = self._detect_workflow_source(explicit_source=source)
