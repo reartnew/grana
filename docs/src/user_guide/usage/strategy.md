@@ -2,7 +2,8 @@ Strategy
 ========
 
 A `strategy` is an iterator that is responsible for controlling actions execution order.
-Default is [](#auto).
+:::{grana-default-strategy}
+:::
 
 :::{contents} On this page:
 :depth: 2
@@ -16,5 +17,5 @@ If an action has a strict dependency failed, then it is treated as skipped and i
 
 ## Available strategies
 
-:::{grana-strategies}
+:::{grana-strategies-list}
 :::
