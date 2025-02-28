@@ -19,7 +19,6 @@ __all__ = [
     "PrologueDisplay",
     "HeaderDisplay",
     "PrefixDisplay",
-    "DefaultDisplay",
     "KNOWN_DISPLAYS",
 ]
 
@@ -176,7 +175,6 @@ class HeaderDisplay(PrologueDisplay):
         super().on_runner_finish()
 
 
-DefaultDisplay = PrefixDisplay
 KNOWN_DISPLAYS: dict[str, type[BaseDisplay]] = {
     HeaderDisplay.NAME: HeaderDisplay,
     PrefixDisplay.NAME: PrefixDisplay,

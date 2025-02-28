@@ -7,7 +7,6 @@ from .actions.base import (
 )
 from .actions.types import Stderr
 from .config.constants import C
-from .display.default import DefaultDisplay
 from .loader.default import DefaultYAMLWorkflowLoader
 from .runner import Runner
 from .strategy.impl import (

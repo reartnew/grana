@@ -12,7 +12,6 @@ from .config.constants import C, rc
 from .config.constants.base import ConstantSource
 from .config.constants.cli import get_cli_option, cli_opts_receiver
 from .display.color import Color
-from .display.default import DefaultDisplay
 from .exceptions import BaseError, ExecutionFailed
 from .loader.default import DefaultYAMLWorkflowLoader
 from .runner import Runner

@@ -141,9 +141,10 @@ class InternalDisplayClass(base.ConstantBase[DisplayClassType]):
             raise ValueError(f"Display name should be one of: {sorted(KNOWN_DISPLAYS)}. Got {value!r}") from None
 
     def default(self) -> DisplayClassType:
-        from ...display.default import DefaultDisplay
+        """`prefix`"""
+        from ...display.default import PrefixDisplay
 
-        return DefaultDisplay
+        return PrefixDisplay
 
 
 class ExternalDisplayClass(base.ConstantBase[t.Optional[DisplayClassType]]):

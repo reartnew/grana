@@ -5,7 +5,7 @@
 import pytest
 
 from grana.config.constants import C
-from grana.display.default import DefaultDisplay
+from grana.display.default import PrefixDisplay
 from grana.strategy.impl import AutoStrategy, FreeStrategy
 
 
@@ -35,6 +35,6 @@ def test_invalid_strategy_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_default_display(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Check that default display is the DefaultDisplay"""
+    """Check that default display is the PrefixDisplay"""
     monkeypatch.delenv("GRANA_DISPLAY_SOURCE_FILE", raising=False)
-    assert C.INTERNAL_DISPLAY_CLASS == DefaultDisplay
+    assert C.INTERNAL_DISPLAY_CLASS == PrefixDisplay
