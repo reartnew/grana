@@ -4,6 +4,10 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "_extensions"))
+
 from grana.version import __version__
 
 # version_switch_json_url = "https://grana.readthedocs.io/en/latest/_static/version-switch.json"
@@ -27,6 +31,7 @@ extensions = [
     "myst_parser",
     "sphinx_copybutton",
     "sphinx_click",
+    "grana_docs",
 ]
 
 templates_path = ["_templates"]

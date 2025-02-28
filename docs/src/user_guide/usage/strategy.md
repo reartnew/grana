@@ -16,20 +16,5 @@ If an action has a strict dependency failed, then it is treated as skipped and i
 
 ## Available strategies
 
-### `explicit`
-
-Actions are started immediately after their explicit dependencies have finished the execution.
-If no dependencies given for an action, then it is scheduled to start in the very beginning of the workflow run.
-
-### `free`
-
-All actions are started immediately. All dependencies are ignored.
-
-### `sequential`
-
-Actions run one-by-one in the same order they are specified in the workflow. All dependencies are ignored.
-
-### `auto`
-
-Same as [](#explicit), but in case of referring to some action's outcome,\
-an implicit dependency is added so the outcome could be resolved.
+:::{grana-strategies}
+:::

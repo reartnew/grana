@@ -16,9 +16,10 @@ ST = t.TypeVar("ST", bound="BaseStrategy")
 
 __all__ = [
     "BaseStrategy",
+    "STRATEGIES_MAP",
 ]
 
-_KNOWN_STRATEGIES: dict[str, type[BaseStrategy]] = {}
+STRATEGIES_MAP: dict[str, type[BaseStrategy]] = {}
 
 
 class BaseStrategy(WithLogger, t.AsyncIterable[WorkflowActionExecution]):
@@ -30,9 +31,9 @@ class BaseStrategy(WithLogger, t.AsyncIterable[WorkflowActionExecution]):
     def get_strategy_class_by_name(name: str) -> type[BaseStrategy]:
         """Obtain derived strategy class by name"""
         try:
-            return _KNOWN_STRATEGIES[name]
+            return STRATEGIES_MAP[name]
         except KeyError:
-            raise ValueError(f"Invalid strategy name: {name!r} (allowed: {sorted(_KNOWN_STRATEGIES)})") from None
+            raise ValueError(f"Invalid strategy name: {name!r} (allowed: {sorted(STRATEGIES_MAP)})") from None
 
     def __init__(self, workflow: Workflow) -> None:
         self._workflow = workflow
@@ -44,7 +45,7 @@ class BaseStrategy(WithLogger, t.AsyncIterable[WorkflowActionExecution]):
         raise NotImplementedError
 
     def __init_subclass__(cls, **kwargs):
-        if _KNOWN_STRATEGIES.setdefault(cls.NAME, cls) is not cls:
+        if STRATEGIES_MAP.setdefault(cls.NAME, cls) is not cls:
             raise NameError(
                 f"Strategy named {cls.NAME!r} already exists. "
                 f"Please specify another name for the {cls.__module__}.{cls.__name__}."

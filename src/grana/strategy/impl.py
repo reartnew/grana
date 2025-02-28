@@ -19,7 +19,8 @@ __all__ = [
 
 
 class ExplicitStrategy(BaseStrategy):
-    """Keep tracking dependencies states"""
+    """Actions are started immediately after their explicit dependencies have finished the execution.
+    If no dependencies given for an action, then it is scheduled to start in the very beginning of the workflow run."""
 
     NAME = "explicit"
 
@@ -64,7 +65,7 @@ class ExplicitStrategy(BaseStrategy):
 
 
 class FreeStrategy(ExplicitStrategy):
-    """Free execution (fully parallel)"""
+    """All actions are started immediately in parallel. All dependencies are ignored."""
 
     NAME = "free"
 
@@ -77,7 +78,7 @@ class FreeStrategy(ExplicitStrategy):
 
 
 class SequentialStrategy(FreeStrategy):
-    """Sequential execution"""
+    """Actions run one-by-one in the same order they are specified in the workflow. All dependencies are ignored."""
 
     NAME = "sequential"
 
@@ -92,7 +93,9 @@ class SequentialStrategy(FreeStrategy):
 
 
 class AutoStrategy(ExplicitStrategy):
-    """Use both explicit and outcome-based dependencies"""
+    """Use both explicit and outcome-based dependencies. Same as [](#explicit),
+    but in case of referring to some action's outcome,
+    an implicit dependency is added so the outcome could be resolved."""
 
     NAME = "auto"
 
