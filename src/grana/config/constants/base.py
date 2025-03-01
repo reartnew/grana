@@ -173,7 +173,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
     def default(self) -> VT:
         # Default value to be applied after every other source has been tested
         if isinstance(self.DEFAULT, ConstantSentinelType):
-            raise Inapplicable
+            raise Inapplicable  # pragma: no cover
         return self.DEFAULT
 
 
