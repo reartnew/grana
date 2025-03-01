@@ -3,19 +3,19 @@ from .base import GranaBaseDirective
 from grana.config.constants.impl import StrategyClass
 
 __all__ = [
-    "GranaDefaultStrategyDirective",
-    "GranaStrategiesListDirective",
+    "GranaDefaultStrategy",
+    "GranaStrategiesList",
 ]
 
 
-class GranaDefaultStrategyDirective(GranaBaseDirective):
+class GranaDefaultStrategy(GranaBaseDirective):
 
     def get_raw_text(self) -> str:
         default_strategy_name: str = StrategyClass().default().NAME
         return f"Default strategy is [](#{default_strategy_name})."
 
 
-class GranaStrategiesListDirective(GranaBaseDirective):
+class GranaStrategiesList(GranaBaseDirective):
 
     def get_raw_text(self) -> str:
         items: list[str] = []

@@ -17,3 +17,7 @@ class GranaBaseDirective(SphinxDirective):
             self.get_raw_text(),
             allow_section_headings=True,
         )
+
+    @classmethod
+    def get_directive_name(cls) -> str:
+        return "".join("-" + c.lower() if c.isupper() else c for c in cls.__name__).lstrip("-")

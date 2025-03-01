@@ -7,6 +7,7 @@ from io import UnsupportedOperation
 from pathlib import Path
 
 from . import base
+from .cli import get_cli_option
 from .helpers import class_from_module
 from ...strategy.base import BaseStrategy
 from ...types import (
@@ -37,8 +38,7 @@ __all__ = [
 
 
 class LogLevel(base.ConstantBase[str]):
-    """Specifies the log level.
-    Default is ERROR."""
+    """Specifies the level for the logging subsystem."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_LOG_LEVEL"
     COMMAND_LINE_OPTION_NAME = "log_level"
@@ -56,8 +56,7 @@ class LogLevel(base.ConstantBase[str]):
 
 
 class LogFile(base.ConstantPath[t.Optional[Path]]):
-    """Specifies the log file.
-    Defaults to the standard error stream."""
+    """Specifies the log file path."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_LOG_FILE"
     RC_PARAMETER_NAME = "log_file"
@@ -65,30 +64,32 @@ class LogFile(base.ConstantPath[t.Optional[Path]]):
 
 
 class RcFile(base.ConstantPath[Path]):
-    """Runtime configuration file constant"""
+    """Specifies the runtime configuration file location."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_RC_FILE"
 
     def default(self) -> Path:
+        """`.granarc` file in the current working directory"""
         return Path().resolve() / ".granarc"
 
 
 class ContextDirectory(base.ConstantPath[Path]):
-    """Context directory constant"""
+    """A directory that is used to resolve all relative paths."""
 
     def default(self) -> Path:
+        """Current working directory"""
         return Path().resolve()
 
 
 class InteractiveMode(base.ConstantBool):
-    """Interactive mode constant"""
+    """Specifies whither to run plan interaction phase or not."""
 
     COMMAND_LINE_OPTION_NAME = "interactive"
     DEFAULT = False
 
 
 class DependencyDefaultStrictness(base.ConstantBool):
-    """Dependencies strictness constant"""
+    """Default strictness for action dependencies."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_STRICT_DEPENDENCIES"
     RC_PARAMETER_NAME = "strict"
@@ -97,13 +98,21 @@ class DependencyDefaultStrictness(base.ConstantBool):
 
 
 class WorkflowSourceFile(base.ConstantPath[t.Optional[Path]]):
-    """Workflow file to use.
-    Default behaviour is to check the current working directory for a `grana.y[a]ml` file."""
+    """Workflow source file path.
+    When not set, `grana.yml`/`grana.yaml` are being looked for in the working directory.
+    If set to `-`, then standard input stream is used as the source."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_WORKFLOW_FILE"
-    COMMAND_LINE_OPTION_NAME = "workflow_file"
     RC_PARAMETER_NAME = "workflow_file"
     DEFAULT = None
+
+    def from_cli_option(self) -> t.Optional[Path]:
+        """Positional argument to `grana run` and `grana validate`."""
+        cli_arg_name: str = "workflow_file"
+        if (cli_arg_value := get_cli_option(cli_arg_name)) is None:
+            raise base.Inapplicable
+        self.logger.debug(f"Defined CLI positional argument {cli_arg_name!r} is accessed by {self._name!r}")
+        return self.cast(cli_arg_value)
 
 
 class WorkflowLoaderClass(base.ConstantBase[t.Optional[LoaderClassType]]):
@@ -126,7 +135,7 @@ class WorkflowLoaderClass(base.ConstantBase[t.Optional[LoaderClassType]]):
 
 
 class InternalDisplayClass(base.ConstantBase[DisplayClassType]):
-    """Select the display by name from the bundled list."""
+    """Selects a display by name from the bundled list."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_DISPLAY_NAME"
     RC_PARAMETER_NAME = "display_name"
@@ -166,8 +175,7 @@ class ExternalDisplayClass(base.ConstantBase[t.Optional[DisplayClassType]]):
 
 
 class StrategyClass(base.ConstantBase[StrategyClassType]):
-    """Specifies the execution strategy.
-    Default is 'auto'."""
+    """Specifies the execution strategy."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_STRATEGY_NAME"
     COMMAND_LINE_OPTION_NAME = "strategy"
@@ -178,6 +186,7 @@ class StrategyClass(base.ConstantBase[StrategyClassType]):
         return BaseStrategy.get_strategy_class_by_name(value)
 
     def default(self) -> StrategyClassType:
+        """`auto`"""
         from ...strategy.impl import AutoStrategy
 
         return AutoStrategy
@@ -190,6 +199,7 @@ class UseColor(base.ConstantBool):
     RC_PARAMETER_NAME = "force_color"
 
     def default(self) -> bool:
+        """Depending on if a TTY is allocated."""
         try:
             return os.isatty(sys.stdout.fileno())
         except UnsupportedOperation:
@@ -197,8 +207,7 @@ class UseColor(base.ConstantBool):
 
 
 class DefaultShellExecutable(base.ConstantBase[str]):
-    """Specifies which shell executable should be used by the shell action by default.
-    Default is /bin/sh."""
+    """Specifies which shell executable should be used by the shell action by default."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_DEFAULT_SHELL_EXECUTABLE"
     RC_PARAMETER_NAME = "default_shell_executable"
@@ -207,8 +216,7 @@ class DefaultShellExecutable(base.ConstantBase[str]):
 
 
 class ShellInjectYieldFunction(base.ConstantBool):
-    """When set to True, all shell-related actions will inject the yield_outcome function definition.
-    Default is True."""
+    """When set to True, all shell-related actions will inject the yield_outcome function definition."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_SHELL_INJECT_YIELD_FUNCTION"
     RC_PARAMETER_NAME = "shell_inject_yield_function"
@@ -217,8 +225,7 @@ class ShellInjectYieldFunction(base.ConstantBool):
 
 
 class StrictOutcomesRendering(base.ConstantBool):
-    """When set to True, rendering a missing outcome key will result in an error instead of an empty string.
-    Default is False."""
+    """When set to True, rendering a missing outcome key will result in an error instead of an empty string."""
 
     ENVIRONMENT_VARIABLE_NAME = "STRICT_OUTCOMES_RENDERING"
     RC_PARAMETER_NAME = "strict_outcomes_rendering"
@@ -237,8 +244,7 @@ class ActionClassDirectories(base.ConstantPathList):
 
 
 class ExternalPythonModulesPaths(base.ConstantPathList):
-    """A list of local directories, which are added to the sys.path while loading any external modules.
-    Default is an empty list."""
+    """A list of local directories, which are added to the sys.path while loading any external modules."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_EXTERNAL_MODULES_PATHS"
     RC_PARAMETER_NAME = "external_python_modules_paths"

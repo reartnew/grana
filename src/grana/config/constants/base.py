@@ -22,6 +22,7 @@ __all__ = [
     "ConstantBool",
     "ConstantPathList",
     "ConstantPath",
+    "sentinel",
 ]
 
 VT = t.TypeVar("VT")
@@ -62,6 +63,7 @@ class ConstantSentinelType(str):
 sentinel = ConstantSentinelType()
 
 
+# pylint: disable=missing-function-docstring
 class ConstantBase(WithLogger, t.Generic[VT]):
     """Constants used in grana runtime"""
 
@@ -126,7 +128,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         return t.cast(VT, value)
 
     def from_workflow_configuration(self) -> VT:
-        """Try to load the value from loaded workflow configuration variables"""
+        # Try to load the value from loaded workflow configuration variables
         wf_cfg_param_name: str = self.WORKFLOW_CONFIG_PARAMETER_NAME
         if wf_cfg_param_name is sentinel:
             raise Inapplicable
@@ -138,7 +140,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         return self.cast(workflow_config_parameter_value)
 
     def from_cli_option(self) -> VT:
-        """Try to load the value from CLI options"""
+        # Try to load the value from CLI options
         cli_option_name: str = self.COMMAND_LINE_OPTION_NAME
         if cli_option_name is sentinel:
             raise Inapplicable
@@ -148,7 +150,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         return self.cast(cli_option_value)
 
     def from_env(self) -> VT:
-        """Try to load the value from environment variables"""
+        # Try to load the value from environment variables
         env_var_name: str = self.ENVIRONMENT_VARIABLE_NAME
         if env_var_name is sentinel:
             raise Inapplicable
@@ -158,7 +160,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         return self.cast(env_var_value)
 
     def from_rc_file(self) -> VT:
-        """Try to load the value from the RC file"""
+        # Try to load the value from the RC file
         rc_param_name: str = self.RC_PARAMETER_NAME
         if rc_param_name is sentinel:
             raise Inapplicable
@@ -169,7 +171,7 @@ class ConstantBase(WithLogger, t.Generic[VT]):
         return self.cast(rc_param_value)
 
     def default(self) -> VT:
-        """Default value to be applied after every other source has been tested"""
+        # Default value to be applied after every other source has been tested
         if isinstance(self.DEFAULT, ConstantSentinelType):
             raise Inapplicable
         return self.DEFAULT
@@ -207,6 +209,7 @@ class ConstantPathList(ConstantBase[list[Path]]):
         return value
 
     def default(self) -> list[Path]:
+        """An empty list"""
         return []
 
 

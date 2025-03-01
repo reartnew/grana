@@ -31,8 +31,7 @@ class WorkflowPositionalArgument(click.Argument):
     def get_help_record(self, ctx: click.Context) -> t.Optional[t.Tuple[str, str]]:
         return self.make_metavar(), (
             "Workflow source file. When not given, will look for one of grana.yml/grana.yaml "
-            "files in the context directory. Use the '-' value to read yaml configuration from the standard input. "
-            "Also configurable via the `GRANA_WORKFLOW_FILE` environment variable."
+            "files in the context directory. Use the '-' value to read yaml configuration from the standard input"
         )
 
     def process_value(self, ctx: click.Context, value: t.Any) -> t.Optional[str]:
@@ -51,12 +50,12 @@ class WorkflowPositionalArgument(click.Argument):
 @click.option(
     "-l",
     "--log-level",
-    help="Logging level. Defaults to `ERROR`. Also configurable via the `GRANA_LOG_LEVEL` environment variable.",
+    help="Logging subsystem level",
 )
 @click.option(
     "-d",
     "--display",
-    help="Display name. Defaults to `prefixes`. Also configurable via the `GRANA_DISPLAY_NAME` environment variable.",
+    help="Display name",
 )
 @cli_opts_receiver
 def main() -> None:
@@ -100,11 +99,10 @@ def wrap_cli_command(func):
 @click.option(
     "-s",
     "--strategy",
-    help="Execution strategy. Defaults to `explicit`. "
-    "Also configurable via the `GRANA_STRATEGY_NAME` environment variable.",
+    help="Execution strategy for the workflow",
 )
 @click.option("-i", "--interactive", help="Run in dialog mode.", is_flag=True, default=False)
-@click.argument("workflow_file", cls=WorkflowPositionalArgument, help="azaza")
+@click.argument("workflow_file", cls=WorkflowPositionalArgument, help="Workflow file path")
 def run() -> None:
     """Run the pipeline."""
     Runner().run_sync()
@@ -175,6 +173,6 @@ def runtime() -> None:
             kv("Info", doc, indent=1)
         kv("Source", action_source, indent=1)
 
-    d = DefaultDisplay()
+    d = C.INTERNAL_DISPLAY_CLASS()
     for line in display_spool:
         d.display(line)
