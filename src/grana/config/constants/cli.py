@@ -37,12 +37,6 @@ def cli_opts_receiver(func):
     return click.pass_context(wrapped)
 
 
-def get_cli_option(name: str, *, valid_values: t.Optional[t.Iterable[str]] = None) -> t.Any:
+def get_cli_option(name: str) -> t.Any:
     """Obtain previously registered CLI option"""
-
-    value: t.Any = _CLI_OPTIONS.get(name)
-    if valid_values is not None and value is not None and value not in valid_values:
-        raise ValueError(
-            f"Unrecognized value for the {name!r} option: {value!r}. " f"Expected one of: {sorted(valid_values)}"
-        )
-    return value
+    return _CLI_OPTIONS.get(name)
