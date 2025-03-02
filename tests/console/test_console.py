@@ -1,7 +1,10 @@
 # pylint: disable=redefined-outer-name
 """CLI tests"""
 
+import logging as vanilla_logging
+import pathlib
 import typing as t
+import uuid
 
 import pytest
 from click.testing import CliRunner
@@ -43,15 +46,13 @@ def _invoke(*args, **kwargs) -> list[str]:
     return result.stdout.rstrip().splitlines()
 
 
-def _noop(*args, **kwargs) -> None:  # pylint: disable=unused-argument
-    return None
-
-
 @pytest.fixture
 def builder(monkeypatch: pytest.MonkeyPatch) -> BuilderType:
     """Setup test command fed from stdin"""
 
-    monkeypatch.setattr(logging, "configure_logging", _noop)
+    # Do not mess up with real root logger during tests,
+    # since it is set up in a session-wide fixture
+    monkeypatch.setattr(logging, "get_main_logger", lambda: vanilla_logging.getLogger(uuid.uuid4().hex))
 
     def build(*subcommand: str):
         def execute(text: t.Optional[str] = None, opts: OptsType = None, global_opts: OptsType = None) -> list[str]:
@@ -204,3 +205,10 @@ def test_info_runtime(runtime_info_cmd: RunnerType, opts: list[str]) -> None:
     assert "Python" in info
     assert "Configuration" in info
     assert "Actions" in info
+
+
+def test_log_file(tmp_path: pathlib.Path, runtime_info_cmd: RunnerType) -> None:
+    """Check log file usage"""
+    log_file_path: pathlib.Path = tmp_path / "grana.log"
+    runtime_info_cmd(global_opts=["--log-file", str(log_file_path)])
+    assert log_file_path.exists()

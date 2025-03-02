@@ -59,6 +59,7 @@ class LogFile(base.ConstantPath[t.Optional[Path]]):
     """Specifies the log file path."""
 
     ENVIRONMENT_VARIABLE_NAME = "GRANA_LOG_FILE"
+    COMMAND_LINE_OPTION_NAME = "log_file"
     RC_PARAMETER_NAME = "log_file"
     DEFAULT = None
 

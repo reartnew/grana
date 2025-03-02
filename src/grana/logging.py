@@ -99,9 +99,14 @@ class ColorFormatter(logging.Formatter):
         return f"\033[{code}m{string}\033[0m"
 
 
+def get_main_logger() -> logging.Logger:
+    """Return the root logger for the package"""
+    return logging.getLogger("grana")
+
+
 def configure_logging(level: str, colorize: bool = False, main_file: t.Optional[pathlib.Path] = None) -> None:
     """Logging setup"""
-    main_logger = logging.getLogger("grana")
+    main_logger = get_main_logger()
     main_logger.setLevel(level)
     ctx_filter = ContextFilter()
 

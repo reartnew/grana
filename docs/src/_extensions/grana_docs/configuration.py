@@ -36,7 +36,7 @@ class GranaConfigurationParameters(GranaBaseDirective):
             elif defn_class.from_workflow_configuration.__doc__:
                 add_row("Workflow file configuration field", format_object_doc(defn_class.from_workflow_configuration))
             if defn_class.COMMAND_LINE_OPTION_NAME is not base.sentinel:
-                add_row("Command-line option", code(f"--{defn_class.COMMAND_LINE_OPTION_NAME}"))
+                add_row("Command-line option", code(f"--{defn_class.COMMAND_LINE_OPTION_NAME.replace('_', '-')}"))
             elif defn_class.from_cli_option.__doc__:
                 add_row("Command-line option", format_object_doc(defn_class.from_cli_option))
             if defn_class.ENVIRONMENT_VARIABLE_NAME is not base.sentinel:

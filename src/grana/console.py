@@ -53,6 +53,11 @@ class WorkflowPositionalArgument(click.Argument):
     help="Logging subsystem level",
 )
 @click.option(
+    "-l",
+    "--log-file",
+    help="Log file path",
+)
+@click.option(
     "-d",
     "--display",
     help="Display name",
