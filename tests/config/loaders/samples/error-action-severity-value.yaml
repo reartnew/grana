@@ -1,0 +1,7 @@
+# exception: LoadError
+# match: Invalid severity: 'bar'
+---
+actions:
+  - severity: bar
+    type: echo
+    message: foo

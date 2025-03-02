@@ -1,6 +1,0 @@
-# exception: LoadError
-# match: Invalid 'visible' value
----
-actions:
-  - name: foo
-    visible: bar

@@ -1,6 +1,0 @@
-# exception: LoadError
-# match: Invalid 'severity' value
----
-actions:
-  - name: foo
-    severity: bar
