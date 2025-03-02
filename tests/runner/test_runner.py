@@ -743,3 +743,22 @@ def test_improper_shell_extension(run_text: RunFactoryType) -> None:
             "✓ SUCCESS: improper-shell",
         ]
     )
+
+
+def test_workflow_with_rc(ctx_from_text: CtxFactoryType, tmp_path: Path) -> None:
+    """Check workflow execution with a .granarc file"""
+    rc_path: Path = tmp_path / ".granarc"
+    rc_path.write_text(
+        """---
+log_level: ERROR
+action_classes_directories: []
+"""
+    )
+    ctx_from_text(
+        """---
+actions:
+  - type: echo
+    message: foo 
+"""
+    )
+    grana.Runner().run_sync()

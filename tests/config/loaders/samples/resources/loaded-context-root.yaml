@@ -1,0 +1,3 @@
+---
+a: b
+c: !load "@{ meta.here }/sub/loaded-context-extras.yaml"

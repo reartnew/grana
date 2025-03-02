@@ -1,0 +1,6 @@
+---
+context:
+  loaded: !load "@{ meta.here }/resources/loaded-context-root.yaml"
+actions:
+  - type: echo
+    message: !@ ctx.loaded.c.foo
