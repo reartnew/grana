@@ -9,14 +9,15 @@ from grana.display.default import PrefixDisplay
 from grana.strategy.impl import AutoStrategy, FreeStrategy
 
 
-def test_invalid_strategy_cli_arg(invalid_strategy_cli_opt) -> None:
+def test_invalid_strategy_cli_arg(set_cli_opt) -> None:
     """Check error throw for bad CLI strategy option value"""
-    with pytest.raises(ValueError, match="Invalid strategy name"):
-        assert C.STRATEGY_CLASS
+    with set_cli_opt("strategy", "unknown-strategy"):
+        with pytest.raises(ValueError, match="Invalid strategy name"):
+            assert C.STRATEGY_CLASS
 
 
 def test_default_strategy(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Check that default strategy is `explicit`"""
+    """Check that default strategy is `auto`"""
     monkeypatch.delenv("GRANA_STRATEGY_NAME", raising=False)
     assert C.STRATEGY_CLASS == AutoStrategy
 
