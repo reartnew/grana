@@ -88,6 +88,9 @@ def runtime_info_cmd(builder: BuilderType) -> RunnerType:
 
 
 GOOD_WORKFLOW_TEXT: str = """---
+configuration:
+  useless_key: foo
+  strategy: "@{ 'explicit' }"
 actions:
   - type: echo
     message: foo

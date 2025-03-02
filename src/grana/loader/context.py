@@ -24,6 +24,7 @@ class LoadedFile(ContextManagerVar[Path]):
         current_loaded_file: t.Optional[Path] = self.get()
         if current_loaded_file is not None:
             return CommonTemplar.from_source_file(path=current_loaded_file)
+        # This happens when the runner is fed from stdin
         return CommonTemplar.from_context_directory()
 
 
