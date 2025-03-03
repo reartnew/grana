@@ -24,6 +24,7 @@ def test_constant_with_boolean_env(monkeypatch: MonkeyPatch) -> None:
         assert C.SHELL_INJECT_YIELD_FUNCTION
 
 
+@pytest.mark.disable_constants_cache
 def test_constant_with_ternary_env(monkeypatch: MonkeyPatch) -> None:
     """Check ternary env values"""
 
@@ -33,17 +34,13 @@ def test_constant_with_ternary_env(monkeypatch: MonkeyPatch) -> None:
     def isatty(*args, **kwargs):
         raise TTYException
 
-    C.reset_context_cache()
     monkeypatch.setenv("GRANA_FORCE_COLOR", "Y")
     assert C.USE_COLOR
-    C.reset_context_cache()
     monkeypatch.setenv("GRANA_FORCE_COLOR", "N")
     assert not C.USE_COLOR
-    C.reset_context_cache()
     monkeypatch.setenv("GRANA_FORCE_COLOR", "foo")
     with pytest.raises(ValueError):
         assert C.USE_COLOR
-    C.reset_context_cache()
     monkeypatch.setattr(os, "isatty", isatty)
     monkeypatch.setenv("GRANA_FORCE_COLOR", "")
     with pytest.raises(TTYException):

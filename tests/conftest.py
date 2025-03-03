@@ -24,7 +24,10 @@ def configure_logging() -> None:
 
 
 @pytest.fixture(autouse=True, scope="function")
-def mount_cache() -> t.Generator[None, None, None]:
-    """Establish logging configuration"""
+def mount_cache(request) -> t.Generator[None, None, None]:
+    """Enable constants caching"""
+    if "disable_constants_cache" in request.keywords:
+        yield
+        return
     with C.mount_context_cache():
         yield
