@@ -85,9 +85,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 dynamic_bases_map[action_type] = (action_class, str(class_file))
         return dynamic_bases_map
 
-    def _internal_load_from_text(self, data: t.Union[str, bytes]) -> None:
-        if isinstance(data, bytes):
-            data = data.decode()
+    def _internal_load_from_text(self, data: str) -> None:
         root_node: dict = yaml.load(data, DefaultYAMLLoader)  # nosec
         if not isinstance(root_node, dict):
             self._throw(f"Unknown workflow structure: {type(root_node)!r} (should be a dict)")

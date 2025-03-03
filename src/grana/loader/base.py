@@ -64,7 +64,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
             self._internal_load_from_text(file_data)
 
     @contextlib.contextmanager
-    def _read_file(self, source_file: t.Union[str, Path]) -> t.Iterator[bytes]:
+    def _read_file(self, source_file: t.Union[str, Path]) -> t.Iterator[str]:
         """Read file data"""
         source_file_raw_path: Path = Path(source_file)
         source_resolved_file_path = source_file_raw_path.resolve()
@@ -72,9 +72,9 @@ class AbstractBaseWorkflowLoader(WithLogger):
             self.logger.debug(f"Loading workflow file: {source_resolved_file_path}")
             if not source_resolved_file_path.is_file():
                 self._throw(f"Workflow file not found: {source_resolved_file_path}")
-            yield source_resolved_file_path.read_bytes()
+            yield source_resolved_file_path.read_text(encoding="utf-8")
 
-    def _internal_load_from_text(self, data: t.Union[str, bytes]) -> None:
+    def _internal_load_from_text(self, data: str) -> None:
         """Load workflow partially from text (can be called recursively)"""
         raise NotImplementedError
 
@@ -88,7 +88,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
             self._throw(f"Unknown action type: {action_type}")
         return action_info[0]
 
-    def load_from_text(self, data: t.Union[str, bytes]) -> Workflow:
+    def load_from_text(self, data: str) -> Workflow:
         """Load workflow from text"""
         self._internal_load_from_text(data=data)
         self.workflow = Workflow(
