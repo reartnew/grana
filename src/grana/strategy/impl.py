@@ -115,5 +115,10 @@ class AutoStrategy(ExplicitStrategy):
                 return execution
         except StopAsyncIteration:
             if self._pending:
-                raise AutoStrategyCycleError(",".join(sorted(execution.name for execution in self._pending))) from None
+                pending_actions: str = ", ".join(sorted(repr(execution.name) for execution in self._pending))
+                error_text: str = (
+                    f"The following actions went unreachable due to implicit dependencies: "
+                    f"{pending_actions}. Check outcome references for circularity."
+                )
+                raise AutoStrategyCycleError(error_text) from None
             raise

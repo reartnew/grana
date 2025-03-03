@@ -734,10 +734,10 @@ def test_improper_shell_extension(run_text: RunFactoryType) -> None:
     assert (
         run_text(
             """
-                ---
-                actions:
-                  - type: improper-shell
-                """
+                        ---
+                        actions:
+                          - type: improper-shell
+                        """
         )
         == [
             "✓ SUCCESS: improper-shell",
@@ -783,3 +783,19 @@ actions:
             "✓ SUCCESS: echo",
         ]
     )
+
+
+def test_auto_strategy_cycle(run_text: RunFactoryType) -> None:
+    """Check auto strategy cycle detection"""
+    with pytest.raises(exceptions.AutoStrategyCycleError):
+        run_text(
+            """
+            actions:
+              - name: Foo
+                type: echo
+                message: !@ out.Bar.y
+              - name: Bar
+                type: echo
+                message: !@ out.Foo.x
+            """
+        )
