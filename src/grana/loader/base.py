@@ -57,17 +57,16 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Raise loader exception from text"""
         raise LoadError(message=message, stack=LOADED_FILE_STACK.get_all()) from None
 
-    def _internal_load_from_file(self, source_file: t.Union[str, Path]) -> None:
+    def _internal_load_from_file(self, source_file: Path) -> None:
         """Load workflow partially from file (can be called recursively).
         :param source_file: either Path or string object pointing at a file"""
         with self._read_file(source_file) as file_data:
             self._internal_load_from_text(file_data)
 
     @contextlib.contextmanager
-    def _read_file(self, source_file: t.Union[str, Path]) -> t.Iterator[str]:
+    def _read_file(self, source_file: Path) -> t.Iterator[str]:
         """Read file data"""
-        source_file_raw_path: Path = Path(source_file)
-        source_resolved_file_path = source_file_raw_path.resolve()
+        source_resolved_file_path: Path = source_file.resolve()
         with LOADED_FILE_STACK.add(source_resolved_file_path):
             self.logger.debug(f"Loading workflow file: {source_resolved_file_path}")
             if not source_resolved_file_path.is_file():
@@ -98,7 +97,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
         )
         return self.workflow
 
-    def load_from_file(self, source_file: t.Union[str, Path]) -> Workflow:
+    def load_from_file(self, source_file: Path) -> Workflow:
         """Load workflow from file"""
         self._internal_load_from_file(source_file=source_file)
         self.workflow = Workflow(
