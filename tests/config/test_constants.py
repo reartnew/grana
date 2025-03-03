@@ -2,6 +2,7 @@
 """Check constants engine"""
 
 import os
+import pathlib
 
 import pytest
 from pytest import MonkeyPatch
@@ -45,3 +46,18 @@ def test_constant_with_ternary_env(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("GRANA_FORCE_COLOR", "")
     with pytest.raises(TTYException):
         assert C.USE_COLOR
+
+
+def test_valid_log_level(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check valid log level"""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".granarc").write_text("log_level: WARNING")
+    assert C.LOG_LEVEL == "WARNING"
+
+
+def test_invalid_log_level(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check invalid log level"""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".granarc").write_text("log_level: FOO")
+    with pytest.raises(ValueError, match="'FOO' is not a valid log level"):
+        assert C.LOG_LEVEL

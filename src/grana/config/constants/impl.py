@@ -52,6 +52,9 @@ class LogLevel(base.ConstantBase[str]):
             "2": "INFO",
             "3": "DEBUG",
         }
+        allowed_log_levels: list[str] = list(log_levels_normalization_map.values()) + list(log_levels_normalization_map)
+        if value not in allowed_log_levels:
+            raise ValueError(f"{value!r} is not a valid log level (expected one of: {allowed_log_levels})")
         return log_levels_normalization_map.get(value, value)
 
 

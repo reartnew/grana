@@ -1,5 +1,7 @@
 """Test miscellaneous CLI components"""
 
+import pathlib
+
 # pylint: disable=unused-argument
 
 import pytest
@@ -39,3 +41,9 @@ def test_default_display(monkeypatch: pytest.MonkeyPatch) -> None:
     """Check that default display is the PrefixDisplay"""
     monkeypatch.delenv("GRANA_DISPLAY_SOURCE_FILE", raising=False)
     assert C.INTERNAL_DISPLAY_CLASS == PrefixDisplay
+
+
+def test_external_display(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check that external display is loaded properly"""
+    monkeypatch.setenv("GRANA_DISPLAY_SOURCE_FILE", str(pathlib.Path(__file__).parent / "external_display.py"))
+    assert C.EXTERNAL_DISPLAY_CLASS.__wrapped__.__doc__ == "Test external display"
