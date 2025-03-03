@@ -85,7 +85,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
     def _get_action_factory_by_type(self, action_type: str) -> type[ActionBase]:
         action_info: t.Optional[tuple[type[ActionBase], str]] = self.get_action_factories_info().get(action_type)
         if action_info is None:
-            self._throw(f"Unknown dispatched type: {action_type}")
+            self._throw(f"Unknown action type: {action_type}")
         return action_info[0]
 
     def loads(self, data: t.Union[str, bytes]) -> Workflow:
