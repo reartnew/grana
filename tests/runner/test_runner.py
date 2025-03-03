@@ -762,3 +762,24 @@ actions:
 """
     )
     grana.Runner().run_sync()
+
+
+def test_invalid_action_sources(run_text: RunFactoryType) -> None:
+    """Check that bad action sources does not affect the behaviour of the runner"""
+    assert (
+        run_text(
+            f"""
+configuration:
+  action_classes_directories:
+    - {__file__}
+    - foo/bar/baz/qux
+actions:
+  - type: echo
+    message: Foo
+""",
+        )
+        == [
+            "[echo]  | Foo",
+            "✓ SUCCESS: echo",
+        ]
+    )
