@@ -77,6 +77,10 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Load workflow partially from text (can be called recursively)"""
         raise NotImplementedError
 
+    def _internal_load_from_dict(self, data: dict) -> None:
+        """Load workflow partially from a dictionary (can be called recursively)"""
+        raise NotImplementedError
+
     def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
         """Returns a mapping of action factories names to its implementation classes and source information"""
         raise NotImplementedError
@@ -104,6 +108,16 @@ class AbstractBaseWorkflowLoader(WithLogger):
             self._executions,
             context=self._gathered_context,
             source_file=Path(source_file),
+            configuration=self._loaded_config,
+        )
+        return self.workflow
+
+    def load_from_dict(self, data: dict) -> Workflow:
+        """Load workflow from file"""
+        self._internal_load_from_dict(data=data)
+        self.workflow = Workflow(
+            self._executions,
+            context=self._gathered_context,
             configuration=self._loaded_config,
         )
         return self.workflow
