@@ -85,7 +85,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 dynamic_bases_map[action_type] = (action_class, str(class_file))
         return dynamic_bases_map
 
-    def _internal_loads(self, data: t.Union[str, bytes]) -> None:
+    def _internal_load_from_text(self, data: t.Union[str, bytes]) -> None:
         if isinstance(data, bytes):
             data = data.decode()
         root_node: dict = yaml.load(data, DefaultYAMLLoader)  # nosec

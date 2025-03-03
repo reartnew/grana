@@ -54,9 +54,9 @@ class Runner(WithLogger):
     def workflow(self) -> Workflow:
         """Calculated workflow"""
         return (
-            self.loader.loads(self._workflow_source.read())
+            self.loader.load_from_text(self._workflow_source.read())
             if isinstance(self._workflow_source, io.TextIOBase)
-            else self.loader.load(self._workflow_source)
+            else self.loader.load_from_file(self._workflow_source)
         )
 
     @functools.cached_property

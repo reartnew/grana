@@ -57,11 +57,11 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Raise loader exception from text"""
         raise LoadError(message=message, stack=LOADED_FILE_STACK.get_all()) from None
 
-    def _internal_load(self, source_file: t.Union[str, Path]) -> None:
+    def _internal_load_from_file(self, source_file: t.Union[str, Path]) -> None:
         """Load workflow partially from file (can be called recursively).
         :param source_file: either Path or string object pointing at a file"""
         with self._read_file(source_file) as file_data:
-            self._internal_loads(file_data)
+            self._internal_load_from_text(file_data)
 
     @contextlib.contextmanager
     def _read_file(self, source_file: t.Union[str, Path]) -> t.Iterator[bytes]:
@@ -74,7 +74,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
                 self._throw(f"Workflow file not found: {source_resolved_file_path}")
             yield source_resolved_file_path.read_bytes()
 
-    def _internal_loads(self, data: t.Union[str, bytes]) -> None:
+    def _internal_load_from_text(self, data: t.Union[str, bytes]) -> None:
         """Load workflow partially from text (can be called recursively)"""
         raise NotImplementedError
 
@@ -88,9 +88,9 @@ class AbstractBaseWorkflowLoader(WithLogger):
             self._throw(f"Unknown action type: {action_type}")
         return action_info[0]
 
-    def loads(self, data: t.Union[str, bytes]) -> Workflow:
+    def load_from_text(self, data: t.Union[str, bytes]) -> Workflow:
         """Load workflow from text"""
-        self._internal_loads(data=data)
+        self._internal_load_from_text(data=data)
         self.workflow = Workflow(
             self._executions,
             context=self._gathered_context,
@@ -98,9 +98,9 @@ class AbstractBaseWorkflowLoader(WithLogger):
         )
         return self.workflow
 
-    def load(self, source_file: t.Union[str, Path]) -> Workflow:
+    def load_from_file(self, source_file: t.Union[str, Path]) -> Workflow:
         """Load workflow from file"""
-        self._internal_load(source_file=source_file)
+        self._internal_load_from_file(source_file=source_file)
         self.workflow = Workflow(
             self._executions,
             context=self._gathered_context,
