@@ -17,6 +17,8 @@ __all__ = [
     "AutoStrategyCycleError",
 ]
 
+import pathlib
+
 
 class ExecutionFailed(Exception):
     """Some steps failed"""
@@ -65,12 +67,12 @@ class LoadError(BaseError):
 
     CODE: int = 102
 
-    def __init__(self, message: str, stack: list[str]) -> None:
+    def __init__(self, message: str, stack: tuple[pathlib.Path, ...]) -> None:
         self.message: str = message
-        self.stack: list[str] = stack
+        self.stack: tuple[pathlib.Path, ...] = stack
         text: str = message
         if stack:
-            text += f"\n  Sources stack: {' -> '.join(stack)}"
+            text += f"\n  Sources stack: {' -> '.join(str(path) for path in stack)}"
         super().__init__(text)
 
 

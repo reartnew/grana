@@ -6,7 +6,7 @@ import pathlib
 
 import yaml
 
-from .context import LOADED_FILE
+from .context import LOADED_FILE_STACK
 from ..actions.types import Expression
 from ..exceptions import YAMLStructureError
 from ..rendering import CommonTemplar
@@ -41,9 +41,9 @@ class DefaultYAMLLoader(ExpressionYAMLLoader):
     @staticmethod
     def parse_load(loader: DefaultYAMLLoader, data: yaml.ScalarNode):
         """Process `!load` tag in parse-time to load external files"""
-        templar: CommonTemplar = LOADED_FILE.create_associated_templar()
+        templar: CommonTemplar = LOADED_FILE_STACK.create_associated_templar()
         file_path: pathlib.Path = pathlib.Path(templar.render(data.value))
-        with file_path.open("rb") as f, LOADED_FILE.set(file_path):
+        with file_path.open("rb") as f, LOADED_FILE_STACK.add(file_path):
             return yaml.load(f, loader.__class__)  # nosec
 
 

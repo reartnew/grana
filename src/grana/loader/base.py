@@ -8,7 +8,7 @@ import dataclasses
 import typing as t
 from pathlib import Path
 
-from .context import LOADED_FILE
+from .context import LOADED_FILE_STACK
 from ..actions.base import WorkflowActionExecution, ActionBase, ActionDependency, ActionSeverity
 from ..config.constants.workflow import WorkflowConfiguration
 from ..exceptions import LoadError, ActionArgumentsLoadError
@@ -27,8 +27,6 @@ class AbstractBaseWorkflowLoader(WithLogger):
 
     def __init__(self) -> None:
         self._executions: dict[str, WorkflowActionExecution] = {}
-        self._raw_file_names_stack: list[str] = []
-        self._resolved_file_paths_stack: list[Path] = []
         self._gathered_context: dict[str, t.Any] = {}
         self._action_type_counters: dict[str, int] = collections.defaultdict(int)
         self._loaded_workflow: t.Optional[Workflow] = None
@@ -55,38 +53,24 @@ class AbstractBaseWorkflowLoader(WithLogger):
 
     def _throw(self, message: str) -> t.NoReturn:
         """Raise loader exception from text"""
-        raise LoadError(message=message, stack=self._raw_file_names_stack) from None
+        raise LoadError(message=message, stack=LOADED_FILE_STACK.get_all()) from None
 
     def _internal_load(self, source_file: t.Union[str, Path]) -> None:
         """Load workflow partially from file (can be called recursively).
         :param source_file: either Path or string object pointing at a file"""
         with self._read_file(source_file) as file_data:
-            with LOADED_FILE.set(Path(source_file)):
-                self._internal_loads(file_data)
-
-    def _get_context(self) -> Path:
-        """Return active context directory for relative path resolution"""
-        return self._resolved_file_paths_stack[-1].parent if self._resolved_file_paths_stack else Path()
+            self._internal_loads(file_data)
 
     @contextlib.contextmanager
     def _read_file(self, source_file: t.Union[str, Path]) -> t.Iterator[bytes]:
         """Read file data"""
         source_file_raw_path: Path = Path(source_file)
-        if not source_file_raw_path.is_absolute():
-            source_file_raw_path = self._get_context() / source_file_raw_path
         source_resolved_file_path = source_file_raw_path.resolve()
-        if source_resolved_file_path in self._resolved_file_paths_stack:
-            self._throw("Cyclic load")
-        self._raw_file_names_stack.append(str(source_file))
-        self._resolved_file_paths_stack.append(source_resolved_file_path)
-        self.logger.debug(f"Loading workflow file: {source_resolved_file_path}")
-        try:
+        with LOADED_FILE_STACK.add(source_resolved_file_path):
+            self.logger.debug(f"Loading workflow file: {source_resolved_file_path}")
             if not source_resolved_file_path.is_file():
                 self._throw(f"Workflow file not found: {source_resolved_file_path}")
             yield source_resolved_file_path.read_bytes()
-        finally:
-            self._raw_file_names_stack.pop()
-            self._resolved_file_paths_stack.pop()
 
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
         """Load workflow partially from text (can be called recursively)"""
@@ -94,7 +78,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
 
     def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
         """Returns a mapping of action factories names to its implementation classes and source information"""
-        return {}
+        raise NotImplementedError
 
     def _get_action_factory_by_type(self, action_type: str) -> type[ActionBase]:
         action_info: t.Optional[tuple[type[ActionBase], str]] = self.get_action_factories_info().get(action_type)
@@ -217,7 +201,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
         for unrecognized_cfg_key in sorted(set(configuration_dict) - allowed_cfg_keys):
             self.logger.warning(f"Unrecognized configuration key: {unrecognized_cfg_key!r}")
             configuration_dict.pop(unrecognized_cfg_key)
-        templar: CommonTemplar = LOADED_FILE.create_associated_templar()
+        templar: CommonTemplar = LOADED_FILE_STACK.create_associated_templar()
         rendered_configuration_dict: dict[str, t.Any] = templar.recursive_render(configuration_dict)
         self._loaded_config = from_dict(WorkflowConfiguration, rendered_configuration_dict)
 
