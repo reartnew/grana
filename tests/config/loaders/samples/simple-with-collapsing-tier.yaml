@@ -20,4 +20,4 @@ actions:
     command: echo foo
     expects:
       - RunSomeTool
-      - RunAnotherTool
+      - name: RunAnotherTool

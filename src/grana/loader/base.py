@@ -35,15 +35,17 @@ class AbstractBaseWorkflowLoader(WithLogger):
     @property
     def workflow(self) -> Workflow:
         """Loaded workflow getter"""
+        # Check for typing and just in case
         if self._loaded_workflow is None:
-            raise ValueError("No workflow was loaded")
+            raise RuntimeError("No workflow was loaded")  # pragma: no cover
         return self._loaded_workflow
 
     @workflow.setter
     def workflow(self, workflow: Workflow) -> None:
         """Loaded workflow setter"""
+        # Check for typing and just in case
         if self._loaded_workflow is not None:
-            raise ValueError("Workflow was loaded already")
+            raise RuntimeError("Workflow was loaded already")  # pragma: no cover
         self._loaded_workflow = workflow
 
     def _register_action(self, action_execution: WorkflowActionExecution) -> None:
