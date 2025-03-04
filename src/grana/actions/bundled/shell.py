@@ -3,6 +3,8 @@
 import asyncio
 import contextlib
 import os
+import pathlib
+import shlex
 import typing as t
 from asyncio.streams import StreamReader
 from asyncio.subprocess import create_subprocess_shell, Process  # noqa
@@ -13,25 +15,26 @@ from ..types import Stderr
 from ...config.constants import C
 
 __all__ = [
-    "ShellArgs",
     "ShellAction",
 ]
 
 
-class ShellArgs(ArgsBase):
-    """Args for shell-related actions"""
+class ShellArgsByCommand(ArgsBase):
+    """Args for shell-related actions with a command provided"""
 
-    command: t.Optional[str] = None
-    file: t.Optional[str] = None
+    command: str
     environment: t.Optional[dict[str, str]] = None
     cwd: t.Optional[str] = None
     executable: t.Optional[str] = None
 
-    def __post_init__(self) -> None:
-        if self.command is None and self.file is None:
-            raise ValueError("Neither command nor file specified")
-        if self.command is not None and self.file is not None:
-            raise ValueError("Both command and file specified")
+
+class ShellArgsByFile(ArgsBase):
+    """Args for shell-related actions with a file provided"""
+
+    file: pathlib.Path
+    environment: t.Optional[dict[str, str]] = None
+    cwd: t.Optional[str] = None
+    executable: t.Optional[str] = None
 
 
 class ShellAction(EmissionScannerActionBase):
@@ -39,7 +42,7 @@ class ShellAction(EmissionScannerActionBase):
 
     _BYTES_LINE_SEPARATOR: bytes = os.linesep.encode()
     _ENCODING: str = "utf-8"
-    args: ShellArgs
+    args: t.Union[ShellArgsByCommand, ShellArgsByFile]
 
     @classmethod
     async def _read_stream(cls, stream: StreamReader, strip_linesep: bool = True) -> t.AsyncGenerator[str, None]:
@@ -61,7 +64,11 @@ class ShellAction(EmissionScannerActionBase):
             self.say(Stderr(line))
 
     async def _create_process(self) -> Process:
-        command: str = self.args.command or f"source '{self.args.file}'"
+        command: str
+        if isinstance(self.args, ShellArgsByCommand):
+            command = self.args.command
+        else:
+            command = f"source {shlex.quote(str(self.args.file))}'"
         if C.SHELL_INJECT_YIELD_FUNCTION:
             command = f"{self._SHELL_SERVICE_FUNCTIONS_DEFINITIONS}\n{command}"
         environment: t.Optional[dict[str, str]] = None

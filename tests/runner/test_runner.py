@@ -575,10 +575,7 @@ def test_render_wrong_type(
         )
     # Can't check exactly due to different representations of the Optional in different python versions
     assert any(
-        k.startswith(
-            "[shell] !| Action 'shell' rendering failed: Unrecognized 'environment' "
-            "content type: dict[str, NoneType]"
-        )
+        k.startswith("[shell] !| Action 'shell' rendering failed: Action 'shell' did not conform to allowed signatures")
         for k in display_collector
     )
 

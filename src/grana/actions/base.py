@@ -165,6 +165,8 @@ class WorkflowActionExecution(WithLogger):
             )
         except ValueError as e:
             raise ActionArgumentsLoadError(f"Action {self.name!r}: {e}") from e
+        except classloader.RootTypeUnionMatchError as e:
+            raise ActionArgumentsLoadError(f"Action {self.name!r} did not conform to allowed signatures: {e}") from e
         except classloader.MissingValueError as e:
             raise ActionArgumentsLoadError(f"Missing key for action {self.name!r}: {e.field_path!r}") from e
         except classloader.UnexpectedDataError as e:
@@ -237,6 +239,8 @@ class WorkflowActionExecution(WithLogger):
                 data_class=self.args_class,
                 data=rendered_args_dict,
             )
+        except classloader.RootTypeUnionMatchError as e:
+            raise ActionRenderError(f"Action {self.name!r} did not conform to allowed signatures: {e}") from None
         except classloader.WrongTypeError as e:
             raise ActionRenderError(
                 f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
