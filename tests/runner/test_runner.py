@@ -754,7 +754,7 @@ actions:
 
 
 def test_improper_shell_extension(run_text: RunFactoryType) -> None:
-    """Check globally set executable for shells"""
+    """Check that shell extensions must expose standard streams"""
     data = run_text(
         """
 actions:
