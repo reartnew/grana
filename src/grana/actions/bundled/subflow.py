@@ -1,3 +1,4 @@
+# pylint: disable=invalid-field-call
 """Separate module for subflow action"""
 
 import typing as t
@@ -20,8 +21,18 @@ ContextType = dict[str, t.Any]
 class SubflowArgs(ArgsBase):
     """Arguments applied to the subflow action."""
 
-    path: Path
-    context: dict[str, t.Any] = field(default_factory=dict)  # pylint: disable=invalid-field-call
+    context: dict[str, t.Any] = field(default_factory=dict)
+    path: t.Optional[Path] = None
+    actions: t.Optional[list[dict[str, t.Any]]] = field(default=None)
+    configuration: t.Optional[dict[str, t.Any]] = field(default=None)
+
+    def __post_init__(self) -> None:
+        is_path_based: bool = self.path is not None
+        is_spec_based: bool = self.actions is not None or self.configuration is not None
+        if is_path_based and is_spec_based:
+            raise ValueError("Cannot specify both `path` and `actions`/`configuration`")
+        if not is_path_based and not is_spec_based:
+            raise ValueError("Either `path` or `actions` must be specified")
 
 
 class SubflowAction(ActionBase):
@@ -70,11 +81,12 @@ class SubflowAction(ActionBase):
                 return receiver
 
             async def run_async(self) -> None:
-                self.workflow.context = self._deep_update_context(
-                    receiver=self.workflow.context,
-                    source=action.args.context,
-                    path="",
-                )
+                if action.args.path is not None:
+                    self.workflow.context = self._deep_update_context(
+                        receiver=self.workflow.context,
+                        source=action.args.context,
+                        path="",
+                    )
                 try:
                     return await super().run_async()
                 finally:
@@ -83,7 +95,16 @@ class SubflowAction(ActionBase):
 
         # Cache [re]mount is required since the subflow may reconfigure some fields
         with C.mount_context_cache():
-            runner = SubflowRunner(source=self.args.path)
+            source: t.Union[Path, dict]
+            if action.args.path is not None:
+                source = action.args.path
+            else:
+                source = {
+                    "actions": action.args.actions or [],
+                    "context": action.args.context,
+                    "configuration": action.args.configuration or {},
+                }
+            runner = SubflowRunner(source)
             try:
                 await runner.run_async()
             except ExecutionFailed:

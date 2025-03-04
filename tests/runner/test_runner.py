@@ -657,12 +657,12 @@ def test_different_shells_globally(run_text: RunFactoryType, monkeypatch: pytest
     )
 
 
-def test_simple_subflow(
+def test_subflow_by_path(
     display_collector: list[str],
     actions_definitions_directory: None,
     tmp_path: Path,
 ) -> None:
-    """Try subflow"""
+    """Try subflow file"""
     flow_file: Path = tmp_path / "flow.yaml"
     subflow_file: Path = tmp_path / "subflow.yaml"
     flow_file.write_text(
@@ -729,20 +729,39 @@ actions:
     ]
 
 
+def test_subflow_by_spec(run_text: RunFactoryType) -> None:
+    """Try subflow specification"""
+    data = run_text(
+        """---
+actions:
+  - name: CallSubflow
+    type: subflow
+    actions:
+      - name: SubBaz
+        type: shell
+        command: yield_outcome deep_key Bar
+  - name: Bar
+    type: echo
+    message: "@{ out.CallSubflow.SubBaz.deep_key }"
+""",
+    )
+    assert data == [
+        "[Bar]                 | Bar",
+        "✓ SUCCESS: CallSubflow",
+        "✓ SUCCESS: └──SubBaz",
+        "✓ SUCCESS: Bar",
+    ]
+
+
 def test_improper_shell_extension(run_text: RunFactoryType) -> None:
     """Check globally set executable for shells"""
-    assert (
-        run_text(
-            """
-                        ---
-                        actions:
-                          - type: improper-shell
-                        """
-        )
-        == [
-            "✓ SUCCESS: improper-shell",
-        ]
+    data = run_text(
+        """
+actions:
+  - type: improper-shell
+"""
     )
+    assert data == ["✓ SUCCESS: improper-shell"]
 
 
 def test_workflow_with_rc(ctx_from_text: CtxFactoryType, tmp_path: Path) -> None:

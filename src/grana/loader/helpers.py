@@ -13,6 +13,7 @@ __all__ = [
 ]
 
 STREAM_DEFAULT_LOADER: type[AbstractBaseWorkflowLoader] = DefaultYAMLWorkflowLoader
+DICT_DEFAULT_LOADER: type[AbstractBaseWorkflowLoader] = DefaultYAMLWorkflowLoader
 SUFFIX_TO_LOADER_MAP: dict[str, type[AbstractBaseWorkflowLoader]] = {
     ".yml": DefaultYAMLWorkflowLoader,
     ".yaml": DefaultYAMLWorkflowLoader,
@@ -20,12 +21,13 @@ SUFFIX_TO_LOADER_MAP: dict[str, type[AbstractBaseWorkflowLoader]] = {
 
 
 def get_default_loader_class_for_source(
-    source: t.Union[str, Path, io.TextIOBase],
+    source: t.Union[Path, dict, io.TextIOBase],
 ) -> type[AbstractBaseWorkflowLoader]:
     """Return loader class based on file stats"""
     if isinstance(source, io.TextIOBase):
         return STREAM_DEFAULT_LOADER
-    source_path: Path = Path(source)
-    if (loader_class := SUFFIX_TO_LOADER_MAP.get(source_path.suffix)) is None:
-        raise SourceError(f"Unrecognized source: {source_path}")
+    if isinstance(source, dict):
+        return DICT_DEFAULT_LOADER
+    if (loader_class := SUFFIX_TO_LOADER_MAP.get(source.suffix)) is None:
+        raise SourceError(f"Unrecognized source: {source}")
     return loader_class
