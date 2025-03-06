@@ -68,7 +68,7 @@ class ShellAction(EmissionScannerActionBase):
         if isinstance(self.args, ShellArgsByCommand):
             command = self.args.command
         else:
-            command = f"source {shlex.quote(str(self.args.file))}'"
+            command = f"source {shlex.quote(str(self.args.file))}"
         if C.SHELL_INJECT_YIELD_FUNCTION:
             command = f"{self._SHELL_SERVICE_FUNCTIONS_DEFINITIONS}\n{command}"
         environment: t.Optional[dict[str, str]] = None

@@ -815,3 +815,21 @@ def test_auto_strategy_cycle(run_text: RunFactoryType) -> None:
                 message: !@ out.Foo.x
             """
         )
+
+
+def test_shell_file(run_text: RunFactoryType, tmp_path: Path) -> None:
+    """Check shell action with `file` argument"""
+    file_path: Path = tmp_path / "action.sh"
+    file_path.write_bytes(b"echo Skipping && skip")
+    data: list[str] = run_text(
+        f"""
+        actions:
+          - name: Foo
+            type: shell
+            file: {file_path}
+        """
+    )
+    assert data == [
+        "[Foo]  | Skipping",
+        "◯ SKIPPED: Foo",
+    ]
