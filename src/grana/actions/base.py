@@ -156,12 +156,10 @@ class WorkflowActionExecution(WithLogger):
                 break
         else:
             raise ActionArgumentsLoadError(f"Couldn't find an `args` annotation for class {self.action_class.__name__}")
-        self.args_class = args_class
         try:
-            classloader.from_dict(
-                data_class=self.args_class,
+            self.args_class = classloader.get_data_class_by_data_signature(
+                data_class=args_class,
                 data=self.raw_args,
-                dry_run=True,
             )
         except ValueError as e:
             raise ActionArgumentsLoadError(f"Action {self.name!r}: {e}") from e
@@ -239,8 +237,6 @@ class WorkflowActionExecution(WithLogger):
                 data_class=self.args_class,
                 data=rendered_args_dict,
             )
-        except classloader.RootTypeUnionMatchError as e:
-            raise ActionRenderError(f"Action {self.name!r} did not conform to allowed signatures: {e}") from None
         except classloader.WrongTypeError as e:
             raise ActionRenderError(
                 f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
