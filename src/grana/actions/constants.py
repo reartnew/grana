@@ -11,5 +11,5 @@ ACTION_RESERVED_FIELD_NAMES: set[str] = {
     "expects",
     "selectable",
     "severity",
-    "locals",  # Future
+    "locals",
 }

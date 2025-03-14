@@ -10,11 +10,11 @@ from grana.rendering import WorkflowTemplar
 
 
 @pytest.fixture
-def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], WorkflowTemplar]:
+def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[dict], WorkflowTemplar]:
     """Prepare a standalone templar"""
     monkeypatch.setenv("TEMPLAR_ENVIRONMENT_KEY", "test")
 
-    def make():
+    def make(locals_map: dict):
         return WorkflowTemplar(
             outcomes_map={
                 "Foo": {
@@ -23,6 +23,7 @@ def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], WorkflowT
                 },
             },
             action_states={"Foo": "SUCCESS"},
+            locals_map=locals_map,
             context_map={
                 "plugh": "xyzzy",
                 "waldo": "@{context.thud}",
@@ -47,13 +48,16 @@ def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], WorkflowT
 
 
 @pytest.fixture
-def loose_templar(templar_factory: t.Callable[[], WorkflowTemplar], monkeypatch: pytest.MonkeyPatch) -> WorkflowTemplar:
+def loose_templar(
+    templar_factory: t.Callable[[dict], WorkflowTemplar],
+    monkeypatch: pytest.MonkeyPatch,
+) -> WorkflowTemplar:
     """Loose templar"""
     monkeypatch.setattr(C, "STRICT_OUTCOMES_RENDERING", False)
-    return templar_factory()
+    return templar_factory({})
 
 
 @pytest.fixture
-def strict_templar(templar_factory: t.Callable[[], WorkflowTemplar]) -> WorkflowTemplar:
+def strict_templar(templar_factory: t.Callable[[dict], WorkflowTemplar]) -> WorkflowTemplar:
     """Strict (default) templar"""
-    return templar_factory()
+    return templar_factory({})

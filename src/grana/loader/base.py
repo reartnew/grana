@@ -220,5 +220,5 @@ class AbstractBaseWorkflowLoader(WithLogger):
         rendered_configuration_dict: dict[str, t.Any] = templar.recursive_render(configuration_dict)
         self._loaded_config = from_dict(WorkflowConfiguration, rendered_configuration_dict)
 
-    def _get_workflow_templar(self) -> WorkflowTemplar:
-        return self.workflow.get_templar()
+    def _get_workflow_templar(self, locals_map: dict) -> WorkflowTemplar:
+        return self.workflow.get_templar(locals_map)

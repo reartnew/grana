@@ -137,7 +137,8 @@ class WorkflowActionExecution(WithLogger):
     description: t.Optional[str] = None
     selectable: bool = True
     severity: ActionSeverity = ActionSeverity.NORMAL
-    templar_factory: t.Optional[t.Callable[[], WorkflowTemplar]] = None
+    templar_factory: t.Optional[t.Callable[[dict], WorkflowTemplar]] = None
+    locals_map: dict[str, t.Any] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.args_class: type[ArgsBase] = ArgsBase
@@ -232,7 +233,7 @@ class WorkflowActionExecution(WithLogger):
         if self.templar_factory is None:
             return ArgsBase()
 
-        templar = self.templar_factory()
+        templar = self.templar_factory(self.locals_map)
         fields: t.Dict[str, dataclasses.Field] = {f.name: f for f in dataclasses.fields(self.args_class)}
         rendered_args_dict: dict = {}
         for arg_key, arg_value in self.raw_args.items():
