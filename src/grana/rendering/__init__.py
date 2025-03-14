@@ -162,7 +162,7 @@ class WorkflowTemplar(CommonTemplar):
                 action_outcomes = c.OutcomeDict(outcomes_map.get(name, {}))
             outcomes_container[name] = action_outcomes
         status_container: c.AttrDict = c.ActionContainingDict(action_states)
-        context_container: c.AttrDict = c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
+        context_container: c.AttrDict = c.AttrDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
         environment_container: c.AttrDict = c.LooseDict(os.environ)
         metadata_container: c.AttrDict = c.LooseDict({"status": status_container})
         if metadata is not None:
