@@ -15,8 +15,6 @@ __all__ = [
     "SubflowAction",
 ]
 
-ContextType = dict[str, t.Any]
-
 
 class SubflowArgsByPath(ArgsBase):
     """Subflow arguments with the file path."""
@@ -64,7 +62,7 @@ class SubflowAction(ActionBase):
                     _resend_event_via_action(event)
 
             @classmethod
-            def _deep_update_context(cls, receiver: ContextType, source: Mapping, path: str) -> ContextType:
+            def _deep_update_context(cls, receiver: dict[str, t.Any], source: Mapping, path: str) -> dict[str, t.Any]:
                 """Apply changes to the context"""
                 for source_key, source_value in source.items():
                     sub_path: str = f"{path}.{source_key}" if path else source_key
