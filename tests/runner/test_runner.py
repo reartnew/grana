@@ -672,7 +672,7 @@ actions:
     type: subflow
     expects: Foo
     path: "@{ meta.here }/subflow.yaml" 
-    context:
+    extra_context:
         vars:
             bar: Bar
         to_replace: Qux

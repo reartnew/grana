@@ -1,8 +1,9 @@
 # pylint: disable=invalid-field-call
 """Separate module for subflow action"""
+
+import dataclasses
 import typing as t
 from collections.abc import Mapping, MutableMapping
-from dataclasses import field, asdict
 from pathlib import Path
 
 from ..base import ArgsBase, ActionBase
@@ -18,18 +19,19 @@ ContextType = dict[str, t.Any]
 
 
 class SubflowArgsByPath(ArgsBase):
-    """Arguments applied to the subflow action."""
+    """Subflow arguments with the file path."""
 
     path: Path
-    context: dict[str, t.Any] = field(default_factory=dict)
+    extra_context: dict[str, t.Any] = dataclasses.field(default_factory=dict)
 
 
 class SubflowArgsBySpec(ArgsBase):
-    """Arguments applied to the subflow action."""
+    """Subflow arguments with the spec."""
 
-    actions: list[dict[str, t.Any]]
-    context: dict[str, t.Any] = field(default_factory=dict)
-    configuration: dict[str, t.Any] = field(default_factory=dict)
+    actions: list[dict[str, t.Any]] = dataclasses.field(metadata={"rendering": "disabled"})
+    context: dict[str, t.Any] = dataclasses.field(default_factory=dict, metadata={"rendering": "disabled"})
+    configuration: dict[str, t.Any] = dataclasses.field(default_factory=dict, metadata={"rendering": "disabled"})
+    extra_context: dict[str, t.Any] = dataclasses.field(default_factory=dict)
 
 
 class SubflowAction(ActionBase):
@@ -78,12 +80,11 @@ class SubflowAction(ActionBase):
                 return receiver
 
             async def run_async(self) -> None:
-                if isinstance(action.args, SubflowArgsByPath):
-                    self.workflow.context = self._deep_update_context(
-                        receiver=self.workflow.context,
-                        source=action.args.context,
-                        path="",
-                    )
+                self.workflow.context = self._deep_update_context(
+                    receiver=self.workflow.context,
+                    source=action.args.extra_context,
+                    path="",
+                )
                 try:
                     return await super().run_async()
                 finally:
@@ -96,7 +97,11 @@ class SubflowAction(ActionBase):
             if isinstance(action.args, SubflowArgsByPath):
                 source = action.args.path
             else:
-                source = asdict(action.args)
+                source = {
+                    "actions": action.args.actions,
+                    "context": action.args.context,
+                    "configuration": action.args.configuration,
+                }
             runner = SubflowRunner(source)
             try:
                 await runner.run_async()

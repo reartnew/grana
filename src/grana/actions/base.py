@@ -5,12 +5,13 @@ from __future__ import annotations
 import asyncio
 import base64
 import collections
+import copy
+import dataclasses
 import enum
 import functools
 import re
 import textwrap
 import typing as t
-from dataclasses import dataclass, field, fields
 
 from .constants import ACTION_RESERVED_FIELD_NAMES
 from .types import Stderr, ActionStatus, RenamedMessageSource, NamedMessageSource
@@ -68,26 +69,28 @@ def strict_default_factory() -> bool:
     return C.DEPENDENCY_DEFAULT_STRICTNESS
 
 
-@dataclass
+@dataclasses.dataclass
 class ActionDependency:
     """Dependency info holder"""
 
     name: str
-    strict: bool = field(default_factory=strict_default_factory)
+    strict: bool = dataclasses.field(default_factory=strict_default_factory)
 
 
 class ArgsMeta(type):
     """Metaclass for args containers that makes them all dataclasses"""
 
     def __new__(cls, name, bases, dct):
-        sub_dataclass = dataclass(super().__new__(cls, name, bases, dct))
-        reserved_names_collisions: set[str] = {f.name for f in fields(sub_dataclass)} & ACTION_RESERVED_FIELD_NAMES
+        sub_dataclass = dataclasses.dataclass(super().__new__(cls, name, bases, dct))
+        reserved_names_collisions: set[str] = {
+            f.name for f in dataclasses.fields(sub_dataclass)
+        } & ACTION_RESERVED_FIELD_NAMES
         if reserved_names_collisions:
             raise TypeError(f"Reserved names found in {name!r} class definition: {sorted(reserved_names_collisions)}")
         return sub_dataclass
 
 
-@dataclass
+@dataclasses.dataclass
 class ArgsBase(metaclass=ArgsMeta):
     """Default empty args holder.
     Should be subclassed and then added to the `args` annotation of any action class."""
@@ -123,14 +126,14 @@ class ActionBase(WithLogger):
         raise NotImplementedError
 
 
-@dataclass
+@dataclasses.dataclass
 class WorkflowActionExecution(WithLogger):
     """An action that is executed within a workflow"""
 
     action_class: type[ActionBase]
     name: str
     raw_args: dict
-    ancestors: list[ActionDependency] = field(default_factory=list)
+    ancestors: list[ActionDependency] = dataclasses.field(default_factory=list)
     description: t.Optional[str] = None
     selectable: bool = True
     severity: ActionSeverity = ActionSeverity.NORMAL
@@ -230,8 +233,15 @@ class WorkflowActionExecution(WithLogger):
             return ArgsBase()
 
         templar = self.templar_factory()
-
-        rendered_args_dict: dict = templar.recursive_render(self.raw_args)
+        fields: t.Dict[str, dataclasses.Field] = {f.name: f for f in dataclasses.fields(self.args_class)}
+        rendered_args_dict: dict = {}
+        for arg_key, arg_value in self.raw_args.items():
+            corr_field: dataclasses.Field = fields[arg_key]
+            if corr_field.metadata.get("rendering") == "disabled":
+                self.logger.debug(f"Argument {arg_key!r} will not be rendered")
+                rendered_args_dict[arg_key] = copy.deepcopy(arg_value)
+            else:
+                rendered_args_dict[arg_key] = templar.recursive_render(arg_value)
         try:
             parsed_args: ArgsBase = classloader.from_dict(
                 data_class=self.args_class,
