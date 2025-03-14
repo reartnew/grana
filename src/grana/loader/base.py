@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .context import LOADED_FILE_STACK
 from ..actions.base import WorkflowActionExecution, ActionBase, ActionDependency, ActionSeverity
+from ..actions.constants import ACTION_RESERVED_FIELD_NAMES
 from ..config.constants.workflow import WorkflowConfiguration
 from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
@@ -147,17 +148,25 @@ class AbstractBaseWorkflowLoader(WithLogger):
             self._throw(f"Unrecognized 'strict' attribute type: {type(strict)!r} (expected boolean)")
         return ActionDependency(name=dep_name, strict=strict)
 
-    def build_action_from_dict_data(self, node: dict) -> WorkflowActionExecution:
+    def build_action_from_dict_data(self, node: dict[str, t.Any]) -> WorkflowActionExecution:
         """Process a dictionary representing an action"""
+        # Split node data into service fields and args
+        service_fields: dict[str, t.Any] = {}
+        raw_args: dict[str, t.Any] = {}
+        for key, value in node.items():
+            if key in ACTION_RESERVED_FIELD_NAMES:
+                service_fields[key] = value
+            else:
+                raw_args[key] = value
         # Action type
-        if "type" not in node:
+        if "type" not in service_fields:
             self._throw("'type' not specified for action")
-        action_type: str = node.pop("type")
+        action_type: str = service_fields["type"]
         action_class: type[ActionBase] = self._get_action_factory_by_type(action_type)
         # Action name
         name: str
-        if "name" in node:
-            name = node.pop("name")
+        if "name" in service_fields:
+            name = service_fields["name"]
             if not isinstance(name, str):
                 self._throw(f"Unexpected name type: {type(name)!r} (should be a string")
             if not name:
@@ -170,22 +179,22 @@ class AbstractBaseWorkflowLoader(WithLogger):
             name = f"{action_type}{auto_name_suffix}"
         self._action_type_counters[action_type] += 1
         # Description
-        description: t.Optional[str] = node.pop("description", None)
+        description: t.Optional[str] = service_fields.get("description", None)
         if description is not None and not isinstance(description, str):
             self._throw(f"Unrecognized 'description' content type: {type(description)!r} (expected optional string)")
         # Dependencies
-        deps_node: t.Union[str, list[t.Union[str, dict]]] = node.pop("expects", [])
+        deps_node: t.Union[str, list[t.Union[str, dict]]] = service_fields.get("expects", [])
         if not isinstance(deps_node, str) and not isinstance(deps_node, list):
             self._throw(f"Unrecognized 'expects' content type: {type(deps_node)!r} (expected a string or list)")
         if isinstance(deps_node, str):
             deps_node = [deps_node]
         dependencies: list[ActionDependency] = [self.build_dependency_from_node(dep_node) for dep_node in deps_node]
         # Selectable
-        selectable: bool = node.pop("selectable", True)
+        selectable: bool = service_fields.get("selectable", True)
         if not isinstance(selectable, bool):
             self._throw(f"Unrecognized 'selectable' content type: {type(selectable)!r} (expected a bool)")
         # Severity
-        severity_str: str = node.pop("severity", ActionSeverity.NORMAL.value)
+        severity_str: str = service_fields.get("severity", ActionSeverity.NORMAL.value)
         if not isinstance(severity_str, str):
             self._throw(f"Unrecognized 'severity' content type: {type(severity_str)!r} (expected a string)")
         try:
@@ -193,17 +202,17 @@ class AbstractBaseWorkflowLoader(WithLogger):
         except ValueError:
             valid_severities: str = ", ".join(sorted(s.value for s in ActionSeverity))
             self._throw(f"Invalid severity: {severity_str!r} (expected one of: {valid_severities})")
-        locals_map: dict[str, t.Any] = node.pop("locals", {})
+        locals_map: dict[str, t.Any] = service_fields.get("locals", {})
         if not isinstance(locals_map, dict):
             self._throw(f"'locals' contents should be a dict (got {type(locals_map)!r})")
-        for local_key, local_value in locals_map.items():
+        for local_key in locals_map:
             if not isinstance(local_key, str):
                 self._throw(f"'locals' keys should be strings (got {type(local_key)!r} for {local_key!r})")
         try:
             action_instance: WorkflowActionExecution = WorkflowActionExecution(
                 name=name,
                 action_class=action_class,
-                raw_args=node,
+                raw_args=raw_args,
                 description=description,
                 ancestors=dependencies,
                 selectable=selectable,
