@@ -193,6 +193,12 @@ class AbstractBaseWorkflowLoader(WithLogger):
         except ValueError:
             valid_severities: str = ", ".join(sorted(s.value for s in ActionSeverity))
             self._throw(f"Invalid severity: {severity_str!r} (expected one of: {valid_severities})")
+        locals_map: dict[str, t.Any] = node.pop("locals", {})
+        if not isinstance(locals_map, dict):
+            self._throw(f"'locals' contents should be a dict (got {type(locals_map)!r})")
+        for local_key, local_value in locals_map.items():
+            if not isinstance(local_key, str):
+                self._throw(f"'locals' keys should be strings (got {type(local_key)!r} for {local_key!r})")
         try:
             action_instance: WorkflowActionExecution = WorkflowActionExecution(
                 name=name,
@@ -202,6 +208,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
                 ancestors=dependencies,
                 selectable=selectable,
                 severity=severity,
+                locals_map=locals_map,
                 templar_factory=self._get_workflow_templar,
             )
         except ActionArgumentsLoadError as e:
