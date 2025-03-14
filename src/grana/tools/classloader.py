@@ -75,10 +75,11 @@ def get_data_class_by_data_signature(data_class: type[T], data: dict[str, t.Any]
     inner_types: tuple[type[T], ...] = dacite.types.extract_generic(data_class)
     for inner_type in inner_types:
         try:
-            get_data_class_by_data_signature(data_class=inner_type, data=data)
-            union_matches.append(inner_type)
+            source_class = get_data_class_by_data_signature(data_class=inner_type, data=data)
         except Exception as e:
             logger.debug(f"Type {inner_type}: {e}")
+        else:
+            union_matches.append(source_class)
     if len(union_matches) != 1:
         raise RootTypeUnionMatchError(types=inner_types, keys=sorted(data)) from None
     return union_matches[0]
