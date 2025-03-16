@@ -71,10 +71,10 @@ class CommonTemplar(WithLogger):
             }
         )
 
-    def render(self, value: str) -> str:
+    def _render_string(self, value: str) -> str:
         """Process string data, replacing all @{} occurrences."""
         try:
-            return self._internal_render(value)
+            return self._internal_render_string(value)
         except ActionRenderRecursionError as e:
             # Eliminate ActionRenderRecursionError stack trace on hit
             self.logger.debug(f"Rendering {value!r} failed: {e!r}")
@@ -86,7 +86,7 @@ class CommonTemplar(WithLogger):
             self.logger.debug(f"Rendering {value!r} failed: {e!r}", exc_info=True)
             raise
 
-    def _internal_render(self, value: str) -> str:
+    def _internal_render_string(self, value: str) -> str:
         """Recursive rendering routine"""
         self._depth += 1
         if self._depth >= MAX_RECURSION_DEPTH:
@@ -125,18 +125,18 @@ class CommonTemplar(WithLogger):
             self.logger.warning(f"Expression render failed: {e!r} (for {expression!r})")
             raise ActionRenderError(render_failure_source) from e
 
-    def recursive_render(self, data: t.Any) -> t.Any:
+    def render(self, data: t.Any) -> t.Any:
         """Perform recursive rendering"""
         result: t.Any
         if isinstance(data, dict):
-            result = {k: self.recursive_render(v) for k, v in data.items()}
+            result = {k: self.render(v) for k, v in data.items()}
         elif isinstance(data, list):
-            result = [self.recursive_render(v) for v in data]
+            result = [self.render(v) for v in data]
         elif isinstance(data, str):
-            result = self.render(data)
+            result = self._render_string(data)
         elif isinstance(data, Expression):
             evaluated_expression: t.Any = self._eval(data.expression)
-            result = self.recursive_render(evaluated_expression)
+            result = self.render(evaluated_expression)
         else:
             result = data
         # Unwrap lazy proxies
@@ -206,5 +206,5 @@ class WorkflowTemplar(CommonTemplar):
                 result_list.append(self._load_ctx_node(item))
             return result_list
         if isinstance(data, str) and qualify_string_as_potentially_renderable(data):
-            return c.LazyProxy(lambda: self._internal_render(data))
+            return c.LazyProxy(lambda: self._internal_render_string(data))
         return data

@@ -242,7 +242,7 @@ class WorkflowActionExecution(WithLogger):
                 self.logger.debug(f"Argument {arg_key!r} will not be rendered")
                 rendered_args_dict[arg_key] = copy.deepcopy(arg_value)
             else:
-                rendered_args_dict[arg_key] = templar.recursive_render(arg_value)
+                rendered_args_dict[arg_key] = templar.render(arg_value)
         try:
             parsed_args: ArgsBase = classloader.from_dict(
                 data_class=self.args_class,

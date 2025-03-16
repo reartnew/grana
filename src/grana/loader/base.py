@@ -233,7 +233,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
             self.logger.warning(f"Unrecognized configuration key: {unrecognized_cfg_key!r}")
             configuration_dict.pop(unrecognized_cfg_key)
         templar: CommonTemplar = LOADED_FILE_STACK.create_associated_templar()
-        rendered_configuration_dict: dict[str, t.Any] = templar.recursive_render(configuration_dict)
+        rendered_configuration_dict: dict[str, t.Any] = templar.render(configuration_dict)
         self._loaded_config = from_dict(WorkflowConfiguration, rendered_configuration_dict)
 
     def _get_workflow_templar(self, locals_map: dict) -> WorkflowTemplar:
