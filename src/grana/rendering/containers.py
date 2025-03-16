@@ -11,7 +11,6 @@ __all__ = [
     "LooseDict",
     "OutcomeDict",
     "ActionContainingDict",
-    "ContextDict",
     "LazyProxy",
 ]
 
@@ -70,17 +69,6 @@ class ActionOutcomeAggregateDict(ActionContainingDict):
         if (result := super().__getitem__(item)) is not None:
             return result
         raise PendingActionUnresolvedOutcomeError(item)
-
-
-class ContextDict(AttrDict):
-    """Context keys representation"""
-
-    def __getitem__(self, item: str):
-        # Context keys can refer to anything else, thus we keep resolving until the template is stable
-        try:
-            return super().__getitem__(item)
-        except KeyError as e:
-            raise ActionRenderError(f"Context key not found: {e}") from e
 
 
 class LazyProxy(lazy_object_proxy.Proxy):

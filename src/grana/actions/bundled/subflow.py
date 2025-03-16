@@ -1,8 +1,9 @@
+# pylint: disable=invalid-field-call
 """Separate module for subflow action"""
 
+import dataclasses
 import typing as t
 from collections.abc import Mapping, MutableMapping
-from dataclasses import field
 from pathlib import Path
 
 from ..base import ArgsBase, ActionBase
@@ -14,20 +15,27 @@ __all__ = [
     "SubflowAction",
 ]
 
-ContextType = dict[str, t.Any]
 
-
-class SubflowArgs(ArgsBase):
-    """Arguments applied to the subflow action."""
+class SubflowArgsByPath(ArgsBase):
+    """Subflow arguments with the file path."""
 
     path: Path
-    context: dict[str, t.Any] = field(default_factory=dict)  # pylint: disable=invalid-field-call
+    extra_context: dict[str, t.Any] = dataclasses.field(default_factory=dict)
+
+
+class SubflowArgsBySpec(ArgsBase):
+    """Subflow arguments with the spec."""
+
+    actions: list[dict[str, t.Any]] = dataclasses.field(metadata={"rendering": "disabled"})
+    context: dict[str, t.Any] = dataclasses.field(default_factory=dict, metadata={"rendering": "disabled"})
+    configuration: dict[str, t.Any] = dataclasses.field(default_factory=dict, metadata={"rendering": "disabled"})
+    extra_context: dict[str, t.Any] = dataclasses.field(default_factory=dict)
 
 
 class SubflowAction(ActionBase):
     """Executes an independent workflow and passes the display events to the original runner."""
 
-    args: SubflowArgs
+    args: t.Union[SubflowArgsByPath, SubflowArgsBySpec]
 
     async def run(self) -> None:
         from ...config.constants import C
@@ -54,7 +62,7 @@ class SubflowAction(ActionBase):
                     _resend_event_via_action(event)
 
             @classmethod
-            def _deep_update_context(cls, receiver: ContextType, source: Mapping, path: str) -> ContextType:
+            def _deep_update_context(cls, receiver: dict[str, t.Any], source: Mapping, path: str) -> dict[str, t.Any]:
                 """Apply changes to the context"""
                 for source_key, source_value in source.items():
                     sub_path: str = f"{path}.{source_key}" if path else source_key
@@ -72,7 +80,7 @@ class SubflowAction(ActionBase):
             async def run_async(self) -> None:
                 self.workflow.context = self._deep_update_context(
                     receiver=self.workflow.context,
-                    source=action.args.context,
+                    source=action.args.extra_context,
                     path="",
                 )
                 try:
@@ -83,7 +91,16 @@ class SubflowAction(ActionBase):
 
         # Cache [re]mount is required since the subflow may reconfigure some fields
         with C.mount_context_cache():
-            runner = SubflowRunner(source=self.args.path)
+            source: t.Union[Path, dict]
+            if isinstance(action.args, SubflowArgsByPath):
+                source = action.args.path
+            else:
+                source = {
+                    "actions": action.args.actions,
+                    "context": action.args.context,
+                    "configuration": action.args.configuration,
+                }
+            runner = SubflowRunner(source)
             try:
                 await runner.run_async()
             except ExecutionFailed:

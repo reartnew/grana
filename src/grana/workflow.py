@@ -39,13 +39,14 @@ class Workflow(dict[str, WorkflowActionExecution], WithLogger):
         # Create order map to check all actions are reachable
         self._allocate_tiers()
 
-    def get_templar(self) -> WorkflowTemplar:
+    def get_templar(self, locals_map: dict) -> WorkflowTemplar:
         """Create a Templar object"""
         return WorkflowTemplar(
             outcomes_map={name: self[name].outcomes for name in self},
             action_states={name: self[name].status.value for name in self},
             context_map=self.context,
             metadata=self.get_metadata(),
+            locals_map=locals_map,
         )
 
     def get_metadata(self) -> dict[str, t.Any]:

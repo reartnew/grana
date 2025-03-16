@@ -150,9 +150,11 @@ class WorkflowTemplar(CommonTemplar):
 
     def __init__(
         self,
+        *,
         outcomes_map: t.Mapping[str, t.Mapping[str, str]],
         action_states: t.Mapping[str, str],
         context_map: t.Mapping[str, t.Any],
+        locals_map: t.Mapping[str, t.Any],
         metadata: t.Optional[t.Mapping[str, t.Any]] = None,
     ) -> None:
         outcomes_container: c.AttrDict = c.ActionOutcomeAggregateDict()
@@ -162,7 +164,8 @@ class WorkflowTemplar(CommonTemplar):
                 action_outcomes = c.OutcomeDict(outcomes_map.get(name, {}))
             outcomes_container[name] = action_outcomes
         status_container: c.AttrDict = c.ActionContainingDict(action_states)
-        context_container: c.AttrDict = c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
+        context_container: c.AttrDict = c.AttrDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
+        locals_container: c.AttrDict = c.AttrDict({k: self._load_ctx_node(data=v) for k, v in locals_map.items()})
         environment_container: c.AttrDict = c.LooseDict(os.environ)
         metadata_container: c.AttrDict = c.LooseDict({"status": status_container})
         if metadata is not None:
@@ -172,11 +175,13 @@ class WorkflowTemplar(CommonTemplar):
             outcomes=outcomes_container,
             context=context_container,
             environment=environment_container,
+            locals=locals_container,
             metadata=metadata_container,
             # Aliases
             out=outcomes_container,
             ctx=context_container,
             env=environment_container,
+            loc=locals_container,
             meta=metadata_container,
         )
 

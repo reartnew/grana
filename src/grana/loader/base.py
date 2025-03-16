@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .context import LOADED_FILE_STACK
 from ..actions.base import WorkflowActionExecution, ActionBase, ActionDependency, ActionSeverity
+from ..actions.constants import ACTION_RESERVED_FIELD_NAMES
 from ..config.constants.workflow import WorkflowConfiguration
 from ..exceptions import LoadError, ActionArgumentsLoadError
 from ..logging import WithLogger
@@ -57,25 +58,28 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Raise loader exception from text"""
         raise LoadError(message=message, stack=LOADED_FILE_STACK.get_all()) from None
 
-    def _internal_load(self, source_file: t.Union[str, Path]) -> None:
+    def _internal_load_from_file(self, source_file: Path) -> None:
         """Load workflow partially from file (can be called recursively).
         :param source_file: either Path or string object pointing at a file"""
         with self._read_file(source_file) as file_data:
-            self._internal_loads(file_data)
+            self._internal_load_from_text(file_data)
 
     @contextlib.contextmanager
-    def _read_file(self, source_file: t.Union[str, Path]) -> t.Iterator[bytes]:
+    def _read_file(self, source_file: Path) -> t.Iterator[str]:
         """Read file data"""
-        source_file_raw_path: Path = Path(source_file)
-        source_resolved_file_path = source_file_raw_path.resolve()
+        source_resolved_file_path: Path = source_file.resolve()
         with LOADED_FILE_STACK.add(source_resolved_file_path):
             self.logger.debug(f"Loading workflow file: {source_resolved_file_path}")
             if not source_resolved_file_path.is_file():
                 self._throw(f"Workflow file not found: {source_resolved_file_path}")
-            yield source_resolved_file_path.read_bytes()
+            yield source_resolved_file_path.read_text(encoding="utf-8")
 
-    def _internal_loads(self, data: t.Union[str, bytes]) -> None:
+    def _internal_load_from_text(self, data: str) -> None:
         """Load workflow partially from text (can be called recursively)"""
+        raise NotImplementedError
+
+    def _internal_load_from_dict(self, data: dict) -> None:
+        """Load workflow partially from a dictionary (can be called recursively)"""
         raise NotImplementedError
 
     def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
@@ -85,12 +89,12 @@ class AbstractBaseWorkflowLoader(WithLogger):
     def _get_action_factory_by_type(self, action_type: str) -> type[ActionBase]:
         action_info: t.Optional[tuple[type[ActionBase], str]] = self.get_action_factories_info().get(action_type)
         if action_info is None:
-            self._throw(f"Unknown dispatched type: {action_type}")
+            self._throw(f"Unknown action type: {action_type}")
         return action_info[0]
 
-    def loads(self, data: t.Union[str, bytes]) -> Workflow:
+    def load_from_text(self, data: str) -> Workflow:
         """Load workflow from text"""
-        self._internal_loads(data=data)
+        self._internal_load_from_text(data=data)
         self.workflow = Workflow(
             self._executions,
             context=self._gathered_context,
@@ -98,13 +102,23 @@ class AbstractBaseWorkflowLoader(WithLogger):
         )
         return self.workflow
 
-    def load(self, source_file: t.Union[str, Path]) -> Workflow:
+    def load_from_file(self, source_file: Path) -> Workflow:
         """Load workflow from file"""
-        self._internal_load(source_file=source_file)
+        self._internal_load_from_file(source_file=source_file)
         self.workflow = Workflow(
             self._executions,
             context=self._gathered_context,
             source_file=Path(source_file),
+            configuration=self._loaded_config,
+        )
+        return self.workflow
+
+    def load_from_dict(self, data: dict) -> Workflow:
+        """Load workflow from file"""
+        self._internal_load_from_dict(data=data)
+        self.workflow = Workflow(
+            self._executions,
+            context=self._gathered_context,
             configuration=self._loaded_config,
         )
         return self.workflow
@@ -134,17 +148,25 @@ class AbstractBaseWorkflowLoader(WithLogger):
             self._throw(f"Unrecognized 'strict' attribute type: {type(strict)!r} (expected boolean)")
         return ActionDependency(name=dep_name, strict=strict)
 
-    def build_action_from_dict_data(self, node: dict) -> WorkflowActionExecution:
+    def build_action_from_dict_data(self, node: dict[str, t.Any]) -> WorkflowActionExecution:
         """Process a dictionary representing an action"""
+        # Split node data into service fields and args
+        service_fields: dict[str, t.Any] = {}
+        raw_args: dict[str, t.Any] = {}
+        for key, value in node.items():
+            if key in ACTION_RESERVED_FIELD_NAMES:
+                service_fields[key] = value
+            else:
+                raw_args[key] = value
         # Action type
-        if "type" not in node:
+        if "type" not in service_fields:
             self._throw("'type' not specified for action")
-        action_type: str = node.pop("type")
+        action_type: str = service_fields["type"]
         action_class: type[ActionBase] = self._get_action_factory_by_type(action_type)
         # Action name
         name: str
-        if "name" in node:
-            name = node.pop("name")
+        if "name" in service_fields:
+            name = service_fields["name"]
             if not isinstance(name, str):
                 self._throw(f"Unexpected name type: {type(name)!r} (should be a string")
             if not name:
@@ -157,22 +179,22 @@ class AbstractBaseWorkflowLoader(WithLogger):
             name = f"{action_type}{auto_name_suffix}"
         self._action_type_counters[action_type] += 1
         # Description
-        description: t.Optional[str] = node.pop("description", None)
+        description: t.Optional[str] = service_fields.get("description", None)
         if description is not None and not isinstance(description, str):
             self._throw(f"Unrecognized 'description' content type: {type(description)!r} (expected optional string)")
         # Dependencies
-        deps_node: t.Union[str, list[t.Union[str, dict]]] = node.pop("expects", [])
+        deps_node: t.Union[str, list[t.Union[str, dict]]] = service_fields.get("expects", [])
         if not isinstance(deps_node, str) and not isinstance(deps_node, list):
             self._throw(f"Unrecognized 'expects' content type: {type(deps_node)!r} (expected a string or list)")
         if isinstance(deps_node, str):
             deps_node = [deps_node]
         dependencies: list[ActionDependency] = [self.build_dependency_from_node(dep_node) for dep_node in deps_node]
         # Selectable
-        selectable: bool = node.pop("selectable", True)
+        selectable: bool = service_fields.get("selectable", True)
         if not isinstance(selectable, bool):
             self._throw(f"Unrecognized 'selectable' content type: {type(selectable)!r} (expected a bool)")
         # Severity
-        severity_str: str = node.pop("severity", ActionSeverity.NORMAL.value)
+        severity_str: str = service_fields.get("severity", ActionSeverity.NORMAL.value)
         if not isinstance(severity_str, str):
             self._throw(f"Unrecognized 'severity' content type: {type(severity_str)!r} (expected a string)")
         try:
@@ -180,15 +202,22 @@ class AbstractBaseWorkflowLoader(WithLogger):
         except ValueError:
             valid_severities: str = ", ".join(sorted(s.value for s in ActionSeverity))
             self._throw(f"Invalid severity: {severity_str!r} (expected one of: {valid_severities})")
+        locals_map: dict[str, t.Any] = service_fields.get("locals", {})
+        if not isinstance(locals_map, dict):
+            self._throw(f"'locals' contents should be a dict (got {type(locals_map)!r})")
+        for local_key in locals_map:
+            if not isinstance(local_key, str):
+                self._throw(f"'locals' keys should be strings (got {type(local_key)!r} for {local_key!r})")
         try:
             action_instance: WorkflowActionExecution = WorkflowActionExecution(
                 name=name,
                 action_class=action_class,
-                raw_args=node,
+                raw_args=raw_args,
                 description=description,
                 ancestors=dependencies,
                 selectable=selectable,
                 severity=severity,
+                locals_map=locals_map,
                 templar_factory=self._get_workflow_templar,
             )
         except ActionArgumentsLoadError as e:
@@ -207,5 +236,5 @@ class AbstractBaseWorkflowLoader(WithLogger):
         rendered_configuration_dict: dict[str, t.Any] = templar.recursive_render(configuration_dict)
         self._loaded_config = from_dict(WorkflowConfiguration, rendered_configuration_dict)
 
-    def _get_workflow_templar(self) -> WorkflowTemplar:
-        return self.workflow.get_templar()
+    def _get_workflow_templar(self, locals_map: dict) -> WorkflowTemplar:
+        return self.workflow.get_templar(locals_map)

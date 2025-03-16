@@ -1,0 +1,7 @@
+# exception: LoadError
+# match: Unrecognized keys for action 'echo'
+---
+actions:
+  - type: echo
+    message: Foo
+    extra: bar

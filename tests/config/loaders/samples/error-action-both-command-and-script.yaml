@@ -1,5 +1,5 @@
 # exception: LoadError
-# match: Both command and file specified
+# match: did not conform to allowed signatures
 ---
 actions:
   - name: foo

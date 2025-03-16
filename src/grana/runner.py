@@ -30,8 +30,12 @@ IOType = io.TextIOBase
 class Runner(WithLogger):
     """Main entry object"""
 
-    def __init__(self, source: t.Union[str, Path, IOType, None] = None) -> None:
-        self._workflow_source: t.Union[Path, IOType] = self._detect_workflow_source(explicit_source=source)
+    def __init__(self, source: t.Union[Path, IOType, dict, None] = None) -> None:
+        self._workflow_source: t.Union[Path, IOType, dict]
+        if source is not None:
+            self._workflow_source = source
+        else:
+            self._workflow_source = self._detect_workflow_source()
         self._started: bool = False
         self._execution_failed: bool = False
 
@@ -53,11 +57,11 @@ class Runner(WithLogger):
     @functools.cached_property
     def workflow(self) -> Workflow:
         """Calculated workflow"""
-        return (
-            self.loader.loads(self._workflow_source.read())
-            if isinstance(self._workflow_source, io.TextIOBase)
-            else self.loader.load(self._workflow_source)
-        )
+        if isinstance(self._workflow_source, io.TextIOBase):
+            return self.loader.load_from_text(self._workflow_source.read())
+        if isinstance(self._workflow_source, dict):
+            return self.loader.load_from_dict(self._workflow_source)
+        return self.loader.load_from_file(self._workflow_source)
 
     @functools.cached_property
     def display(self) -> types.DisplayType:
@@ -67,11 +71,7 @@ class Runner(WithLogger):
         return display_class()
 
     @classmethod
-    def _detect_workflow_source(cls, explicit_source: t.Union[str, Path, IOType, None] = None) -> t.Union[Path, IOType]:
-        if explicit_source is not None:
-            if isinstance(explicit_source, IOType):
-                return explicit_source
-            return Path(explicit_source)
+    def _detect_workflow_source(cls) -> t.Union[Path, IOType]:
         if source_file := C.WORKFLOW_SOURCE_FILE:
             if str(source_file) == "-":
                 cls.logger.info("Using stdin as workflow source")

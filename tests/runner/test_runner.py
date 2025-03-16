@@ -575,10 +575,7 @@ def test_render_wrong_type(
         )
     # Can't check exactly due to different representations of the Optional in different python versions
     assert any(
-        k.startswith(
-            "[shell] !| Action 'shell' rendering failed: Unrecognized 'environment' "
-            "content type: dict[str, NoneType]"
-        )
+        k.startswith("[shell] !| Action 'shell' rendering failed: Unrecognized 'environment' content type:")
         for k in display_collector
     )
 
@@ -657,12 +654,12 @@ def test_different_shells_globally(run_text: RunFactoryType, monkeypatch: pytest
     )
 
 
-def test_simple_subflow(
+def test_subflow_by_path(
     display_collector: list[str],
     actions_definitions_directory: None,
     tmp_path: Path,
 ) -> None:
-    """Try subflow"""
+    """Try subflow file"""
     flow_file: Path = tmp_path / "flow.yaml"
     subflow_file: Path = tmp_path / "subflow.yaml"
     flow_file.write_text(
@@ -675,7 +672,7 @@ actions:
     type: subflow
     expects: Foo
     path: "@{ meta.here }/subflow.yaml" 
-    context:
+    extra_context:
         vars:
             bar: Bar
         to_replace: Qux
@@ -729,20 +726,39 @@ actions:
     ]
 
 
-def test_improper_shell_extension(run_text: RunFactoryType) -> None:
-    """Check globally set executable for shells"""
-    assert (
-        run_text(
-            """
-                        ---
-                        actions:
-                          - type: improper-shell
-                        """
-        )
-        == [
-            "✓ SUCCESS: improper-shell",
-        ]
+def test_subflow_by_spec(run_text: RunFactoryType) -> None:
+    """Try subflow specification"""
+    data = run_text(
+        """---
+actions:
+  - name: CallSubflow
+    type: subflow
+    actions:
+      - name: SubBaz
+        type: shell
+        command: yield_outcome deep_key Bar
+  - name: Bar
+    type: echo
+    message: "@{ out.CallSubflow.SubBaz.deep_key }"
+""",
     )
+    assert data == [
+        "[Bar]                 | Bar",
+        "✓ SUCCESS: CallSubflow",
+        "✓ SUCCESS: └──SubBaz",
+        "✓ SUCCESS: Bar",
+    ]
+
+
+def test_improper_shell_extension(run_text: RunFactoryType) -> None:
+    """Check that shell extensions must expose standard streams"""
+    data = run_text(
+        """
+actions:
+  - type: improper-shell
+"""
+    )
+    assert data == ["✓ SUCCESS: improper-shell"]
 
 
 def test_workflow_with_rc(ctx_from_text: CtxFactoryType, tmp_path: Path) -> None:
@@ -799,3 +815,21 @@ def test_auto_strategy_cycle(run_text: RunFactoryType) -> None:
                 message: !@ out.Foo.x
             """
         )
+
+
+def test_shell_file(run_text: RunFactoryType, tmp_path: Path) -> None:
+    """Check shell action with `file` argument"""
+    file_path: Path = tmp_path / "action.sh"
+    file_path.write_bytes(b"echo Skipping && skip")
+    data: list[str] = run_text(
+        f"""
+        actions:
+          - name: Foo
+            type: shell
+            file: {file_path}
+        """
+    )
+    assert data == [
+        "[Foo]  | Skipping",
+        "◯ SKIPPED: Foo",
+    ]

@@ -21,7 +21,7 @@ def test_workflow_load_over_sample(
 
     def check():
         loader: AbstractBaseWorkflowLoader = loader_class()
-        loader.load(workflow_path)
+        loader.load_from_file(workflow_path)
         with loader.workflow.configuration.apply():
             # Check constants
             list(C.constants_info())
@@ -37,7 +37,7 @@ def test_workflow_load_over_sample(
 
 def test_yaml_loads() -> None:
     """Test normal YAML loading from a string"""
-    DefaultYAMLWorkflowLoader().loads(
+    DefaultYAMLWorkflowLoader().load_from_text(
         """---
 actions:
   - name: RunSomeTool
@@ -51,7 +51,7 @@ actions:
 def test_yaml_loads_bad_structure() -> None:
     """Test bad YAML loading from a string"""
     with pytest.raises(LoadError):
-        DefaultYAMLWorkflowLoader().loads(
+        DefaultYAMLWorkflowLoader().load_from_text(
             """---
 actions:
   - {}

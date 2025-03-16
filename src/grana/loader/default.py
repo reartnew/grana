@@ -85,13 +85,14 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 dynamic_bases_map[action_type] = (action_class, str(class_file))
         return dynamic_bases_map
 
-    def _internal_loads(self, data: t.Union[str, bytes]) -> None:
-        if isinstance(data, bytes):
-            data = data.decode()
+    def _internal_load_from_text(self, data: str) -> None:
         root_node: dict = yaml.load(data, DefaultYAMLLoader)  # nosec
         if not isinstance(root_node, dict):
             self._throw(f"Unknown workflow structure: {type(root_node)!r} (should be a dict)")
-        root_keys: set[str] = set(root_node)
+        self._internal_load_from_dict(data=root_node)
+
+    def _internal_load_from_dict(self, data: dict) -> None:
+        root_keys: set[str] = set(data)
         if not root_keys:
             self._throw(f"Empty root dictionary (expected some of: {', '.join(sorted(self.ALLOWED_ROOT_TAGS))}")
         if unrecognized_keys := root_keys - self.ALLOWED_ROOT_TAGS:
@@ -99,12 +100,12 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 f"Unrecognized root keys: {sorted(unrecognized_keys)} "
                 f"(expected some of: {', '.join(sorted(self.ALLOWED_ROOT_TAGS))}"
             )
-        processable_keys: set[str] = set(root_node) & self.ALLOWED_ROOT_TAGS
+        processable_keys: set[str] = set(data) & self.ALLOWED_ROOT_TAGS
         if "configuration" in processable_keys:
-            self.load_configuration_from_dict(root_node["configuration"])
+            self.load_configuration_from_dict(data["configuration"])
         with self._loaded_config.apply():
             if "actions" in processable_keys:
-                actions: list[dict] = root_node["actions"]
+                actions: list[dict] = data["actions"]
                 if not isinstance(actions, list):
                     self._throw(f"'actions' contents should be a list (got {type(actions)!r})")
                 for child_node in actions:
@@ -113,7 +114,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                     action: WorkflowActionExecution = self.build_action_from_dict_data(child_node)
                     self._register_action(action)
             if "context" in processable_keys:
-                context: dict[str, t.Any] = root_node["context"]
+                context: dict[str, t.Any] = data["context"]
                 if not isinstance(context, dict):
                     self._throw(f"'context' contents should be a dict (got {type(context)!r})")
                 self._loads_contexts_dict(data=context)

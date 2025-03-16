@@ -50,7 +50,7 @@ def test_context_rendering(loose_templar: WorkflowTemplar) -> None:
 
 def test_context_missing_key_rendering(loose_templar: WorkflowTemplar) -> None:
     """Test context missing key rendering"""
-    with pytest.raises(ActionRenderError, match="Context key not found"):
+    with pytest.raises(ActionRenderError, match=re.escape("KeyError('unknown_key')")):
         loose_templar.render("@{context.unknown_key}")
 
 
