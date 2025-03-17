@@ -101,7 +101,9 @@ class ColorFormatter(logging.Formatter):
 
 def get_main_logger() -> logging.Logger:
     """Return the root logger for the package"""
-    return logging.getLogger("grana")
+    # Trim subpackage name
+    root_logger_name: str = __name__.removesuffix(".logging")
+    return logging.getLogger(root_logger_name)
 
 
 def configure_logging(level: str, colorize: bool = False, main_file: t.Optional[pathlib.Path] = None) -> None:
