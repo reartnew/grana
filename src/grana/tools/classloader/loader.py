@@ -5,11 +5,7 @@ import itertools
 import typing as t
 
 from . import exceptions
-
-try:
-    from types import UnionType
-except ImportError:  # pragma: no cover
-    UnionType = None  # type: ignore
+from ...logging import WithLogger
 
 NoneType = type(None)
 T = t.TypeVar("T")
@@ -24,7 +20,7 @@ class TypeSentinel:
 
 
 @dataclasses.dataclass
-class DataClassLoader:
+class DataClassLoader(WithLogger):
     """Constructs data classes by type and data"""
 
     validate_types: bool = True
@@ -91,7 +87,8 @@ class DataClassLoader:
             try:
                 try:
                     value = self._make_value_for_type(data_type=inner_type, data=data, path=path)
-                except Exception:
+                except Exception as e:
+                    self.logger.debug(f"Non-successful union member attempt: {e}")
                     continue
                 if self._is_instance(value, inner_type):
                     union_matches[inner_type] = value
@@ -170,9 +167,7 @@ class DataClassLoader:
 
     @classmethod
     def _is_union(cls, data_type: type) -> bool:
-        if cls._extract_origin_from_generic(data_type) == t.Union:
-            return True
-        return UnionType is None or isinstance(data_type, UnionType)
+        return cls._extract_origin_from_generic(data_type) == t.Union
 
     @classmethod
     def _extract_origin_from_generic(cls, data_type: type) -> type:
