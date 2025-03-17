@@ -2,8 +2,7 @@
 
 import typing as t
 
-import lazy_object_proxy  # type: ignore
-
+from .proxy import LazyProxy
 from ..exceptions import ActionRenderError, PendingActionUnresolvedOutcomeError
 
 __all__ = [
@@ -69,10 +68,3 @@ class ActionOutcomeAggregateDict(ActionContainingDict):
         if (result := super().__getitem__(item)) is not None:
             return result
         raise PendingActionUnresolvedOutcomeError(item)
-
-
-class LazyProxy(lazy_object_proxy.Proxy):
-    """Lazy proxy that `repr`s like its wrapped object"""
-
-    def __repr__(self, __getattr__=object.__getattribute__) -> str:
-        return repr(self.__wrapped__)
