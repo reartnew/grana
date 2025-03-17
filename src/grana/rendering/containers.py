@@ -62,7 +62,7 @@ class ActionContainingDict(AttrDict):
 
 
 class ActionOutcomeAggregateDict(ActionContainingDict):
-    """Anything with action names as keys"""
+    """Top-level container for action outcomes"""
 
     def __getitem__(self, item: str):
         if (result := super().__getitem__(item)) is not None:

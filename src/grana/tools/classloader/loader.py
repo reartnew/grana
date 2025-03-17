@@ -7,6 +7,11 @@ import typing as t
 from . import exceptions
 from ...logging import WithLogger
 
+try:
+    from types import UnionType  # type: ignore[attr-defined]  # pylint: disable=no-name-in-module
+except ImportError:
+    UnionType = None  # type: ignore[assignment, misc]
+
 NoneType = type(None)
 T = t.TypeVar("T")
 
@@ -81,19 +86,16 @@ class DataClassLoader(WithLogger):
             for sub_type in union_types:
                 if sub_type is not NoneType:
                     return self._make_value_for_type(data_type=sub_type, data=data, path=path)
-            raise ValueError(f"Non-None type not found: {union_data_type!r}")
+            raise ValueError(f"Only None types found for union: {union_data_type!r}")
         union_matches = {}
         for inner_type in union_types:
             try:
-                try:
-                    value = self._make_value_for_type(data_type=inner_type, data=data, path=path)
-                except Exception as e:
-                    self.logger.debug(f"Non-successful union member attempt: {e}")
-                    continue
-                if self._is_instance(value, inner_type):
-                    union_matches[inner_type] = value
-            except exceptions.ClassLoaderError:
-                pass
+                value = self._make_value_for_type(data_type=inner_type, data=data, path=path)
+            except Exception as e:
+                self.logger.debug(f"Non-successful union member type attempt: {e!r}")
+                continue
+            if self._is_instance(value, inner_type):
+                union_matches[inner_type] = value
         if len(union_matches) > 1:
             raise exceptions.StrictUnionTypeMatchError(matches=union_matches, path=path)
         if union_matches:
@@ -167,6 +169,9 @@ class DataClassLoader(WithLogger):
 
     @classmethod
     def _is_union(cls, data_type: type) -> bool:
+        # Check "A | B" form
+        if UnionType is not None and isinstance(data_type, UnionType):
+            return True
         return cls._extract_origin_from_generic(data_type) == t.Union
 
     @classmethod
