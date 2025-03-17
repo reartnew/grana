@@ -1,5 +1,5 @@
 # exception: LoadError
-# match: Missing key for action
+# match: Missing value for field
 ---
 actions:
   - name: foo
