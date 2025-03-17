@@ -44,6 +44,10 @@ class LazyProxy:
             return delattr(self.__wrapped__, __name)
         del self.__dict__[__name]
 
+    # operator.call is available only since python 3.11
+    def __call__(self, *args, **kwargs):
+        return self.__wrapped__(*args, **kwargs)
+
     __name__ = property(_make_method(operator.attrgetter("__name__")))  # type: ignore[assignment]
     __module__ = property(_make_method(operator.attrgetter("__module__")))  # type: ignore[assignment]
     __doc__ = property(_make_method(operator.attrgetter("__doc__")))  # type: ignore[assignment]
@@ -52,7 +56,6 @@ class LazyProxy:
     __weakref__ = property(_make_method(weakref.ref))
     __enter__ = _make_method(operator.attrgetter("__enter__"))
     __exit__ = _make_method(operator.attrgetter("__exit__"))
-    __call__ = _make_method(operator.call)
     __dir__ = _make_method(dir)
     __str__ = _make_method(str)
     __bytes__ = _make_method(bytes)
