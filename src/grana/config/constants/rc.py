@@ -64,5 +64,5 @@ class RC:
         with rc_file_path.open() as f:
             config_data: dict = t.cast(dict, yaml.load(f, ExpressionYAMLLoader))  # nosec
         templar: CommonTemplar = CommonTemplar.from_source_file(rc_file_path)
-        rendered_data: t.Dict[str, t.Any] = templar.recursive_render(config_data)
-        return from_dict(RC, rendered_data)
+        rendered_data: t.Dict[str, t.Any] = templar.render(config_data)
+        return from_dict(data_type=RC, data=rendered_data)

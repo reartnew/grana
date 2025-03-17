@@ -575,8 +575,7 @@ def test_render_wrong_type(
         )
     # Can't check exactly due to different representations of the Optional in different python versions
     assert any(
-        k.startswith("[shell] !| Action 'shell' rendering failed: Unrecognized 'environment' content type:")
-        for k in display_collector
+        k.startswith("[shell] !| Action 'shell' rendering failed: Unrecognized content type") for k in display_collector
     )
 
 

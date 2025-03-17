@@ -1,5 +1,5 @@
 # exception: LoadError
-# match: Unrecognized keys for action 'echo'
+# match: Action 'echo': Unrecognized fields: 'extra'
 ---
 actions:
   - type: echo
