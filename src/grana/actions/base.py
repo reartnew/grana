@@ -20,7 +20,7 @@ from ..exceptions import ActionRunError, ActionRenderError, ActionArgumentsLoadE
 from ..logging import WithLogger, context
 from ..rendering import WorkflowTemplar
 from ..tools import classloader
-from ..tools.concealment import represent_object_type
+from ..tools.classloader.exceptions import TypeMatchError, ClassLoaderError
 from ..tools.inspect import get_class_annotations
 
 __all__ = [
@@ -162,17 +162,11 @@ class WorkflowActionExecution(WithLogger):
             raise ActionArgumentsLoadError(f"Couldn't find an `args` annotation for class {self.action_class.__name__}")
         try:
             self.args_class = classloader.get_data_class_by_data_signature(
-                data_class=args_class,
+                data_type=args_class,
                 data=self.raw_args,
             )
-        except ValueError as e:
+        except (ValueError, ClassLoaderError) as e:
             raise ActionArgumentsLoadError(f"Action {self.name!r}: {e}") from e
-        except classloader.RootTypeUnionMatchError as e:
-            raise ActionArgumentsLoadError(f"Action {self.name!r} did not conform to allowed signatures: {e}") from e
-        except classloader.MissingValueError as e:
-            raise ActionArgumentsLoadError(f"Missing key for action {self.name!r}: {e.field_path!r}") from e
-        except classloader.UnexpectedDataError as e:
-            raise ActionArgumentsLoadError(f"Unrecognized keys for action {self.name!r}: {sorted(e.keys)}") from e
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self.status.value})"
@@ -245,14 +239,11 @@ class WorkflowActionExecution(WithLogger):
                 rendered_args_dict[arg_key] = templar.render(arg_value)
         try:
             parsed_args: ArgsBase = classloader.from_dict(
-                data_class=self.args_class,
+                data_type=self.args_class,
                 data=rendered_args_dict,
             )
-        except classloader.WrongTypeError as e:
-            raise ActionRenderError(
-                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
-                f" (expected {e.field_type!r})"
-            ) from None
+        except TypeMatchError as e:
+            raise ActionRenderError(e) from None
         return parsed_args
 
     async def execute(self) -> None:
