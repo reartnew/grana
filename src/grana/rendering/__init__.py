@@ -53,10 +53,11 @@ class CommonTemplar(WithLogger):
     @classmethod
     def from_source_file(cls, path: pathlib.Path) -> CommonTemplar:
         """Construct a base templar from the source file path"""
+        resolved_path: pathlib.Path = path.resolve()
         return cls._make_base_templar_with_meta_and_env(
             extra_meta={
-                "source_file": path,
-                "here": path.parent,
+                "source_file": resolved_path,
+                "here": resolved_path.parent,
             }
         )
 

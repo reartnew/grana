@@ -57,10 +57,11 @@ class Workflow(dict[str, WorkflowActionExecution], WithLogger):
             "cwd": C.CONTEXT_DIRECTORY,
         }
         if self.source_file is not None:
+            source_file: pathlib.Path = self.source_file.resolve()
             metadata.update(
                 {
-                    "source_file": self.source_file,
-                    "here": self.source_file.parent,
+                    "source_file": source_file,
+                    "here": source_file.parent,
                 }
             )
         return metadata
