@@ -1,6 +1,6 @@
 # grana
 
-Grana is an open-source command-line declarative automation tool,
+Grana is an open-source command-line task automation tool,
 whose purpose is launching pipelines easily in any environment from the local machine to the automation server.
 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/grana)](https://pypi.python.org/pypi/grana/)

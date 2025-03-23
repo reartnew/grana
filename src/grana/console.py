@@ -64,7 +64,7 @@ class WorkflowPositionalArgument(click.Argument):
 )
 @cli_opts_receiver
 def main() -> None:
-    """Open-source command-line declarative automation tool."""
+    """Open-source command-line task automation tool."""
 
 
 def wrap_cli_command(func):

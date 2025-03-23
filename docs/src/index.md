@@ -1,11 +1,11 @@
 Grana Documentation
 ===================
 
-`grana` is an open-source command-line declarative automation tool,
+`grana` is an open-source command-line task automation tool,
 whose purpose is launching pipelines easily in any environment from the local machine to the automation server.
 
 > The original philosophy of Grana is to provide the following features:
-> - An executable unit is a declaratively described pipeline, which is called a *Workflow*. 
+> - An executable unit is a YAML-described pipeline, which is called a *Workflow*. 
 > - Workflows may consist of sequential as well as of concurrent steps.
 > - Workflow steps (herein referred to as *Actions*) can produce return values to be reused in subsequent actions.
 > - Actions can interact with the user, but only in one direction (that is, an action can generate visible output).

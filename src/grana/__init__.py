@@ -1,4 +1,4 @@
-"""Declarative task runner"""
+"""A convenient task runner"""
 
 from .actions.base import (
     ActionBase,

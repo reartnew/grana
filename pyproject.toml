@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "grana"
-version = "1.4.0"
-description = "Declarative task runner"
+version = "1.4.0a0"
+description = "A convenient task runner"
 license = "MIT"
 authors = [
     "Artem Novikov <artnew@list.ru>",
