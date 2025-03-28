@@ -12,8 +12,19 @@ __all__ = [
 
 
 def _make_method(func: t.Callable) -> t.Callable:
+    """Create proxy method"""
+
     def method_over_wrapped(self, *args, **kwargs):
         return func(self.__wrapped__, *args, **kwargs)
+
+    return method_over_wrapped
+
+
+def _make_r_method(func: t.Callable) -> t.Callable:
+    """Create proxy method with positional args in reversed order"""
+
+    def method_over_wrapped(self, other):
+        return func(other, self.__wrapped__)
 
     return method_over_wrapped
 
@@ -84,6 +95,20 @@ class LazyProxy:
     __and__ = _make_method(operator.and_)
     __xor__ = _make_method(operator.xor)
     __or__ = _make_method(operator.or_)
+    __radd__ = _make_r_method(operator.add)
+    __rsub__ = _make_r_method(operator.sub)
+    __rmul__ = _make_r_method(operator.mul)
+    __rmatmul__ = _make_r_method(operator.matmul)
+    __rtruediv__ = _make_r_method(operator.truediv)
+    __rfloordiv__ = _make_r_method(operator.floordiv)
+    __rmod__ = _make_r_method(operator.mod)
+    __rdivmod__ = _make_r_method(divmod)
+    __rpow__ = _make_r_method(pow)
+    __rlshift__ = _make_r_method(operator.lshift)
+    __rrshift__ = _make_r_method(operator.rshift)
+    __rand__ = _make_r_method(operator.and_)
+    __rxor__ = _make_r_method(operator.xor)
+    __ror__ = _make_r_method(operator.or_)
     __iadd__ = _make_method(operator.iadd)
     __isub__ = _make_method(operator.isub)
     __imul__ = _make_method(operator.imul)
