@@ -48,6 +48,7 @@ class RC:
     action_classes_directories: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
     external_python_modules_paths: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
     strict: t.Union[bool, ConfigSentinel] = sentinel
+    subprocess_stream_buffer_limit: t.Union[int, ConfigSentinel] = sentinel
 
     @classmethod
     @CACHE.wrap

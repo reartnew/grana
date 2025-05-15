@@ -253,3 +253,14 @@ class ExternalPythonModulesPaths(base.ConstantPathList):
     ENVIRONMENT_VARIABLE_NAME = "GRANA_EXTERNAL_MODULES_PATHS"
     RC_PARAMETER_NAME = "external_python_modules_paths"
     WORKFLOW_CONFIG_PARAMETER_NAME = "external_python_modules_paths"
+
+
+class SubprocessStreamBufferLimit(base.ConstantBase[int]):
+    """An integer number defining the maximum line stdout/stderr length for a spawned subprocess."""
+
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_SUBPROCESS_STREAM_BUFFER_LIMIT"
+    RC_PARAMETER_NAME = "subprocess_stream_buffer_limit"
+    DEFAULT = 2**16  # asyncio.streams._DEFAULT_LIMIT
+
+    def cast(self, value: t.Any) -> int:
+        return int(value)

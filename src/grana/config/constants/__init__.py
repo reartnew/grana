@@ -33,6 +33,7 @@ class C:
     STRICT_OUTCOMES_RENDERING: base.ConstantBase = impl.StrictOutcomesRendering()
     ACTION_CLASSES_DIRECTORIES: base.ConstantBase = impl.ActionClassDirectories()
     EXTERNAL_PYTHON_MODULES_PATHS: base.ConstantBase = impl.ExternalPythonModulesPaths()
+    SUBPROCESS_STREAM_BUFFER_LIMIT: base.ConstantBase = impl.SubprocessStreamBufferLimit()
 
     @classmethod
     def constants_info(cls) -> t.Iterable[base.ConstantProxyDescriptor]:

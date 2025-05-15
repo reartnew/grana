@@ -83,6 +83,7 @@ class ShellAction(EmissionScannerActionBase):
             env=environment,
             cwd=self.args.cwd,
             executable=self.args.executable or C.DEFAULT_SHELL_EXECUTABLE,
+            limit=C.SUBPROCESS_STREAM_BUFFER_LIMIT,
         )
         return process
 
