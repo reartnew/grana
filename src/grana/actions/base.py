@@ -31,7 +31,12 @@ __all__ = [
     "ActionSkip",
     "ArgsBase",
     "EmissionScannerActionBase",
+    "CommunicatorPrivilegeError",
 ]
+
+
+class CommunicatorPrivilegeError(Exception):
+    """Raised when an unprivileged action is calling a privileged communicator method."""
 
 
 # pylint: disable=unused-argument
@@ -48,7 +53,8 @@ class AbstractExecutionCommunicator(WithLogger):
 
     def resend_display_event(self, event: DisplayEvent) -> None:
         """Pass a display event to the execution"""
-        self.logger.warning("`send_display_event` did not take effect")
+        self.logger.warning("`send_display_event` is privileged")
+        raise CommunicatorPrivilegeError
 
 
 class ActionSkip(BaseException):
@@ -180,7 +186,7 @@ class WorkflowActionExecution(WithLogger):
         self.logger.info(f"Running action: {self.name!r}")
         execution = self
 
-        class Communicator(AbstractExecutionCommunicator):
+        class PrivilegedCommunicator(AbstractExecutionCommunicator):
             """Closure-based communication interface"""
 
             def resend_display_event(self, event: DisplayEvent) -> None:
@@ -216,7 +222,7 @@ class WorkflowActionExecution(WithLogger):
                 execution.outcomes[key] = value
 
         action_instance: ActionBase = self.action_class()
-        action_instance._communicator = Communicator()  # pylint: disable=protected-access
+        action_instance._communicator = PrivilegedCommunicator()  # pylint: disable=protected-access
         with context(action=self.name):
             # Inject args
             action_instance.args = self.render_action_args()

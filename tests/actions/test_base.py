@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from grana import ActionBase
+from grana.actions.base import ActionBase, CommunicatorPrivilegeError
 from grana.display.types import DisplayEvent, DisplayEventName
 
 
@@ -34,4 +34,5 @@ class StubAction(ActionBase):
 async def test_action_standalone_run():
     """Check standalone action run"""
     action = StubAction()
-    await action.run()
+    with pytest.raises(CommunicatorPrivilegeError):
+        await action.run()
