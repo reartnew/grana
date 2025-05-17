@@ -51,7 +51,7 @@ class SubflowAction(ActionBase):
             ):
                 event.future.set_result(None)  # Unlock the execution and continue
             else:
-                self._communicator.resend_display_event(event)  # Pass modified event
+                self._communicator.send_display_event(event)  # Pass modified event
 
         class SubflowRunner(Runner):
             """A runner that intercepts and filters out events"""

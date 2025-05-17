@@ -21,7 +21,7 @@ class StubAction(ActionBase):
         for message in self.MESSAGES:
             self.say(message)
             self.yield_outcome(key=message, value=message)
-            self._communicator.resend_display_event(
+            self._communicator.send_display_event(
                 DisplayEvent(
                     name=DisplayEventName.ON_ACTION_MESSAGE,
                     message="foo",

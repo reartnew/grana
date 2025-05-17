@@ -51,7 +51,7 @@ class AbstractExecutionCommunicator(WithLogger):
         """Pass an outcome to the execution"""
         self.logger.warning("`yield_outcome` did not take effect")
 
-    def resend_display_event(self, event: DisplayEvent) -> None:
+    def send_display_event(self, event: DisplayEvent) -> None:
         """Pass a display event to the execution"""
         self.logger.warning("`send_display_event` is privileged")
         raise CommunicatorPrivilegeError
@@ -189,7 +189,7 @@ class WorkflowActionExecution(WithLogger):
         class PrivilegedCommunicator(AbstractExecutionCommunicator):
             """Closure-based communication interface"""
 
-            def resend_display_event(self, event: DisplayEvent) -> None:
+            def send_display_event(self, event: DisplayEvent) -> None:
                 new_event = DisplayEvent(name=event.name, **event.kwargs)
                 new_event.future.add_done_callback(lambda _: event.future.set_result(None))
                 if event.name == DisplayEventName.ON_RUNNER_START:
