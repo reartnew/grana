@@ -9,6 +9,7 @@ from grana.actions.base import (
     ActionDependency,
     ActionBase,
 )
+from grana.rendering import CommonTemplar
 from grana.workflow import Workflow
 
 
@@ -28,7 +29,7 @@ def _make_chained_workflow(action_class: type[ActionBase]) -> Workflow:
                 action_class=action_class,
                 raw_args={},
                 ancestors=[ActionDependency(name=step_names[num - 1], strict=True)] if num else [],
-                templar_factory=None,
+                templar_factory=lambda data: CommonTemplar(**data),
             )
             for num, step_name in enumerate(step_names)
         }

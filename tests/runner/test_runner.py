@@ -965,3 +965,16 @@ def test_loop_restricted_fields(run_text: RunFactoryType, display_collector: lis
         """[loop] !| Action 'loop' run exception: ValueError("Unexpected `step` fields: ['severity']")""",
         "✗ FAILURE: loop",
     ]
+
+
+def test_communicator_privileges(run_text: RunFactoryType) -> None:
+    """Check that regular action does not get a privileged communicator"""
+    output: list[str] = run_text(
+        """
+        actions:
+          - type: privileged-failures
+        """
+    )
+    assert output == [
+        "✓ SUCCESS: privileged-failures",
+    ]

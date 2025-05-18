@@ -18,7 +18,7 @@ from .types import Stderr, ActionStatus, RenamedMessageSource, NamedMessageSourc
 from ..display.types import DisplayEvent, DisplayEventName
 from ..exceptions import ActionRunError, ActionRenderError, ActionArgumentsLoadError
 from ..logging import WithLogger, context
-from ..rendering import WorkflowTemplar
+from ..rendering import CommonTemplar
 from ..tools import classloader
 from ..tools.classloader.exceptions import TypeMatchError, ClassLoaderError
 from ..tools.inspect import get_class_annotations
@@ -55,7 +55,7 @@ class AbstractExecutionCommunicator(WithLogger):
         """Pass a display event to the execution"""
         raise NotImplementedError
 
-    def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> WorkflowTemplar:
+    def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> CommonTemplar:
         """Build a templar"""
         raise NotImplementedError
 
@@ -142,11 +142,11 @@ class WorkflowActionExecution(WithLogger):
     action_class: type[ActionBase]
     name: str
     raw_args: dict
+    templar_factory: t.Callable[[dict], CommonTemplar]
     ancestors: list[ActionDependency] = dataclasses.field(default_factory=list)
     description: t.Optional[str] = None
     selectable: bool = True
     severity: ActionSeverity = ActionSeverity.NORMAL
-    templar_factory: t.Optional[t.Callable[[dict], WorkflowTemplar]] = None
     locals_map: dict[str, t.Any] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -211,7 +211,7 @@ class WorkflowActionExecution(WithLogger):
                 self.logger.error("`send_display_event` is privileged")
                 raise CommunicatorPrivilegeError
 
-            def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> WorkflowTemplar:
+            def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> CommonTemplar:
                 self.logger.error("`get_templar` is privileged")
                 raise CommunicatorPrivilegeError
 
@@ -250,9 +250,7 @@ class WorkflowActionExecution(WithLogger):
                     raise ValueError(f"Unknown event name: {event.name!r}")  # pragma: no cover
                 execution.event_queue.put_nowait(new_event)
 
-            def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> WorkflowTemplar:
-                if execution.templar_factory is None:
-                    raise ValueError("templar_factory is not set")
+            def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> CommonTemplar:
                 return execution.templar_factory(
                     {
                         **execution.locals_map,
@@ -274,9 +272,6 @@ class WorkflowActionExecution(WithLogger):
 
     def render_action_args(self) -> ArgsBase:
         """Prepare action to execution by rendering its template fields"""
-        if self.templar_factory is None:
-            return ArgsBase()
-
         templar = self.templar_factory(self.locals_map)
         fields: t.Dict[str, dataclasses.Field] = {f.name: f for f in dataclasses.fields(self.args_class)}
         rendered_args_dict: dict = {}
