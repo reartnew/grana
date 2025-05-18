@@ -82,7 +82,8 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Load workflow partially from a dictionary (can be called recursively)"""
         raise NotImplementedError
 
-    def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
+    @classmethod
+    def get_action_factories_info(cls) -> dict[str, tuple[type[ActionBase], str]]:
         """Returns a mapping of action factories names to its implementation classes and source information"""
         raise NotImplementedError
 
@@ -207,7 +208,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
             self._throw(f"'locals' contents should be a dict (got {type(locals_map)!r})")
         for local_key in locals_map:
             if not isinstance(local_key, str):
-                self._throw(f"'locals' keys should be strings (got {type(local_key)!r} for {local_key!r})")
+                self._throw(f"Locals keys should be strings (got {type(local_key)!r} for {local_key!r})")
         try:
             action_instance: WorkflowActionExecution = WorkflowActionExecution(
                 name=name,

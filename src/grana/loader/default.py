@@ -15,6 +15,7 @@ from ..actions.bundled import (
     EchoAction,
     ShellAction,
     SubflowAction,
+    LoopAction,
     DockerShellAction,
 )
 from ..config.constants import C
@@ -31,28 +32,32 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
 
     ALLOWED_ROOT_TAGS: set[str] = {"actions", "context", "miscellaneous", "configuration"}
 
-    def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
+    @classmethod
+    def get_action_factories_info(cls) -> dict[str, tuple[type[ActionBase], str]]:
         return {
-            **self._get_static_action_factories_mapping(),
-            **self._load_external_action_factories_mapping(),
+            **cls._get_static_action_factories_mapping(),
+            **cls._load_external_action_factories_mapping(),
         }
 
+    @classmethod
     @CACHE.wrap
-    def _get_static_action_factories_mapping(self) -> dict[str, tuple[type[ActionBase], str]]:
+    def _get_static_action_factories_mapping(cls) -> dict[str, tuple[type[ActionBase], str]]:
         return {
             name: (klass, "built-in")
             for name, klass in (
                 ("echo", EchoAction),
                 ("shell", ShellAction),
                 ("subflow", SubflowAction),
+                ("loop", LoopAction),
                 ("docker-shell", DockerShellAction),
             )
             if klass is not None
         }
 
+    @classmethod
     @CACHE.wrap
-    def _load_external_action_factories_mapping(self) -> dict[str, tuple[type[ActionBase], str]]:
-        return self._get_action_factories_from_sources_tuple(sources=tuple(C.ACTION_CLASSES_DIRECTORIES))
+    def _load_external_action_factories_mapping(cls) -> dict[str, tuple[type[ActionBase], str]]:
+        return cls._get_action_factories_from_sources_tuple(sources=tuple(C.ACTION_CLASSES_DIRECTORIES))
 
     @classmethod
     @functools.lru_cache(1)

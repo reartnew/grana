@@ -4,8 +4,7 @@ import asyncio
 
 import pytest
 
-from grana import ActionBase
-from grana.display.types import DisplayEvent, DisplayEventName
+from grana.actions.base import ActionBase
 
 
 class StubAction(ActionBase):
@@ -21,12 +20,6 @@ class StubAction(ActionBase):
         for message in self.MESSAGES:
             self.say(message)
             self.yield_outcome(key=message, value=message)
-            self._communicator.resend_display_event(
-                DisplayEvent(
-                    name=DisplayEventName.ON_ACTION_MESSAGE,
-                    message="foo",
-                )
-            )
             await asyncio.sleep(0.01)
 
 

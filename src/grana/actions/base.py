@@ -18,7 +18,7 @@ from .types import Stderr, ActionStatus, RenamedMessageSource, NamedMessageSourc
 from ..display.types import DisplayEvent, DisplayEventName
 from ..exceptions import ActionRunError, ActionRenderError, ActionArgumentsLoadError
 from ..logging import WithLogger, context
-from ..rendering import WorkflowTemplar
+from ..rendering import CommonTemplar
 from ..tools import classloader
 from ..tools.classloader.exceptions import TypeMatchError, ClassLoaderError
 from ..tools.inspect import get_class_annotations
@@ -31,7 +31,12 @@ __all__ = [
     "ActionSkip",
     "ArgsBase",
     "EmissionScannerActionBase",
+    "CommunicatorPrivilegeError",
 ]
+
+
+class CommunicatorPrivilegeError(Exception):
+    """Raised when an unprivileged action is calling a privileged communicator method."""
 
 
 # pylint: disable=unused-argument
@@ -46,9 +51,13 @@ class AbstractExecutionCommunicator(WithLogger):
         """Pass an outcome to the execution"""
         self.logger.warning("`yield_outcome` did not take effect")
 
-    def resend_display_event(self, event: DisplayEvent) -> None:
+    def send_display_event(self, event: DisplayEvent) -> None:
         """Pass a display event to the execution"""
-        self.logger.warning("`send_display_event` did not take effect")
+        raise NotImplementedError
+
+    def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> CommonTemplar:
+        """Build a templar"""
+        raise NotImplementedError
 
 
 class ActionSkip(BaseException):
@@ -133,11 +142,11 @@ class WorkflowActionExecution(WithLogger):
     action_class: type[ActionBase]
     name: str
     raw_args: dict
+    templar_factory: t.Callable[[dict], CommonTemplar]
     ancestors: list[ActionDependency] = dataclasses.field(default_factory=list)
     description: t.Optional[str] = None
     selectable: bool = True
     severity: ActionSeverity = ActionSeverity.NORMAL
-    templar_factory: t.Optional[t.Callable[[dict], WorkflowTemplar]] = None
     locals_map: dict[str, t.Any] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -176,14 +185,52 @@ class WorkflowActionExecution(WithLogger):
         """Make a nested event"""
         return RenamedMessageSource(name=f"{self.name}/{origin.name}", origin=origin)
 
+    @classmethod
+    @functools.cache
+    def _get_privileged_action_classes(cls) -> t.Set[t.Type[ActionBase]]:
+        """Get action classes that receive privileged communicator"""
+        from ..loader.default import DefaultYAMLWorkflowLoader
+
+        factories = DefaultYAMLWorkflowLoader.get_action_factories_info()
+        return {
+            factories[k][0]
+            for k in (
+                "subflow",
+                "loop",
+            )
+        }
+
     async def _run_with_log_context(self) -> None:
         self.logger.info(f"Running action: {self.name!r}")
         execution = self
 
-        class Communicator(AbstractExecutionCommunicator):
+        class DefaultCommunicator(AbstractExecutionCommunicator):
             """Closure-based communication interface"""
 
-            def resend_display_event(self, event: DisplayEvent) -> None:
+            def send_display_event(self, event: DisplayEvent) -> None:
+                self.logger.error("`send_display_event` is privileged")
+                raise CommunicatorPrivilegeError
+
+            def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> CommonTemplar:
+                self.logger.error("`get_templar` is privileged")
+                raise CommunicatorPrivilegeError
+
+            def send_say(self, message: str) -> None:
+                execution.event_queue.put_nowait(
+                    DisplayEvent(
+                        DisplayEventName.ON_ACTION_MESSAGE,
+                        source=execution,
+                        message=message,
+                    )
+                )
+
+            def send_yield_outcome(self, key: str, value: t.Any) -> None:
+                execution.outcomes[key] = value
+
+        class PrivilegedCommunicator(DefaultCommunicator):
+            """Closure-based communication interface with privileged methods"""
+
+            def send_display_event(self, event: DisplayEvent) -> None:
                 new_event = DisplayEvent(name=event.name, **event.kwargs)
                 new_event.future.add_done_callback(lambda _: event.future.set_result(None))
                 if event.name == DisplayEventName.ON_RUNNER_START:
@@ -203,20 +250,21 @@ class WorkflowActionExecution(WithLogger):
                     raise ValueError(f"Unknown event name: {event.name!r}")  # pragma: no cover
                 execution.event_queue.put_nowait(new_event)
 
-            def send_say(self, message: str) -> None:
-                execution.event_queue.put_nowait(
-                    DisplayEvent(
-                        DisplayEventName.ON_ACTION_MESSAGE,
-                        source=execution,
-                        message=message,
-                    )
+            def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> CommonTemplar:
+                return execution.templar_factory(
+                    {
+                        **execution.locals_map,
+                        **extra_locals,
+                    }
                 )
 
-            def send_yield_outcome(self, key: str, value: t.Any) -> None:
-                execution.outcomes[key] = value
-
         action_instance: ActionBase = self.action_class()
-        action_instance._communicator = Communicator()  # pylint: disable=protected-access
+        selected_communicator: AbstractExecutionCommunicator
+        if self.action_class in self._get_privileged_action_classes():
+            selected_communicator = PrivilegedCommunicator()
+        else:
+            selected_communicator = DefaultCommunicator()
+        action_instance._communicator = selected_communicator  # pylint: disable=protected-access
         with context(action=self.name):
             # Inject args
             action_instance.args = self.render_action_args()
@@ -224,9 +272,6 @@ class WorkflowActionExecution(WithLogger):
 
     def render_action_args(self) -> ArgsBase:
         """Prepare action to execution by rendering its template fields"""
-        if self.templar_factory is None:
-            return ArgsBase()
-
         templar = self.templar_factory(self.locals_map)
         fields: t.Dict[str, dataclasses.Field] = {f.name: f for f in dataclasses.fields(self.args_class)}
         rendered_args_dict: dict = {}

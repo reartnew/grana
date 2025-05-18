@@ -3,6 +3,7 @@
 from .echo import EchoAction
 from .shell import ShellAction
 from .subflow import SubflowAction
+from .loop import LoopAction
 
 try:
     from .docker_shell import DockerShellAction

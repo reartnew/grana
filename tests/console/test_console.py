@@ -1,11 +1,13 @@
 # pylint: disable=redefined-outer-name
 """CLI tests"""
 
+import importlib.metadata
 import logging as vanilla_logging
 import pathlib
 import typing as t
 import uuid
 
+import packaging.version
 import pytest
 from click.testing import CliRunner
 
@@ -39,8 +41,13 @@ class BuilderType(t.Protocol):
     def __call__(self, *commands: str) -> RunnerType: ...
 
 
+cli_runner_kwargs: dict = {}
+if packaging.version.Version(importlib.metadata.version("click")) < packaging.version.Version("8.2.0"):
+    cli_runner_kwargs["mix_stderr"] = False
+
+
 def _invoke(*args, **kwargs) -> list[str]:
-    result = CliRunner(mix_stderr=False).invoke(*args, **kwargs)
+    result = CliRunner(**cli_runner_kwargs).invoke(*args, **kwargs)
     if result.exit_code:
         raise CLIError(code=result.exit_code, message=result.stderr) from None
     return result.stdout.rstrip().splitlines()

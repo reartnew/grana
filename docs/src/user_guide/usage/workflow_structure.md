@@ -61,6 +61,11 @@ The mapping structure is:
     - Specifies whether to allow switching the action on-off during plan interaction phase.\
       Value should be one of: `normal`, `low`.\
       Defaults to `normal`.
+*   - `locals`\
+      *{sub}`optional,`*\
+      *{sup}`type: mapping`*
+    - Defines variables available only during this action rendering.\
+      Defaults to an empty mapping.
 :::
 
 #### `expects` field

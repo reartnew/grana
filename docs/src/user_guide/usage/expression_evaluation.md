@@ -20,6 +20,7 @@ For custom loaders, refer the developers guide.
 Expressions are literally pythonic with lazy evaluation, and there are the following objects available:
 
 - `context` (aliased as `ctx`): references to the workflow [context map](./workflow_structure.md#context).
+- `locals` (aliased as `loc`): references to the action [locals map](./workflow_structure.md#actions).
 - `environment` (aliased as `env`): provides access to environment variables.
 - `outcomes` (aliased as `out`): contains finished actions [outcome values](./actions/index.md#outcomes).
 - `metadata` (aliased as `meta`): a bunch of workflow metadata information.

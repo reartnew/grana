@@ -41,7 +41,7 @@ class WorkflowPositionalArgument(click.Argument):
             raise click.BadParameter("Cannot apply more than one value", param=self)
         return vanilla_value[0] if vanilla_value else None
 
-    def make_metavar(self) -> str:
+    def make_metavar(self, *args, **kwargs) -> str:
         """Fixed representation"""
         return "[WORKFLOW_FILE]"
 

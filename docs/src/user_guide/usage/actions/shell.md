@@ -1,5 +1,5 @@
 `shell` - execute shell script
-=============================
+==============================
 
 :::{note}
 This article is about a specific action.\
