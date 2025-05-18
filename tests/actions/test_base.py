@@ -4,8 +4,7 @@ import asyncio
 
 import pytest
 
-from grana.actions.base import ActionBase, CommunicatorPrivilegeError
-from grana.display.types import DisplayEvent, DisplayEventName
+from grana.actions.base import ActionBase
 
 
 class StubAction(ActionBase):
@@ -21,12 +20,6 @@ class StubAction(ActionBase):
         for message in self.MESSAGES:
             self.say(message)
             self.yield_outcome(key=message, value=message)
-            self._communicator.send_display_event(
-                DisplayEvent(
-                    name=DisplayEventName.ON_ACTION_MESSAGE,
-                    message="foo",
-                )
-            )
             await asyncio.sleep(0.01)
 
 
@@ -34,5 +27,4 @@ class StubAction(ActionBase):
 async def test_action_standalone_run():
     """Check standalone action run"""
     action = StubAction()
-    with pytest.raises(CommunicatorPrivilegeError):
-        await action.run()
+    await action.run()

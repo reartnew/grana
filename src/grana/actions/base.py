@@ -53,8 +53,7 @@ class AbstractExecutionCommunicator(WithLogger):
 
     def send_display_event(self, event: DisplayEvent) -> None:
         """Pass a display event to the execution"""
-        self.logger.warning("`send_display_event` is privileged")
-        raise CommunicatorPrivilegeError
+        raise NotImplementedError
 
     def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> WorkflowTemplar:
         """Build a templar"""
@@ -194,11 +193,11 @@ class WorkflowActionExecution(WithLogger):
             """Closure-based communication interface"""
 
             def send_display_event(self, event: DisplayEvent) -> None:
-                self.logger.warning("`send_display_event` is privileged")
+                self.logger.error("`send_display_event` is privileged")
                 raise CommunicatorPrivilegeError
 
             def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> WorkflowTemplar:
-                self.logger.warning("`get_templar` is privileged")
+                self.logger.error("`get_templar` is privileged")
                 raise CommunicatorPrivilegeError
 
             def send_say(self, message: str) -> None:
