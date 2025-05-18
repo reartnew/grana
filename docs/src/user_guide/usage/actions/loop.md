@@ -38,8 +38,8 @@ since the action is actually translated into one.
     - Loop variables definitions, e.g. `i: !@ range(5)`.\
       Multiple variables can be provided.
       If so, then the cartesian product of all specified ranges is used to produce the loop.\
-      Corresponding variables values are available in the `locals` namespace within the step.\
-      **Note**: eponymous local keys set from the **locals** directive will be replaced.
+      Corresponding variables values are available in the [`locals`](../expression_evaluation.md#expression-structure) namespace within the step.\
+      **Note**: eponymous local keys set from the [**locals**](../workflow_structure.md#actions) directive of the loop step will be replaced.
 *   - `strategy`
     - **string**\
       *optional*
