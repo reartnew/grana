@@ -82,7 +82,8 @@ class AbstractBaseWorkflowLoader(WithLogger):
         """Load workflow partially from a dictionary (can be called recursively)"""
         raise NotImplementedError
 
-    def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
+    @classmethod
+    def get_action_factories_info(cls) -> dict[str, tuple[type[ActionBase], str]]:
         """Returns a mapping of action factories names to its implementation classes and source information"""
         raise NotImplementedError
 

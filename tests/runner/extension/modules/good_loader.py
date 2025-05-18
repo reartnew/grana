@@ -16,7 +16,8 @@ class StringReturningAction(ActionBase):
 class WorkflowLoader(DefaultYAMLWorkflowLoader):
     """With returning strings"""
 
-    def get_action_factories_info(self) -> dict[str, tuple[type[ActionBase], str]]:
+    @classmethod
+    def get_action_factories_info(cls) -> dict[str, tuple[type[ActionBase], str]]:
         return {
             **super().get_action_factories_info(),
             "return-string": (StringReturningAction, "tests-extra"),
