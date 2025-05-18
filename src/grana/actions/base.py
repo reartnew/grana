@@ -71,21 +71,6 @@ class ActionSeverity(enum.Enum):
     NORMAL = "normal"
 
 
-@functools.cache
-def get_privileged_action_classes() -> t.Set[t.Type[ActionBase]]:
-    """Get action classes that receive privileged communicator"""
-    from ..loader.default import DefaultYAMLWorkflowLoader
-
-    factories = DefaultYAMLWorkflowLoader.get_action_factories_info()
-    return {
-        factories[k][0]
-        for k in (
-            "subflow",
-            "loop",
-        )
-    }
-
-
 def strict_default_factory() -> bool:
     """Get default strictness value"""
     from ..config.constants import C
@@ -200,6 +185,21 @@ class WorkflowActionExecution(WithLogger):
         """Make a nested event"""
         return RenamedMessageSource(name=f"{self.name}/{origin.name}", origin=origin)
 
+    @classmethod
+    @functools.cache
+    def _get_privileged_action_classes(cls) -> t.Set[t.Type[ActionBase]]:
+        """Get action classes that receive privileged communicator"""
+        from ..loader.default import DefaultYAMLWorkflowLoader
+
+        factories = DefaultYAMLWorkflowLoader.get_action_factories_info()
+        return {
+            factories[k][0]
+            for k in (
+                "subflow",
+                "loop",
+            )
+        }
+
     async def _run_with_log_context(self) -> None:
         self.logger.info(f"Running action: {self.name!r}")
         execution = self
@@ -262,7 +262,7 @@ class WorkflowActionExecution(WithLogger):
 
         action_instance: ActionBase = self.action_class()
         selected_communicator: AbstractExecutionCommunicator
-        if self.action_class in get_privileged_action_classes():
+        if self.action_class in self._get_privileged_action_classes():
             selected_communicator = PrivilegedCommunicator()
         else:
             selected_communicator = DefaultCommunicator()
