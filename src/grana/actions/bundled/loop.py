@@ -15,6 +15,8 @@ __all__ = [
     "LoopAction",
 ]
 
+TOP_LEVEL_ONLY_ACTION_RESERVED_FIELD_NAMES: set[str] = constants.ACTION_RESERVED_FIELD_NAMES - {"type", "name"}
+
 
 class LoopArgs(ArgsBase):
     """Loop step arguments."""
@@ -64,7 +66,7 @@ class LoopAction(ActionBase):
         # Cache [re]mount is required since the subflow may reconfigure some fields
         with C.mount_context_cache():
             # Check step vars
-            if unexpected_fields := set(action.args.step) & constants.TOP_LEVEL_ONLY_ACTION_RESERVED_FIELD_NAMES:
+            if unexpected_fields := set(action.args.step) & TOP_LEVEL_ONLY_ACTION_RESERVED_FIELD_NAMES:
                 raise ValueError(f"Unexpected `step` fields: {sorted(unexpected_fields)}")
             # Prepare ranges
             var_names: list[str] = []
