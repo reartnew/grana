@@ -71,6 +71,21 @@ class ActionSeverity(enum.Enum):
     NORMAL = "normal"
 
 
+@functools.cache
+def get_privileged_action_classes() -> t.Set[t.Type[ActionBase]]:
+    """Get action classes that receive privileged communicator"""
+    from ..loader.default import DefaultYAMLWorkflowLoader
+
+    factories = DefaultYAMLWorkflowLoader.get_action_factories_info()
+    return {
+        factories[k][0]
+        for k in (
+            "subflow",
+            "loop",
+        )
+    }
+
+
 def strict_default_factory() -> bool:
     """Get default strictness value"""
     from ..config.constants import C
@@ -246,7 +261,12 @@ class WorkflowActionExecution(WithLogger):
                 )
 
         action_instance: ActionBase = self.action_class()
-        action_instance._communicator = PrivilegedCommunicator()  # pylint: disable=protected-access
+        selected_communicator: AbstractExecutionCommunicator
+        if self.action_class in get_privileged_action_classes():
+            selected_communicator = PrivilegedCommunicator()
+        else:
+            selected_communicator = DefaultCommunicator()
+        action_instance._communicator = selected_communicator  # pylint: disable=protected-access
         with context(action=self.name):
             # Inject args
             action_instance.args = self.render_action_args()
