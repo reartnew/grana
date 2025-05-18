@@ -50,4 +50,5 @@ refer to the shell [yield_outcome](./shell.md#helpers) function.
 echo
 shell
 subflow
+loop
 ```
