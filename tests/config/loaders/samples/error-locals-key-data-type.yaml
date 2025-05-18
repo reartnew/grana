@@ -1,0 +1,10 @@
+# exception: LoadError
+# match: Locals keys should be strings
+---
+actions:
+
+  - name: Test
+    type: shell
+    command: "echo @{locals.1}"
+    locals:
+      1: foo

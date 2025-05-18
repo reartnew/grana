@@ -1,0 +1,10 @@
+# exception: LoadError
+# match: 'locals' contents should be a dict
+---
+context: foo
+actions:
+
+  - name: Test
+    type: shell
+    command: echo foo
+    locals: []

@@ -208,7 +208,7 @@ class AbstractBaseWorkflowLoader(WithLogger):
             self._throw(f"'locals' contents should be a dict (got {type(locals_map)!r})")
         for local_key in locals_map:
             if not isinstance(local_key, str):
-                self._throw(f"'locals' keys should be strings (got {type(local_key)!r} for {local_key!r})")
+                self._throw(f"Locals keys should be strings (got {type(local_key)!r} for {local_key!r})")
         try:
             action_instance: WorkflowActionExecution = WorkflowActionExecution(
                 name=name,
