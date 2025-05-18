@@ -56,7 +56,7 @@ class AbstractExecutionCommunicator(WithLogger):
         self.logger.warning("`send_display_event` is privileged")
         raise CommunicatorPrivilegeError
 
-    def get_templar(self, extra_locals: t.Optional[t.Dict[str, t.Any]] = None) -> WorkflowTemplar:
+    def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> WorkflowTemplar:
         """Build a templar"""
         raise NotImplementedError
 
@@ -197,7 +197,7 @@ class WorkflowActionExecution(WithLogger):
                 self.logger.warning("`send_display_event` is privileged")
                 raise CommunicatorPrivilegeError
 
-            def get_templar(self, extra_locals: t.Optional[t.Dict[str, t.Any]] = None) -> WorkflowTemplar:
+            def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> WorkflowTemplar:
                 self.logger.warning("`get_templar` is privileged")
                 raise CommunicatorPrivilegeError
 
@@ -236,11 +236,9 @@ class WorkflowActionExecution(WithLogger):
                     raise ValueError(f"Unknown event name: {event.name!r}")  # pragma: no cover
                 execution.event_queue.put_nowait(new_event)
 
-            def get_templar(self, extra_locals: t.Optional[t.Dict[str, t.Any]] = None) -> WorkflowTemplar:
+            def get_templar(self, extra_locals: t.Dict[str, t.Any]) -> WorkflowTemplar:
                 if execution.templar_factory is None:
                     raise ValueError("templar_factory is not set")
-                if extra_locals is None:
-                    return execution.templar_factory(execution.locals_map)
                 return execution.templar_factory(
                     {
                         **execution.locals_map,

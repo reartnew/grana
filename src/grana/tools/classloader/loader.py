@@ -9,7 +9,7 @@ from ...logging import WithLogger
 
 try:
     from types import UnionType  # type: ignore[attr-defined]  # pylint: disable=no-name-in-module
-except ImportError:
+except ImportError:  # pragma: no cover
     UnionType = None  # type: ignore[assignment, misc]
 
 NoneType = type(None)
