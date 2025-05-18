@@ -58,8 +58,7 @@ class AbstractExecutionCommunicator(WithLogger):
 
     def get_templar(self, extra_locals: t.Optional[t.Dict[str, t.Any]] = None) -> WorkflowTemplar:
         """Build a templar"""
-        self.logger.warning("`get_templar` is privileged")
-        raise CommunicatorPrivilegeError
+        raise NotImplementedError
 
 
 class ActionSkip(BaseException):
@@ -191,8 +190,31 @@ class WorkflowActionExecution(WithLogger):
         self.logger.info(f"Running action: {self.name!r}")
         execution = self
 
-        class PrivilegedCommunicator(AbstractExecutionCommunicator):
+        class DefaultCommunicator(AbstractExecutionCommunicator):
             """Closure-based communication interface"""
+
+            def send_display_event(self, event: DisplayEvent) -> None:
+                self.logger.warning("`send_display_event` is privileged")
+                raise CommunicatorPrivilegeError
+
+            def get_templar(self, extra_locals: t.Optional[t.Dict[str, t.Any]] = None) -> WorkflowTemplar:
+                self.logger.warning("`get_templar` is privileged")
+                raise CommunicatorPrivilegeError
+
+            def send_say(self, message: str) -> None:
+                execution.event_queue.put_nowait(
+                    DisplayEvent(
+                        DisplayEventName.ON_ACTION_MESSAGE,
+                        source=execution,
+                        message=message,
+                    )
+                )
+
+            def send_yield_outcome(self, key: str, value: t.Any) -> None:
+                execution.outcomes[key] = value
+
+        class PrivilegedCommunicator(DefaultCommunicator):
+            """Closure-based communication interface with privileged methods"""
 
             def send_display_event(self, event: DisplayEvent) -> None:
                 new_event = DisplayEvent(name=event.name, **event.kwargs)
@@ -215,6 +237,8 @@ class WorkflowActionExecution(WithLogger):
                 execution.event_queue.put_nowait(new_event)
 
             def get_templar(self, extra_locals: t.Optional[t.Dict[str, t.Any]] = None) -> WorkflowTemplar:
+                if execution.templar_factory is None:
+                    raise ValueError("templar_factory is not set")
                 if extra_locals is None:
                     return execution.templar_factory(execution.locals_map)
                 return execution.templar_factory(
@@ -223,18 +247,6 @@ class WorkflowActionExecution(WithLogger):
                         **extra_locals,
                     }
                 )
-
-            def send_say(self, message: str) -> None:
-                execution.event_queue.put_nowait(
-                    DisplayEvent(
-                        DisplayEventName.ON_ACTION_MESSAGE,
-                        source=execution,
-                        message=message,
-                    )
-                )
-
-            def send_yield_outcome(self, key: str, value: t.Any) -> None:
-                execution.outcomes[key] = value
 
         action_instance: ActionBase = self.action_class()
         action_instance._communicator = PrivilegedCommunicator()  # pylint: disable=protected-access
