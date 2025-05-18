@@ -846,3 +846,122 @@ def test_shell_stream_buffer_limit(run_text: RunFactoryType, monkeypatch: pytest
                 command: echo XXXXXXXXXX
             """
         )
+
+
+def test_loop_anonymous(run_text: RunFactoryType) -> None:
+    """Check loop without names"""
+    output: list[str] = run_text(
+        """
+        actions:
+          - type: loop
+            matrix:
+              i: !@ range(5)
+            step:
+              type: echo
+              message: "@{ locals.i }"
+        """
+    )
+    # Transform into set, since default strategy allows parallel execution
+    assert set(output) == {
+        "[loop/echo]    | 0",
+        "[loop/echo-2]  | 1",
+        "[loop/echo-3]  | 2",
+        "[loop/echo-4]  | 3",
+        "[loop/echo-5]  | 4",
+        "✓ SUCCESS: loop",
+        "✓ SUCCESS: ├──echo",
+        "✓ SUCCESS: ├──echo-2",
+        "✓ SUCCESS: ├──echo-3",
+        "✓ SUCCESS: ├──echo-4",
+        "✓ SUCCESS: └──echo-5",
+    }
+
+
+def test_loop_named(run_text: RunFactoryType) -> None:
+    """Check loop with names and complex rendering"""
+    output: list[str] = run_text(
+        """
+        context:
+          loopStepType: echo
+        actions:
+          - type: loop
+            locals:
+              namePrefix: "@{ ctx.loopStepType }-with-name"
+            matrix:
+              i: !@ range(5)
+            step:
+              name: "@{ loc.namePrefix }-@{ loc.i }"
+              type: "@{ ctx.loopStepType }"
+              message: "@{ locals.i }"
+        """
+    )
+    # Transform into set, since default strategy allows parallel execution
+    assert set(output) == {
+        "[loop/echo-with-name-0]  | 0",
+        "[loop/echo-with-name-1]  | 1",
+        "[loop/echo-with-name-2]  | 2",
+        "[loop/echo-with-name-3]  | 3",
+        "[loop/echo-with-name-4]  | 4",
+        "✓ SUCCESS: loop",
+        "✓ SUCCESS: ├──echo-with-name-0",
+        "✓ SUCCESS: ├──echo-with-name-1",
+        "✓ SUCCESS: ├──echo-with-name-2",
+        "✓ SUCCESS: ├──echo-with-name-3",
+        "✓ SUCCESS: └──echo-with-name-4",
+    }
+
+
+def test_loop_with_modified_strategy(run_text: RunFactoryType) -> None:
+    """Check loop with strategy management"""
+    output: list[str] = run_text(
+        """
+        actions:
+          - type: loop
+            severity: low
+            matrix:
+              i: !@ range(5)
+            step:
+              name: "ordered-echo-@{ loc.i }"
+              type: shell
+              command: |
+                echo @{ locals.i }
+                if [ "@{ locals.i }" = "2" ]; then
+                  exit 1;
+                fi
+            strategy: sequential
+            strict: yes
+        """
+    )
+    assert output == [
+        "[loop/ordered-echo-0]  | 0",
+        "[loop/ordered-echo-1]  | 1",
+        "[loop/ordered-echo-2]  | 2",
+        "                      !| Exit code: 1",
+        "✓ WARNING: loop",
+        "✓ SUCCESS: ├──ordered-echo-0",
+        "✓ SUCCESS: ├──ordered-echo-1",
+        "✗ FAILURE: ├──ordered-echo-2",
+        "◯ SKIPPED: ├──ordered-echo-3",
+        "◯ SKIPPED: └──ordered-echo-4",
+    ]
+
+
+def test_loop_restricted_fields(run_text: RunFactoryType, display_collector: list[str]) -> None:
+    """Check loop with strategy management"""
+    with pytest.raises(exceptions.ExecutionFailed):
+        run_text(
+            """
+            actions:
+              - type: loop
+                matrix:
+                  i: !@ range(5)
+                step:
+                  severity: low
+                  type: echo
+                  message: "@{ locals.i }"
+            """
+        )
+    assert display_collector == [
+        """[loop] !| Action 'loop' run exception: ValueError("Unexpected `step` fields: ['severity']")""",
+        "✗ FAILURE: loop",
+    ]
