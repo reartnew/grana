@@ -832,3 +832,17 @@ def test_shell_file(run_text: RunFactoryType, tmp_path: Path) -> None:
         "[Foo]  | Skipping",
         "◯ SKIPPED: Foo",
     ]
+
+
+def test_shell_stream_buffer_limit(run_text: RunFactoryType, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check shell buffer overflow"""
+    monkeypatch.setenv("GRANA_SUBPROCESS_STREAM_BUFFER_LIMIT", "5")
+    with pytest.raises(exceptions.ExecutionFailed):
+        run_text(
+            """
+            actions:
+              - name: Foo
+                type: shell
+                command: echo XXXXXXXXXX
+            """
+        )
