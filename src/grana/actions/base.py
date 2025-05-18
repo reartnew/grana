@@ -217,13 +217,12 @@ class WorkflowActionExecution(WithLogger):
             def get_templar(self, extra_locals: t.Optional[t.Dict[str, t.Any]] = None) -> WorkflowTemplar:
                 if extra_locals is None:
                     return execution.templar_factory(execution.locals_map)
-                else:
-                    return execution.templar_factory(
-                        {
-                            **execution.locals_map,
-                            **extra_locals,
-                        }
-                    )
+                return execution.templar_factory(
+                    {
+                        **execution.locals_map,
+                        **extra_locals,
+                    }
+                )
 
             def send_say(self, message: str) -> None:
                 execution.event_queue.put_nowait(
