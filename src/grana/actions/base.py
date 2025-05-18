@@ -56,6 +56,11 @@ class AbstractExecutionCommunicator(WithLogger):
         self.logger.warning("`send_display_event` is privileged")
         raise CommunicatorPrivilegeError
 
+    def get_templar(self, extra_locals: t.Optional[t.Dict[str, t.Any]] = None) -> WorkflowTemplar:
+        """Build a templar"""
+        self.logger.warning("`get_templar` is privileged")
+        raise CommunicatorPrivilegeError
+
 
 class ActionSkip(BaseException):
     """Stop executing action"""
@@ -208,6 +213,17 @@ class WorkflowActionExecution(WithLogger):
                     # Just in case we add some event types later and not specify behaviour here
                     raise ValueError(f"Unknown event name: {event.name!r}")  # pragma: no cover
                 execution.event_queue.put_nowait(new_event)
+
+            def get_templar(self, extra_locals: t.Optional[t.Dict[str, t.Any]] = None) -> WorkflowTemplar:
+                if extra_locals is None:
+                    return execution.templar_factory(execution.locals_map)
+                else:
+                    return execution.templar_factory(
+                        {
+                            **execution.locals_map,
+                            **extra_locals,
+                        }
+                    )
 
             def send_say(self, message: str) -> None:
                 execution.event_queue.put_nowait(

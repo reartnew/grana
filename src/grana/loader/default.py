@@ -15,6 +15,7 @@ from ..actions.bundled import (
     EchoAction,
     ShellAction,
     SubflowAction,
+    LoopAction,
     DockerShellAction,
 )
 from ..config.constants import C
@@ -45,6 +46,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 ("echo", EchoAction),
                 ("shell", ShellAction),
                 ("subflow", SubflowAction),
+                ("loop", LoopAction),
                 ("docker-shell", DockerShellAction),
             )
             if klass is not None
