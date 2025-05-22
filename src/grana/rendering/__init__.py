@@ -30,8 +30,8 @@ class CommonTemplar(WithLogger):
     DISABLED_GLOBALS: list[str] = ["exec", "eval", "compile", "setattr", "delattr"]
 
     def __init__(self, **args: dict[str, t.Any]) -> None:
-        self._locals: dict[str, t.Any] = args
         self._globals: dict[str, t.Any] = {f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS}
+        self._globals.update(args)
         self._depth: int = 0
 
     @classmethod
@@ -118,7 +118,7 @@ class CommonTemplar(WithLogger):
         self.logger.debug(f"Processing expression: {expression!r}")
         try:
             # pylint: disable=eval-used
-            return eval(expression, self._globals, self._locals)  # nosec
+            return eval(expression, self._globals, {})  # nosec
         except ActionRenderError:
             raise
         except Exception as e:
