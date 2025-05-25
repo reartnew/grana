@@ -134,6 +134,9 @@ class ActionBase(WithLogger):
         """Main entry to be implemented in subclasses"""
         raise NotImplementedError
 
+    def on_render(self) -> None:
+        """Hook method, called right after rendering args"""
+
 
 @dataclasses.dataclass
 class WorkflowActionExecution(WithLogger):
@@ -148,6 +151,7 @@ class WorkflowActionExecution(WithLogger):
     selectable: bool = True
     severity: ActionSeverity = ActionSeverity.NORMAL
     locals_map: dict[str, t.Any] = dataclasses.field(default_factory=dict)
+    action_instance: t.Optional[ActionBase] = None
 
     def __post_init__(self) -> None:
         self.args_class: type[ArgsBase] = ArgsBase
@@ -202,6 +206,12 @@ class WorkflowActionExecution(WithLogger):
 
     async def _run_with_log_context(self) -> None:
         self.logger.info(f"Running action: {self.name!r}")
+        with context(action=self.name):
+            self.action_instance = self.prepare_action_instance()
+            await self.action_instance.run()
+
+    def prepare_action_instance(self) -> ActionBase:
+        """Make an action instance to run later"""
         execution = self
 
         class DefaultCommunicator(AbstractExecutionCommunicator):
@@ -265,12 +275,13 @@ class WorkflowActionExecution(WithLogger):
         else:
             selected_communicator = DefaultCommunicator()
         action_instance._communicator = selected_communicator  # pylint: disable=protected-access
-        with context(action=self.name):
-            # Inject args
-            action_instance.args = self.render_action_args()
-            return await action_instance.run()
+        # Inject args
+        action_instance.args = self._render_action_args()
+        # Call the hook
+        action_instance.on_render()
+        return action_instance
 
-    def render_action_args(self) -> ArgsBase:
+    def _render_action_args(self) -> ArgsBase:
         """Prepare action to execution by rendering its template fields"""
         templar = self.templar_factory(self.locals_map)
         fields: t.Dict[str, dataclasses.Field] = {f.name: f for f in dataclasses.fields(self.args_class)}
