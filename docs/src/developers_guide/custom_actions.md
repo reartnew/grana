@@ -29,7 +29,7 @@ Each action class has an `args` field, which is:
 - Populated for the instance by the workflow, based on the loaded information.
 
 Subclasses of `grana.ArgsBase` are automatically dataclasses.\
-Raw arguments ddata are transformed into dataclass instances according to intuitive logic.
+Raw arguments data is transformed into dataclass instances according to intuitive logic.
 
 ## Action methods
 
