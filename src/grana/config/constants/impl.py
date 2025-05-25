@@ -286,13 +286,12 @@ class TemplarModulesWhitelist(base.ConstantBase[dict[str, str]]):
     def cast(self, value: t.Union[str, list[str], dict[str, str]]) -> dict[str, str]:
         if isinstance(value, dict):
             return value
-        kv_iterator: t.Iterable[str]
+        # Ensure that type is list[str]
         if isinstance(value, str):
-            kv_iterator = (item.strip() for item in value.split(","))
-        else:
-            kv_iterator = value
+            value = value.split(",")
         result: dict[str, str] = {}
-        for item in kv_iterator:
+        for item in value:
+            item = item.strip()
             if ":" in item:
                 k, v = item.split(":", 1)
                 result[k] = v

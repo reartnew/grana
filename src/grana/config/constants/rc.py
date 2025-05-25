@@ -49,7 +49,7 @@ class RC:
     external_python_modules_paths: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
     strict: t.Union[bool, ConfigSentinel] = sentinel
     subprocess_stream_buffer_limit: t.Union[int, ConfigSentinel] = sentinel
-    templar_modules_whitelist: t.Union[list[str], dict[str, str], ConfigSentinel] = sentinel
+    templar_modules_whitelist: t.Union[list[str], ConfigSentinel] = sentinel
 
     @classmethod
     @CACHE.wrap

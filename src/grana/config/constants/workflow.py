@@ -33,7 +33,7 @@ class WorkflowConfiguration:
     action_classes_directories: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
     external_python_modules_paths: t.Union[list[pathlib.Path], ConfigSentinel] = sentinel
     strict: t.Union[bool, ConfigSentinel] = sentinel
-    templar_modules_whitelist: t.Union[list[str], dict[str, str], ConfigSentinel] = sentinel
+    templar_modules_whitelist: t.Union[list[str], ConfigSentinel] = sentinel
 
     @contextlib.contextmanager
     def apply(self) -> t.Generator[None, None, None]:
