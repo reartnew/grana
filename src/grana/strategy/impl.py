@@ -104,7 +104,7 @@ class AutoStrategy(ExplicitStrategy):
             while True:
                 execution = await super()._next_execution()
                 try:
-                    execution.render_action_args()
+                    execution.prepare_action_instance()
                 except PendingActionUnresolvedOutcomeError as e:
                     self.logger.info(f"Adding an automatic dependency of {execution.name!r} on {e.action_name!r}")
                     execution.ancestors.append(ActionDependency(name=e.action_name))
