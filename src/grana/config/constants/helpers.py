@@ -18,6 +18,7 @@ from ...exceptions import SourceError
 
 __all__ = [
     "class_from_module",
+    "add_sys_paths",
 ]
 
 VT = t.TypeVar("VT")
