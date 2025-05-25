@@ -34,6 +34,7 @@ __all__ = [
     "StrictOutcomesRendering",
     "ActionClassDirectories",
     "ExternalPythonModulesPaths",
+    "TemplarModulesWhitelist",
 ]
 
 
@@ -264,3 +265,40 @@ class SubprocessStreamBufferLimit(base.ConstantBase[int]):
 
     def cast(self, value: t.Any) -> int:
         return int(value)
+
+
+class TemplarModulesWhitelist(base.ConstantBase[dict[str, str]]):
+    """List of modules allowed to be used in a template."""
+
+    ENVIRONMENT_VARIABLE_NAME = "GRANA_TEMPLAR_MODULES_WHITELIST"
+    RC_PARAMETER_NAME = "templar_modules_whitelist"
+    WORKFLOW_CONFIG_PARAMETER_NAME = "templar_modules_whitelist"
+
+    def _register_result(self, result: dict[str, str], source: base.ConstantSource) -> None:
+        """Cumulative constant processing"""
+        if self._result_and_source is not base.sentinel:
+            prev_result, _ = self._result_and_source
+            prev_result.update(result)  # type: ignore[arg-type]
+            source = base.ConstantSource.MULTIPLE
+        self._result_and_source = result, source
+
+    def cast(self, value: t.Union[str, list[str], dict[str, str]]) -> dict[str, str]:
+        if isinstance(value, dict):
+            return value
+        kv_iterator: t.Iterable[str]
+        if isinstance(value, str):
+            kv_iterator = (item.strip() for item in value.split(","))
+        else:
+            kv_iterator = value
+        result: dict[str, str] = {}
+        for item in kv_iterator:
+            if ":" in item:
+                k, v = item.split(":", 1)
+                result[k] = v
+            else:
+                result[item] = item
+        return result
+
+    def default(self) -> dict[str, str]:
+        """An empty dict"""
+        return {}
