@@ -169,6 +169,7 @@ class WorkflowTemplar(CommonTemplar):
         locals_container: c.AttrDict = c.AttrDict({k: self._load_ctx_node(data=v) for k, v in locals_map.items()})
         environment_container: c.AttrDict = c.LooseDict(os.environ)
         metadata_container: c.AttrDict = c.LooseDict({"status": status_container})
+        modules_container: c.AttrDict = c.ExternalModulesDict()
         if metadata is not None:
             metadata_container.update(metadata)
         super().__init__(
@@ -178,12 +179,14 @@ class WorkflowTemplar(CommonTemplar):
             environment=environment_container,
             locals=locals_container,
             metadata=metadata_container,
+            modules=modules_container,
             # Aliases
             out=outcomes_container,
             ctx=context_container,
             env=environment_container,
             loc=locals_container,
             meta=metadata_container,
+            mod=modules_container,
         )
 
     def _evaluate_context_object_expression(self, expression: str) -> t.Any:

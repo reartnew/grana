@@ -34,6 +34,7 @@ class C:
     ACTION_CLASSES_DIRECTORIES: base.ConstantBase = impl.ActionClassDirectories()
     EXTERNAL_PYTHON_MODULES_PATHS: base.ConstantBase = impl.ExternalPythonModulesPaths()
     SUBPROCESS_STREAM_BUFFER_LIMIT: base.ConstantBase = impl.SubprocessStreamBufferLimit()
+    TEMPLAR_MODULES_WHITELIST: base.ConstantBase = impl.TemplarModulesWhitelist()
 
     @classmethod
     def constants_info(cls) -> t.Iterable[base.ConstantProxyDescriptor]:

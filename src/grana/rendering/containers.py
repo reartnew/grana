@@ -1,15 +1,19 @@
 """Templar containers for rendering."""
 
+import importlib
+import types
 import typing as t
 
 from .proxy import LazyProxy
 from ..exceptions import ActionRenderError, PendingActionUnresolvedOutcomeError
+from ..logging import WithLogger
 
 __all__ = [
     "AttrDict",
     "LooseDict",
     "OutcomeDict",
     "ActionContainingDict",
+    "ExternalModulesDict",
     "LazyProxy",
 ]
 
@@ -68,3 +72,26 @@ class ActionOutcomeAggregateDict(ActionContainingDict):
         if (result := super().__getitem__(item)) is not None:
             return result
         raise PendingActionUnresolvedOutcomeError(item)
+
+
+class ExternalModulesDict(AttrDict, WithLogger):
+    """Container for accessing external modules inside templars"""
+
+    def __init__(self):
+        super().__init__()
+        self._known_modules: t.Dict[str, types.ModuleType] = {}
+
+    def __getitem__(self, key):
+        if key not in self._known_modules:
+            self._known_modules[key] = self._load_module(key)
+        return self._known_modules[key]
+
+    @classmethod
+    def _load_module(cls, module_alias: str):
+        from ..config.constants import C, helpers
+
+        if (actual_module_name := C.TEMPLAR_MODULES_WHITELIST.get(module_alias)) is None:
+            raise KeyError(f"Module alias {module_alias!r} is not added to the templar modules whitelist")
+        cls.logger.debug(f"Module alias {module_alias!r} resolved to {actual_module_name!r}")
+        with helpers.add_sys_paths(*C.EXTERNAL_PYTHON_MODULES_PATHS):
+            return importlib.import_module(actual_module_name)
