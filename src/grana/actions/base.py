@@ -10,7 +10,6 @@ import copy
 import dataclasses
 import enum
 import functools
-import os
 import re
 import textwrap
 import typing as t
@@ -472,7 +471,7 @@ class StandardStreamsActionBase(ActionBase):
             if config.pass_stdout:
                 self.say(line)
         if config.capture_stdout:
-            self.yield_outcome(CaptureStream.STDOUT.value, "\n".join(captured_data))
+            self.yield_outcome(CaptureStream.STDOUT.value, "".join(captured_data))
 
     async def _read_stderr(self, stream: t.AsyncIterable[str]) -> None:
         config: StreamCaptureConfiguration = self._get_capture_configration()
@@ -483,7 +482,7 @@ class StandardStreamsActionBase(ActionBase):
             if config.pass_stderr:
                 self.say(Stderr(line))
         if config.capture_stderr:
-            self.yield_outcome(CaptureStream.STDERR.value, "\n".join(captured_data))
+            self.yield_outcome(CaptureStream.STDERR.value, "".join(captured_data))
 
     async def _start_streams_transmission(
         self,
@@ -542,14 +541,11 @@ class StreamCaptureConfiguration:
 class SubprocessActionBase(StandardStreamsActionBase):
     """Base class for subprocess-based actions"""
 
-    _BYTES_LINE_SEPARATOR: bytes = os.linesep.encode()
     _ENCODING: str = "utf-8"
 
     @classmethod
-    async def _read_stream(cls, stream: StreamReader, strip_linesep: bool = True) -> t.AsyncGenerator[str, None]:
+    async def _read_stream(cls, stream: StreamReader) -> t.AsyncGenerator[str, None]:
         async for chunk in stream:  # type: bytes
-            if strip_linesep:
-                chunk = chunk.rstrip(cls._BYTES_LINE_SEPARATOR)
             yield chunk.decode(cls._ENCODING)
 
     async def _create_process(self) -> Process:
