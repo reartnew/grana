@@ -32,6 +32,8 @@ __all__ = [
     "ArgsBase",
     "EmissionScannerActionBase",
     "CommunicatorPrivilegeError",
+    "StreamCaptureConfiguration",
+    "CaptureStream",
 ]
 
 
@@ -446,3 +448,77 @@ class EmissionScannerActionBase(ActionBase):
         # Do not forget to report system message prefix, if any
         if memorized_prefix:
             super().say(memorized_prefix)
+
+    def _get_capture_configration(self) -> StreamCaptureConfiguration:
+        raise NotImplementedError
+
+    async def _read_stdout(self, stream: t.AsyncIterable[str]) -> None:
+        config: StreamCaptureConfiguration = self._get_capture_configration()
+        captured_data: list[str] = []
+        async for line in stream:
+            if config.capture_stdout:
+                captured_data.append(line)
+            if config.pass_stdout:
+                self.say(line)
+        if config.capture_stdout:
+            self.yield_outcome(CaptureStream.STDOUT.value, "\n".join(captured_data))
+
+    async def _read_stderr(self, stream: t.AsyncIterable[str]) -> None:
+        config: StreamCaptureConfiguration = self._get_capture_configration()
+        captured_data: list[str] = []
+        async for line in stream:
+            if config.capture_stderr:
+                captured_data.append(line)
+            if config.pass_stderr:
+                self.say(Stderr(line))
+        if config.capture_stderr:
+            self.yield_outcome(CaptureStream.STDERR.value, "\n".join(captured_data))
+
+    async def _start_streams_transmission(
+        self,
+        stdout: t.AsyncIterable[str],
+        stderr: t.AsyncIterable[str],
+    ) -> asyncio.Future:
+        tasks: list[asyncio.Task] = [
+            asyncio.create_task(self._read_stdout(stdout)),
+            asyncio.create_task(self._read_stderr(stderr)),
+        ]
+        # Wait for all tasks to complete
+        await asyncio.wait(tasks)
+        # Check exceptions
+        return asyncio.gather(*tasks)
+
+
+class CaptureStream(enum.Enum):
+    """Valid values to use in the `capture` argument"""
+
+    STDOUT = "stdout"
+    STDERR = "stderr"
+    STDOUT_PASS = "stdout+pass"
+    STDERR_PASS = "stderr+pass"
+
+
+@dataclasses.dataclass
+class StreamCaptureConfiguration:
+    """Configuration for capturing stream data"""
+
+    pass_stdout: bool
+    pass_stderr: bool
+    capture_stdout: bool
+    capture_stderr: bool
+
+    @classmethod
+    def from_stream_list(cls, spec_list: list[CaptureStream]) -> StreamCaptureConfiguration:
+        """Create a StreamCaptureConfiguration from a list of streams"""
+        if len(spec_list) != len(set(spec_list)):
+            raise ValueError(f"Duplicate capture arguments provided: {spec_list}")
+        if CaptureStream.STDOUT in spec_list and CaptureStream.STDOUT_PASS in spec_list:
+            raise ValueError(f"{CaptureStream.STDOUT} and {CaptureStream.STDOUT_PASS} are mutually exclusive")
+        if CaptureStream.STDERR in spec_list and CaptureStream.STDERR_PASS in spec_list:
+            raise ValueError(f"{CaptureStream.STDERR} and {CaptureStream.STDERR_PASS} are mutually exclusive")
+        return StreamCaptureConfiguration(
+            capture_stdout=CaptureStream.STDOUT in spec_list or CaptureStream.STDOUT_PASS in spec_list,
+            capture_stderr=CaptureStream.STDERR in spec_list or CaptureStream.STDERR_PASS in spec_list,
+            pass_stdout=CaptureStream.STDOUT not in spec_list,
+            pass_stderr=CaptureStream.STDERR not in spec_list,
+        )

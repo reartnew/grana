@@ -1,6 +1,5 @@
 """Shell action wrapped into a docker container"""
 
-import asyncio
 import contextlib
 import functools
 import tempfile
@@ -15,8 +14,7 @@ import aiohttp
 from aiodocker.containers import DockerContainer
 from aiohttp.client import DEFAULT_TIMEOUT
 
-from ..base import EmissionScannerActionBase, ArgsBase
-from ..types import Stderr
+from ..base import EmissionScannerActionBase, ArgsBase, StreamCaptureConfiguration, CaptureStream
 from ...config.constants import C
 
 __all__ = [
@@ -87,6 +85,7 @@ class DockerShellArgs(ArgsBase):
     network: Network = field(default_factory=Network)  # pylint: disable=invalid-field-call
     privileged: bool = False
     auth: t.Optional[Auth] = None
+    capture: list[CaptureStream] = field(default_factory=list)  # pylint: disable=invalid-field-call
 
 
 class DockerShellAction(EmissionScannerActionBase):
@@ -175,23 +174,16 @@ class DockerShellAction(EmissionScannerActionBase):
                     auth=self._make_auth(),
                 )
             async with self._make_container(client) as container:
-                tasks: list[asyncio.Task] = [
-                    asyncio.create_task(self._read_stdout(container)),
-                    asyncio.create_task(self._read_stderr(container)),
-                ]
-                # Wait for all tasks to complete
-                await asyncio.wait(tasks)
-                # Check exceptions
-                await asyncio.gather(*tasks)
+                streams_transmission = await self._start_streams_transmission(
+                    stdout=container.log(stdout=True, follow=True),
+                    stderr=container.log(stderr=True, follow=True),
+                )
+                await streams_transmission
                 result: dict = await container.wait()
                 self.logger.debug(f"Docker container result: {result}")
                 if (code := result.get("StatusCode", -1)) != 0:
                     self.fail(f"Exit code: {code}")
 
-    async def _read_stdout(self, container: DockerContainer) -> None:
-        async for chunk in container.log(stdout=True, follow=True):
-            self.say(chunk)
-
-    async def _read_stderr(self, container: DockerContainer) -> None:
-        async for chunk in container.log(stderr=True, follow=True):
-            self.say(Stderr(chunk))
+    @functools.cache
+    def _get_capture_configration(self) -> StreamCaptureConfiguration:
+        return StreamCaptureConfiguration.from_stream_list(self.args.capture)

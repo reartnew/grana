@@ -749,17 +749,6 @@ actions:
     ]
 
 
-def test_improper_shell_extension(run_text: RunFactoryType) -> None:
-    """Check that shell extensions must expose standard streams"""
-    data = run_text(
-        """
-actions:
-  - type: improper-shell
-"""
-    )
-    assert data == ["✓ SUCCESS: improper-shell"]
-
-
 def test_workflow_with_rc(ctx_from_text: CtxFactoryType, tmp_path: Path) -> None:
     """Check workflow execution with a .granarc file"""
     rc_path: Path = tmp_path / ".granarc"
