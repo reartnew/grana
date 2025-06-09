@@ -1,7 +1,11 @@
+# pylint: disable=invalid-field-call
 """Separate module for shell-related action"""
 
 import asyncio
 import contextlib
+import dataclasses
+import enum
+import functools
 import os
 import pathlib
 import shlex
@@ -16,7 +20,28 @@ from ...config.constants import C
 
 __all__ = [
     "ShellAction",
+    "StreamCaptureConfiguration",
+    "CaptureStream",
 ]
+
+
+@dataclasses.dataclass
+class StreamCaptureConfiguration:
+    """Configuration for capturing stream data"""
+
+    pass_stdout: bool
+    pass_stderr: bool
+    capture_stdout: bool
+    capture_stderr: bool
+
+
+class CaptureStream(enum.Enum):
+    """Valid values to use in the `capture` argument"""
+
+    STDOUT = "stdout"
+    STDERR = "stderr"
+    STDOUT_PASS = "stdout+pass"
+    STDERR_PASS = "stderr+pass"
 
 
 class ShellArgsByCommand(ArgsBase):
@@ -26,6 +51,7 @@ class ShellArgsByCommand(ArgsBase):
     environment: t.Optional[dict[str, str]] = None
     cwd: t.Optional[str] = None
     executable: t.Optional[str] = None
+    capture: list[CaptureStream] = dataclasses.field(default_factory=list)
 
 
 class ShellArgsByFile(ArgsBase):
@@ -35,6 +61,7 @@ class ShellArgsByFile(ArgsBase):
     environment: t.Optional[dict[str, str]] = None
     cwd: t.Optional[str] = None
     executable: t.Optional[str] = None
+    capture: list[CaptureStream] = dataclasses.field(default_factory=list)
 
 
 class ShellAction(EmissionScannerActionBase):
@@ -43,6 +70,21 @@ class ShellAction(EmissionScannerActionBase):
     _BYTES_LINE_SEPARATOR: bytes = os.linesep.encode()
     _ENCODING: str = "utf-8"
     args: t.Union[ShellArgsByCommand, ShellArgsByFile]
+
+    @functools.cache
+    def _get_capture_configration(self) -> StreamCaptureConfiguration:
+        if len(self.args.capture) != len(set(self.args.capture)):
+            raise ValueError(f"Duplicate capture arguments provided: {self.args.capture}")
+        if CaptureStream.STDOUT in self.args.capture and CaptureStream.STDOUT_PASS in self.args.capture:
+            raise ValueError(f"{CaptureStream.STDOUT} and {CaptureStream.STDOUT_PASS} are mutually exclusive")
+        if CaptureStream.STDERR in self.args.capture and CaptureStream.STDERR_PASS in self.args.capture:
+            raise ValueError(f"{CaptureStream.STDERR} and {CaptureStream.STDERR_PASS} are mutually exclusive")
+        return StreamCaptureConfiguration(
+            capture_stdout=CaptureStream.STDOUT in self.args.capture or CaptureStream.STDOUT_PASS in self.args.capture,
+            capture_stderr=CaptureStream.STDERR in self.args.capture or CaptureStream.STDERR_PASS in self.args.capture,
+            pass_stdout=CaptureStream.STDOUT not in self.args.capture,
+            pass_stderr=CaptureStream.STDERR not in self.args.capture,
+        )
 
     @classmethod
     async def _read_stream(cls, stream: StreamReader, strip_linesep: bool = True) -> t.AsyncGenerator[str, None]:
@@ -54,14 +96,28 @@ class ShellAction(EmissionScannerActionBase):
     async def _read_stdout(self, process: Process) -> None:
         if process.stdout is None:
             raise ValueError("Process standard output is not available")
+        config: StreamCaptureConfiguration = self._get_capture_configration()
+        captured_data: list[str] = []
         async for line in self._read_stream(process.stdout):
-            self.say(line)
+            if config.capture_stdout:
+                captured_data.append(line)
+            if config.pass_stdout:
+                self.say(line)
+        if config.capture_stdout:
+            self.yield_outcome(CaptureStream.STDOUT.value, "\n".join(captured_data))
 
     async def _read_stderr(self, process: Process) -> None:
         if process.stderr is None:
             raise ValueError("Process standard output is not available")
+        config: StreamCaptureConfiguration = self._get_capture_configration()
+        captured_data: list[str] = []
         async for line in self._read_stream(process.stderr):
-            self.say(Stderr(line))
+            if config.capture_stderr:
+                captured_data.append(line)
+            if config.pass_stderr:
+                self.say(Stderr(line))
+        if config.capture_stderr:
+            self.yield_outcome(CaptureStream.STDERR.value, "\n".join(captured_data))
 
     async def _create_process(self) -> Process:
         command: str
