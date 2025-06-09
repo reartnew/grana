@@ -12,7 +12,7 @@ from asyncio.streams import StreamReader
 from asyncio.subprocess import create_subprocess_shell, Process  # noqa
 from subprocess import PIPE  # nosec
 
-from ..base import ArgsBase, EmissionScannerActionBase, CaptureStream, StreamCaptureConfiguration
+from ..base import ArgsBase, StandardStreamsActionBase, CaptureStream, StreamCaptureConfiguration
 from ...config.constants import C
 
 __all__ = [
@@ -40,7 +40,7 @@ class ShellArgsByFile(ArgsBase):
     capture: list[CaptureStream] = dataclasses.field(default_factory=list)
 
 
-class ShellAction(EmissionScannerActionBase):
+class ShellAction(StandardStreamsActionBase):
     """Runs a shell command on the local system."""
 
     _BYTES_LINE_SEPARATOR: bytes = os.linesep.encode()

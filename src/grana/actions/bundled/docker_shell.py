@@ -14,7 +14,7 @@ import aiohttp
 from aiodocker.containers import DockerContainer
 from aiohttp.client import DEFAULT_TIMEOUT
 
-from ..base import EmissionScannerActionBase, ArgsBase, StreamCaptureConfiguration, CaptureStream
+from ..base import StandardStreamsActionBase, ArgsBase, StreamCaptureConfiguration, CaptureStream
 from ...config.constants import C
 
 __all__ = [
@@ -88,7 +88,7 @@ class DockerShellArgs(ArgsBase):
     capture: list[CaptureStream] = field(default_factory=list)  # pylint: disable=invalid-field-call
 
 
-class DockerShellAction(EmissionScannerActionBase):
+class DockerShellAction(StandardStreamsActionBase):
     """Runs a shell command in a docker container."""
 
     args: DockerShellArgs

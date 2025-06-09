@@ -30,7 +30,7 @@ __all__ = [
     "WorkflowActionExecution",
     "ActionSkip",
     "ArgsBase",
-    "EmissionScannerActionBase",
+    "StandardStreamsActionBase",
     "CommunicatorPrivilegeError",
     "StreamCaptureConfiguration",
     "CaptureStream",
@@ -358,7 +358,7 @@ class WorkflowActionExecution(WithLogger):
 
 
 # pylint: disable=abstract-method
-class EmissionScannerActionBase(ActionBase):
+class StandardStreamsActionBase(ActionBase):
     """Base class for stream-scanning actions"""
 
     _SERVICE_MESSAGES_SCAN_PATTERN: t.ClassVar[t.Pattern] = re.compile(

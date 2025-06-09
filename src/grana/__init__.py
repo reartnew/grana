@@ -3,7 +3,7 @@
 from .actions.base import (
     ActionBase,
     ArgsBase,
-    EmissionScannerActionBase,
+    StandardStreamsActionBase,
 )
 from .actions.types import Stderr
 from .config.constants import C
