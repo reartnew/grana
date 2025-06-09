@@ -50,6 +50,16 @@ By default, a few helper functions definitions are added (see [#helpers](#helper
       *optional*
     - Path to the shell binary.\
       See also: default shell executable.
+*   - `capture`
+    - **list**\
+      *optional*\
+      *values: string*
+    - Standard streams capture configuration.\
+      Allowed item values are: `stdout`, `stderr`, `stdout+pass`, `stderr+pass`.\
+      When `stdout`, `stderr` or both are given, the corresponding streams \
+      are captured silently and are yielded as eponymous outcomes.\
+      The same applies for `stdout+pass` and `stderr+pass`, \
+      but the streams are not suppressed then.
 :::
 
 ## Helpers
