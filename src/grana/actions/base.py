@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import collections
+import contextlib
 import copy
 import dataclasses
 import enum
@@ -12,6 +13,8 @@ import functools
 import re
 import textwrap
 import typing as t
+from asyncio.streams import StreamReader
+from asyncio.subprocess import Process  # noqa
 
 from .constants import ACTION_RESERVED_FIELD_NAMES
 from .types import Stderr, ActionStatus, RenamedMessageSource, NamedMessageSource
@@ -30,8 +33,11 @@ __all__ = [
     "WorkflowActionExecution",
     "ActionSkip",
     "ArgsBase",
-    "EmissionScannerActionBase",
+    "StandardStreamsActionBase",
     "CommunicatorPrivilegeError",
+    "StreamCaptureConfiguration",
+    "CaptureStream",
+    "SubprocessActionBase",
 ]
 
 
@@ -356,7 +362,7 @@ class WorkflowActionExecution(WithLogger):
 
 
 # pylint: disable=abstract-method
-class EmissionScannerActionBase(ActionBase):
+class StandardStreamsActionBase(ActionBase):
     """Base class for stream-scanning actions"""
 
     _SERVICE_MESSAGES_SCAN_PATTERN: t.ClassVar[t.Pattern] = re.compile(
@@ -446,3 +452,125 @@ class EmissionScannerActionBase(ActionBase):
         # Do not forget to report system message prefix, if any
         if memorized_prefix:
             super().say(memorized_prefix)
+
+    @functools.cache
+    def _get_capture_configration(self) -> StreamCaptureConfiguration:
+        return StreamCaptureConfiguration(
+            pass_stdout=True,
+            pass_stderr=True,
+            capture_stdout=False,
+            capture_stderr=False,
+        )
+
+    async def _read_stdout(self, stream: t.AsyncIterable[str]) -> None:
+        config: StreamCaptureConfiguration = self._get_capture_configration()
+        captured_data: list[str] = []
+        async for line in stream:
+            if config.capture_stdout:
+                captured_data.append(line)
+            if config.pass_stdout:
+                self.say(line)
+        if config.capture_stdout:
+            self.yield_outcome(CaptureStream.STDOUT.value, "".join(captured_data))
+
+    async def _read_stderr(self, stream: t.AsyncIterable[str]) -> None:
+        config: StreamCaptureConfiguration = self._get_capture_configration()
+        captured_data: list[str] = []
+        async for line in stream:
+            if config.capture_stderr:
+                captured_data.append(line)
+            if config.pass_stderr:
+                self.say(Stderr(line))
+        if config.capture_stderr:
+            self.yield_outcome(CaptureStream.STDERR.value, "".join(captured_data))
+
+    async def _start_streams_transmission(
+        self,
+        stdout: t.AsyncIterable[str],
+        stderr: t.AsyncIterable[str],
+    ) -> asyncio.Task:
+        tasks: list[asyncio.Task] = [
+            asyncio.create_task(self._read_stdout(stdout)),
+            asyncio.create_task(self._read_stderr(stderr)),
+        ]
+
+        async def wait_and_gather():
+            # Wait for all tasks to complete
+            await asyncio.wait(tasks)
+            # Check exceptions
+            await asyncio.gather(*tasks)
+
+        return asyncio.create_task(wait_and_gather())
+
+
+class CaptureStream(enum.Enum):
+    """Valid values to use in the `capture` argument"""
+
+    STDOUT = "stdout"
+    STDERR = "stderr"
+    STDOUT_PASS = "stdout+pass"  # nosec
+    STDERR_PASS = "stderr+pass"  # nosec
+
+
+@dataclasses.dataclass
+class StreamCaptureConfiguration:
+    """Configuration for capturing stream data"""
+
+    pass_stdout: bool
+    pass_stderr: bool
+    capture_stdout: bool
+    capture_stderr: bool
+
+    @classmethod
+    def from_streams_list(cls, spec: list[CaptureStream]) -> StreamCaptureConfiguration:
+        """Create a StreamCaptureConfiguration from a list of streams"""
+        if len(spec) != len(set(spec)):
+            raise ValueError(f"Duplicate capture arguments provided: {spec}")
+        if CaptureStream.STDOUT in spec and CaptureStream.STDOUT_PASS in spec:
+            raise ValueError(f"{CaptureStream.STDOUT} and {CaptureStream.STDOUT_PASS} are mutually exclusive")
+        if CaptureStream.STDERR in spec and CaptureStream.STDERR_PASS in spec:
+            raise ValueError(f"{CaptureStream.STDERR} and {CaptureStream.STDERR_PASS} are mutually exclusive")
+        return StreamCaptureConfiguration(
+            capture_stdout=CaptureStream.STDOUT in spec or CaptureStream.STDOUT_PASS in spec,
+            capture_stderr=CaptureStream.STDERR in spec or CaptureStream.STDERR_PASS in spec,
+            pass_stdout=CaptureStream.STDOUT not in spec,
+            pass_stderr=CaptureStream.STDERR not in spec,
+        )
+
+
+class SubprocessActionBase(StandardStreamsActionBase):
+    """Base class for subprocess-based actions"""
+
+    _ENCODING: str = "utf-8"
+
+    @classmethod
+    async def _read_stream(cls, stream: StreamReader) -> t.AsyncGenerator[str, None]:
+        async for chunk in stream:  # type: bytes
+            yield chunk.decode(cls._ENCODING)
+
+    async def _create_process(self) -> Process:
+        raise NotImplementedError
+
+    @contextlib.asynccontextmanager
+    async def _control_process_lifecycle(self):
+        process = await self._create_process()
+        yield process
+        if process.returncode is None:
+            process.kill()
+        # Close communication anyway
+        await process.communicate()
+        for stream in (process.stdout, process.stderr, process.stdin):
+            if stream is None:
+                continue
+            stream._transport.close()  # type: ignore[union-attr]  # pylint: disable=protected-access
+
+    async def run(self) -> None:
+        async with self._control_process_lifecycle() as process:
+            streams_transmission = await self._start_streams_transmission(
+                stdout=self._read_stream(process.stdout),
+                stderr=self._read_stream(process.stderr),
+            )
+            await streams_transmission
+            await process.communicate()
+            if process.returncode:
+                self.fail(f"Exit code: {process.returncode}")
