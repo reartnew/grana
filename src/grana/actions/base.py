@@ -5,13 +5,17 @@ from __future__ import annotations
 import asyncio
 import base64
 import collections
+import contextlib
 import copy
 import dataclasses
 import enum
 import functools
+import os
 import re
 import textwrap
 import typing as t
+from asyncio.streams import StreamReader
+from asyncio.subprocess import Process  # noqa
 
 from .constants import ACTION_RESERVED_FIELD_NAMES
 from .types import Stderr, ActionStatus, RenamedMessageSource, NamedMessageSource
@@ -34,6 +38,7 @@ __all__ = [
     "CommunicatorPrivilegeError",
     "StreamCaptureConfiguration",
     "CaptureStream",
+    "SubprocessActionBase",
 ]
 
 
@@ -526,3 +531,44 @@ class StreamCaptureConfiguration:
             pass_stdout=CaptureStream.STDOUT not in spec_list,
             pass_stderr=CaptureStream.STDERR not in spec_list,
         )
+
+
+class SubprocessActionBase(StandardStreamsActionBase):
+    """Base class for subprocess-based actions"""
+
+    _BYTES_LINE_SEPARATOR: bytes = os.linesep.encode()
+    _ENCODING: str = "utf-8"
+
+    @classmethod
+    async def _read_stream(cls, stream: StreamReader, strip_linesep: bool = True) -> t.AsyncGenerator[str, None]:
+        async for chunk in stream:  # type: bytes
+            if strip_linesep:
+                chunk = chunk.rstrip(cls._BYTES_LINE_SEPARATOR)
+            yield chunk.decode(cls._ENCODING)
+
+    async def _create_process(self) -> Process:
+        raise NotImplementedError
+
+    @contextlib.asynccontextmanager
+    async def _control_process_lifecycle(self):
+        process = await self._create_process()
+        yield process
+        if process.returncode is None:
+            process.kill()
+        # Close communication anyway
+        await process.communicate()
+        for stream in (process.stdout, process.stderr, process.stdin):
+            if stream is None:
+                continue
+            stream._transport.close()  # type: ignore[union-attr]  # pylint: disable=protected-access
+
+    async def run(self) -> None:
+        async with self._control_process_lifecycle() as process:
+            streams_transmission = await self._start_streams_transmission(
+                stdout=self._read_stream(process.stdout),
+                stderr=self._read_stream(process.stderr),
+            )
+            await streams_transmission
+            await process.communicate()
+            if process.returncode:
+                self.fail(f"Exit code: {process.returncode}")

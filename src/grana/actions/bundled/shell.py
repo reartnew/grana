@@ -1,18 +1,16 @@
 # pylint: disable=invalid-field-call
 """Separate module for shell-related action"""
 
-import contextlib
 import dataclasses
 import functools
 import os
 import pathlib
 import shlex
 import typing as t
-from asyncio.streams import StreamReader
 from asyncio.subprocess import create_subprocess_shell, Process  # noqa
 from subprocess import PIPE  # nosec
 
-from ..base import ArgsBase, StandardStreamsActionBase, CaptureStream, StreamCaptureConfiguration
+from ..base import ArgsBase, CaptureStream, StreamCaptureConfiguration, SubprocessActionBase
 from ...config.constants import C
 
 __all__ = [
@@ -40,23 +38,14 @@ class ShellArgsByFile(ArgsBase):
     capture: list[CaptureStream] = dataclasses.field(default_factory=list)
 
 
-class ShellAction(StandardStreamsActionBase):
+class ShellAction(SubprocessActionBase):
     """Runs a shell command on the local system."""
 
-    _BYTES_LINE_SEPARATOR: bytes = os.linesep.encode()
-    _ENCODING: str = "utf-8"
     args: t.Union[ShellArgsByCommand, ShellArgsByFile]
 
     @functools.cache
     def _get_capture_configration(self) -> StreamCaptureConfiguration:
         return StreamCaptureConfiguration.from_stream_list(self.args.capture)
-
-    @classmethod
-    async def _read_stream(cls, stream: StreamReader, strip_linesep: bool = True) -> t.AsyncGenerator[str, None]:
-        async for chunk in stream:  # type: bytes
-            if strip_linesep:
-                chunk = chunk.rstrip(cls._BYTES_LINE_SEPARATOR)
-            yield chunk.decode(cls._ENCODING)
 
     async def _create_process(self) -> Process:
         command: str
@@ -81,27 +70,3 @@ class ShellAction(StandardStreamsActionBase):
             limit=C.SUBPROCESS_STREAM_BUFFER_LIMIT,
         )
         return process
-
-    @contextlib.asynccontextmanager
-    async def _control_process_lifecycle(self):
-        process = await self._create_process()
-        yield process
-        if process.returncode is None:
-            process.kill()
-        # Close communication anyway
-        await process.communicate()
-        for stream in (process.stdout, process.stderr, process.stdin):
-            if stream is None:
-                continue
-            stream._transport.close()  # type: ignore[union-attr]  # pylint: disable=protected-access
-
-    async def run(self) -> None:
-        async with self._control_process_lifecycle() as process:
-            streams_transmission = await self._start_streams_transmission(
-                stdout=self._read_stream(process.stdout),
-                stderr=self._read_stream(process.stderr),
-            )
-            await streams_transmission
-            await process.communicate()
-            if process.returncode:
-                self.fail(f"Exit code: {process.returncode}")
