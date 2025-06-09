@@ -1,6 +1,6 @@
 """Runner public methods tests"""
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,too-many-lines
 
 import io
 import random
@@ -967,3 +967,55 @@ def test_communicator_privileges(run_text: RunFactoryType) -> None:
     assert output == [
         "✓ SUCCESS: privileged-failures",
     ]
+
+
+def test_streams_capture(run_text: RunFactoryType) -> None:
+    """Check streams capturing for shell"""
+    output: list[str] = run_text(
+        """
+        actions:
+          - type: shell
+            capture: [ stdout, stderr ]
+            command: |
+              echo "Hello"
+              echo "World" >&2
+          - type: echo
+            message: "@{ out.shell.stdout }"
+          - type: echo
+            message: "@{ out.shell.stderr }"
+        """
+    )
+    assert set(output) == {
+        "[echo]    | Hello",
+        "[echo-2]  | World",
+        "✓ SUCCESS: shell",
+        "✓ SUCCESS: echo",
+        "✓ SUCCESS: echo-2",
+    }
+
+
+def test_streams_capture_pass(run_text: RunFactoryType) -> None:
+    """Check streams capturing with passing for shell"""
+    output: list[str] = run_text(
+        """
+        actions:
+          - type: shell
+            capture: [ stdout+pass, stderr+pass ]
+            command: |
+              echo "Hello"
+              echo "World" >&2
+          - type: echo
+            message: "@{ out.shell.stdout }"
+          - type: echo
+            message: "@{ out.shell.stderr }"
+        """
+    )
+    assert set(output) == {
+        "[shell]   | Hello",
+        "         *| World",
+        "[echo]    | Hello",
+        "[echo-2]  | World",
+        "✓ SUCCESS: shell",
+        "✓ SUCCESS: echo",
+        "✓ SUCCESS: echo-2",
+    }
