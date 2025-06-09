@@ -478,15 +478,19 @@ class EmissionScannerActionBase(ActionBase):
         self,
         stdout: t.AsyncIterable[str],
         stderr: t.AsyncIterable[str],
-    ) -> asyncio.Future:
+    ) -> asyncio.Task:
         tasks: list[asyncio.Task] = [
             asyncio.create_task(self._read_stdout(stdout)),
             asyncio.create_task(self._read_stderr(stderr)),
         ]
-        # Wait for all tasks to complete
-        await asyncio.wait(tasks)
-        # Check exceptions
-        return asyncio.gather(*tasks)
+
+        async def wait_and_gather():
+            # Wait for all tasks to complete
+            await asyncio.wait(tasks)
+            # Check exceptions
+            await asyncio.gather(*tasks)
+
+        return asyncio.create_task(wait_and_gather())
 
 
 class CaptureStream(enum.Enum):
