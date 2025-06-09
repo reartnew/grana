@@ -509,8 +509,8 @@ class CaptureStream(enum.Enum):
 
     STDOUT = "stdout"
     STDERR = "stderr"
-    STDOUT_PASS = "stdout+pass"
-    STDERR_PASS = "stderr+pass"
+    STDOUT_PASS = "stdout+pass"  # nosec
+    STDERR_PASS = "stderr+pass"  # nosec
 
 
 @dataclasses.dataclass
