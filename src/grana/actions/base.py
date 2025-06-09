@@ -454,8 +454,14 @@ class StandardStreamsActionBase(ActionBase):
         if memorized_prefix:
             super().say(memorized_prefix)
 
+    @functools.cache
     def _get_capture_configration(self) -> StreamCaptureConfiguration:
-        raise NotImplementedError
+        return StreamCaptureConfiguration(
+            pass_stdout=True,
+            pass_stderr=True,
+            capture_stdout=False,
+            capture_stderr=False,
+        )
 
     async def _read_stdout(self, stream: t.AsyncIterable[str]) -> None:
         config: StreamCaptureConfiguration = self._get_capture_configration()
@@ -517,19 +523,19 @@ class StreamCaptureConfiguration:
     capture_stderr: bool
 
     @classmethod
-    def from_stream_list(cls, spec_list: list[CaptureStream]) -> StreamCaptureConfiguration:
+    def from_streams_list(cls, spec: list[CaptureStream]) -> StreamCaptureConfiguration:
         """Create a StreamCaptureConfiguration from a list of streams"""
-        if len(spec_list) != len(set(spec_list)):
-            raise ValueError(f"Duplicate capture arguments provided: {spec_list}")
-        if CaptureStream.STDOUT in spec_list and CaptureStream.STDOUT_PASS in spec_list:
+        if len(spec) != len(set(spec)):
+            raise ValueError(f"Duplicate capture arguments provided: {spec}")
+        if CaptureStream.STDOUT in spec and CaptureStream.STDOUT_PASS in spec:
             raise ValueError(f"{CaptureStream.STDOUT} and {CaptureStream.STDOUT_PASS} are mutually exclusive")
-        if CaptureStream.STDERR in spec_list and CaptureStream.STDERR_PASS in spec_list:
+        if CaptureStream.STDERR in spec and CaptureStream.STDERR_PASS in spec:
             raise ValueError(f"{CaptureStream.STDERR} and {CaptureStream.STDERR_PASS} are mutually exclusive")
         return StreamCaptureConfiguration(
-            capture_stdout=CaptureStream.STDOUT in spec_list or CaptureStream.STDOUT_PASS in spec_list,
-            capture_stderr=CaptureStream.STDERR in spec_list or CaptureStream.STDERR_PASS in spec_list,
-            pass_stdout=CaptureStream.STDOUT not in spec_list,
-            pass_stderr=CaptureStream.STDERR not in spec_list,
+            capture_stdout=CaptureStream.STDOUT in spec or CaptureStream.STDOUT_PASS in spec,
+            capture_stderr=CaptureStream.STDERR in spec or CaptureStream.STDERR_PASS in spec,
+            pass_stdout=CaptureStream.STDOUT not in spec,
+            pass_stderr=CaptureStream.STDERR not in spec,
         )
 
 

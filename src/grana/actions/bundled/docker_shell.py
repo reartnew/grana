@@ -186,4 +186,4 @@ class DockerShellAction(StandardStreamsActionBase):
 
     @functools.cache
     def _get_capture_configration(self) -> StreamCaptureConfiguration:
-        return StreamCaptureConfiguration.from_stream_list(self.args.capture)
+        return StreamCaptureConfiguration.from_streams_list(self.args.capture)
