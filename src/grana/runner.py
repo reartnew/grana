@@ -6,14 +6,17 @@ thus placed to a separate module.
 import asyncio
 import functools
 import io
+import pathlib
 import sys
 import typing as t
 from pathlib import Path
+import tempfile
 
 from . import types
 from .actions.base import WorkflowActionExecution
 from .actions.types import ActionStatus
 from .config.constants import C
+from .config import TEMP_DIR_CONTEXT
 from .display.types import DisplayEvent, DisplayEventName
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.helpers import get_default_loader_class_for_source
@@ -120,7 +123,11 @@ class Runner(WithLogger):
         self._started = True
         # Build workflow and display
         workflow: Workflow = self.workflow
-        with workflow.configuration.apply():
+        with (
+            tempfile.TemporaryDirectory() as context_temp_dir,
+            TEMP_DIR_CONTEXT.set(pathlib.Path(context_temp_dir)),
+            workflow.configuration.apply(),
+        ):
             display: types.DisplayType = self.display
             display.logger.debug("Starting events processing")
             display_events_flow_processing_task: asyncio.Task = asyncio.create_task(self._process_display_events())

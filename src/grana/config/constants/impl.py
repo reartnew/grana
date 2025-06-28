@@ -9,6 +9,7 @@ from pathlib import Path
 from . import base
 from .cli import get_cli_option
 from .helpers import class_from_module
+from .. import TEMP_DIR_CONTEXT
 from ...strategy.base import BaseStrategy
 from ...types import (
     LoaderClassType,
@@ -76,6 +77,14 @@ class RcFile(base.ConstantPath[Path]):
     def default(self) -> Path:
         """`.granarc` file in the current working directory"""
         return Path().resolve() / ".granarc"
+
+
+class RunnerTemporaryDirectory(base.ConstantPath[t.Optional[Path]]):
+    """Holds a runner-scoped temporary directory path"""
+
+    def default(self) -> t.Optional[Path]:
+        """Obtain from runner context"""
+        return TEMP_DIR_CONTEXT.get()
 
 
 class ContextDirectory(base.ConstantPath[Path]):
