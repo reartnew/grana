@@ -55,6 +55,7 @@ class Workflow(dict[str, WorkflowActionExecution], WithLogger):
 
         metadata: dict[str, t.Any] = {
             "cwd": C.CONTEXT_DIRECTORY,
+            "tempdir": C.RUNNER_TEMPORARY_DIRECTORY,
         }
         if self.source_file is not None:
             source_file: pathlib.Path = self.source_file.resolve()

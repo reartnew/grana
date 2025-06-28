@@ -20,6 +20,7 @@ class C:
     LOG_FILE: base.ConstantBase = impl.LogFile()
     RC_FILE: base.ConstantBase = impl.RcFile()
     CONTEXT_DIRECTORY: base.ConstantBase = impl.ContextDirectory()
+    RUNNER_TEMPORARY_DIRECTORY: base.ConstantBase = impl.RunnerTemporaryDirectory()
     INTERACTIVE_MODE: base.ConstantBase = impl.InteractiveMode()
     DEPENDENCY_DEFAULT_STRICTNESS: base.ConstantBase = impl.DependencyDefaultStrictness()
     WORKFLOW_SOURCE_FILE: base.ConstantBase = impl.WorkflowSourceFile()
