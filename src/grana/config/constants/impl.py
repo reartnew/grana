@@ -9,7 +9,7 @@ from pathlib import Path
 from . import base
 from .cli import get_cli_option
 from .helpers import class_from_module
-from .. import TEMP_DIR_CONTEXT
+from .runner import TEMP_DIR_CONTEXT
 from ...strategy.base import BaseStrategy
 from ...types import (
     LoaderClassType,

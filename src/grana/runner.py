@@ -8,15 +8,15 @@ import functools
 import io
 import pathlib
 import sys
+import tempfile
 import typing as t
 from pathlib import Path
-import tempfile
 
 from . import types
 from .actions.base import WorkflowActionExecution
 from .actions.types import ActionStatus
 from .config.constants import C
-from .config import TEMP_DIR_CONTEXT
+from .config.constants.runner import TEMP_DIR_CONTEXT
 from .display.types import DisplayEvent, DisplayEventName
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.helpers import get_default_loader_class_for_source
