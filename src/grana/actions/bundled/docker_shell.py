@@ -130,6 +130,7 @@ class DockerShellAction(StandardStreamsActionBase):
             container: DockerContainer = await client.containers.run(
                 name=container_name,
                 config={
+                    "Entrypoint": [],
                     "Cmd": [self.args.executable, container_entry_file_path],
                     "Image": self.args.image,
                     "HostConfig": {

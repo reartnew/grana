@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "grana"
-version = "1.4.0a8"
+version = "1.4.0a9"
 description = "A convenient task runner"
 license = "MIT"
 authors = [
